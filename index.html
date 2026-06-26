@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Discover authentic, high-quality spices and blends online with RA Masala.">
+  <meta name="author" content="RA Masala">
+  <title>RA Masala</title>
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="RA Masala - Authentic Spices & Blends" />
+  <meta property="og:url" content="https://ramasala.com" />
+  <meta property="og:description" content="Shop premium quality, rich, and aromatic spices online. Bring the true flavor to your kitchen.">
+  <meta property="og:image" content="img/favicon1.png" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="RA Masala - Authentic Spices & Blends">
+  <meta name="twitter:description" content="Shop premium quality, rich, and aromatic spices online. Bring the true flavor to your kitchen.">
+  <meta name="twitter:image" content="https://ramasala.com/img/favicon1.png">
+
+  <!-- Favicon -->
+  <link rel="apple-touch-icon" sizes="180x180" href="dist/chrome.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="dist/chrome.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="dist/chrome.png">
+  <link rel="shortcut icon" href="dist/chrome.png" type="image/png">
+  <link rel="manifest" href="#">
+
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="RA Masala - Authentic Spices & Blends">
+  <meta name="twitter:description" content="Shop premium quality, rich, and aromatic spices online. Bring the true flavor to your kitchen.">
+  <meta name="twitter:image" content="https://ramasala.com/chrome.png">
+
+  <!-- Favicon & Icons -->
+  <link rel="apple-touch-icon" sizes="180x180" href="dist/chrome.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="dist/chrome.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="dist/chrome.png">
+  <link rel="manifest" href="#">
+  
+  <!-- Standard favicon for all browsers -->
+  <link rel="shortcut icon" href="dist/chrome.png" type="image/png">
+  
+  <!-- For modern browsers with SVG support (optional) -->
+  <link rel="icon" type="image/svg+xml" href="dist/favicon.png">
+</head>
+
+<body>
+  <div id="root" class="position-relative">
+    <!-- Premium Traditional Splash Loading Screen -->
+    <div class="splash-loader-container">
+      <div class="splash-loader-content">
+        <!-- Golden Swirling Mandalas Background Glow -->
+        <div class="splash-mandala-glow"></div>
+        
+        <!-- Brand Logo -->
+        <img src="images/ra_waa.png" alt="RA Masala Logo" class="splash-logo" />
+        
+        <!-- Indian Diya / Flickering Flame or Custom Spinning Loader -->
+        <div class="splash-spinner-wrapper">
+          <div class="splash-spinner"></div>
+          <div class="splash-spinner-inner"></div>
+        </div>
+        
+        <!-- Elegant Subtitle & Title -->
+        <p class="splash-subtitle">असा अवीरत चवीचा ठेवा...</p>
+        <h2 class="splash-title">आर.ए.वा!</h2>
+        
+        <!-- Progress bar / glowing indicator -->
+        <div class="splash-progress-track">
+          <div class="splash-progress-bar"></div>
+        </div>
+      </div>
+    </div>
+    
+    <style>
+      .splash-loader-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: radial-gradient(circle, #5b1a2c 0%, #2c0b14 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        overflow: hidden;
+      }
+      .splash-loader-content {
+        position: relative;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        animation: splashPulse 2.5s ease-in-out infinite;
+      }
+      .splash-mandala-glow {
+        position: absolute;
+        width: 300px;
+        height: 300px;
+        background: radial-gradient(circle, rgba(255, 215, 0, 0.15) 0%, rgba(255, 215, 0, 0) 70%);
+        border-radius: 50%;
+        top: -50px;
+        z-index: 0;
+        animation: rotateGlow 12s linear infinite;
+      }
+      .splash-logo {
+        max-height: 110px;
+        object-fit: contain;
+        z-index: 1;
+        filter: drop-shadow(0 4px 15px rgba(0, 0, 0, 0.4));
+        margin-bottom: 20px;
+        animation: floatLogo 3s ease-in-out infinite;
+      }
+      .splash-spinner-wrapper {
+        position: relative;
+        width: 60px;
+        height: 60px;
+        margin-bottom: 20px;
+        z-index: 1;
+      }
+      .splash-spinner {
+        box-sizing: border-box;
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border: 3px solid transparent;
+        border-top-color: #FFD700;
+        border-bottom-color: #FFD700;
+        border-radius: 50%;
+        animation: spinLoader 1.5s linear infinite;
+      }
+      .splash-spinner-inner {
+        box-sizing: border-box;
+        position: absolute;
+        top: 10%;
+        left: 10%;
+        width: 80%;
+        height: 80%;
+        border: 3px solid transparent;
+        border-left-color: #FF8C00;
+        border-right-color: #FF8C00;
+        border-radius: 50%;
+        animation: spinLoaderReverse 1s linear infinite;
+      }
+      .splash-subtitle {
+        font-family: 'Georgia', serif;
+        color: #FFB300;
+        font-size: 1.1rem;
+        margin: 10px 0 5px 0;
+        letter-spacing: 1.5px;
+        z-index: 1;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+      }
+      .splash-title {
+        font-family: 'Georgia', serif;
+        color: #FFFFFF;
+        font-size: 2.2rem;
+        font-weight: bold;
+        margin: 0 0 25px 0;
+        letter-spacing: 2px;
+        z-index: 1;
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+      }
+      .splash-progress-track {
+        width: 180px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+        overflow: hidden;
+        z-index: 1;
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+      }
+      .splash-progress-bar {
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, #FFD700, #FF8C00, #FFD700);
+        background-size: 200% 100%;
+        animation: loadingProgress 2s linear infinite;
+      }
+      
+      @keyframes spinLoader {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      @keyframes spinLoaderReverse {
+        0% { transform: rotate(360deg); }
+        100% { transform: rotate(0deg); }
+      }
+      @keyframes rotateGlow {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      @keyframes floatLogo {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-8px); }
+      }
+      @keyframes splashPulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.02); }
+      }
+      @keyframes loadingProgress {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+      }
+    </style>
+  </div>
+
+  <script type="module" src="/src/main.tsx"></script>
+  
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(function (registration) {
+            console.log('Service Worker registered successfully:', registration.scope);
+          })
+          .catch(function (error) {
+            console.log('Service Worker registration failed:', error);
+          });
+      });
+    }
+  </script>
+</body>
+
+</html>

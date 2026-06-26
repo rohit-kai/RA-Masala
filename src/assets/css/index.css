@@ -1,0 +1,555 @@
+@import url('./fonts.css');
+
+:root {
+
+  --fd-color-white: #fff;
+  --fd-color-dark: #10111E;
+  --fd-color-secondary: #0B2B3C;
+  --fd-color-primary: #7BAE00;
+  --fd-color-red: #DE0808;
+  --fd-color-silver: #D9D9D9;
+  --fd-color-yellow: #FFCC00;
+  --fd-color-bg: #F2F3F9;
+
+}
+
+* {outline: none;}
+body { font-family: "Poppins Regular", sans-serif!important;  margin: 0; padding: 0; color: var(--fd-color-white)!important; background-color: var(--fd-color-bg)!important; }
+ul, li {margin: 0!important; padding: 0!important; list-style: none;}
+a {color: #fff!important; text-decoration: none!important;}
+.fd-color-primary {color: var(--fd-color-primary)!important;} .fd-bg-primary {background-color: var(--fd-color-primary)}
+.fd-color-secondary {color: var(--fd-color-secondary);} .fd-bg-secondary {background-color: var(--fd-color-secondary)}
+.fd-hover-color-primary:hover { color: var(--fd-color-primary)!important} .fd-hover-bg-primary:hover { background-color: var(--fd-color-primary)!important; color: #fff!important}
+.fd-hover-border-primary:hover {border-color: var(--fd-color-primary)!important}
+.fd-btn { display: block; color: #fff; padding: 10px 20px; background-color: var(--fd-color-primary) }
+.fd-btn-red { display: block; color: #fff; padding: 8px;  background-color: var(--fd-color-red) }
+.w-70 {width: 70%!important} .w-30 {width: 30%!important;} .justify-content-space-between {justify-content: space-between;}
+.f-content {line-height: 35px;} .dot {margin: 0 10px 10px 0!important;} .cursor-pointer {cursor: pointer}
+.fd-slideshow div, .fd-slideshow ul.slider  { height: 100%;}
+.control-dots {text-align: start!important; left : 10%!important} .p-custom {padding: 5px 20px}
+.product-cart:hover .show {display: block!important} .z-1 { z-index: 1}
+.grid-3 { grid-template-columns: 3fr 3fr 3fr;} .grid-4 { grid-template-columns: 3fr 3fr 3fr 3fr;} .grid-2 { grid-template-columns: 6fr 6fr} .grid-0 { grid-template-columns: 12fr} 
+.p-color {display: block; width : 20px; height : 20px; border-radius : 30px; cursor: pointer}
+.fd-nav-active{background-color: var(--fd-color-primary)!important; color : #fff!important}
+.cursor-disabled {cursor: no-drop!important;}
+.others-imgs {width : 80px; height : 80px;}
+.fd-underline { border-bottom: 3px solid var(--fd-color-primary);}
+/* .scroller {scrollbar-color: var(--fd-color-silver) var(--fd-color-dark); scrollbar-width: thin;} */
+.spinner { border: 10px solid #fff; border-top: 10px solid #fff; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } } 
+
+@media (min-width: 992px) {
+  .grid-lg-3 { grid-template-columns: 3fr 3fr 3fr!important;}
+  .grid-lg-4 { grid-template-columns: 3fr 3fr 3fr 3fr!important;}
+  .grid-lg-2 { grid-template-columns: 6fr 6fr!important}
+  .grid-lg-0 { grid-template-columns: 12fr!important} 
+
+}
+
+/* Welcome Opening Page Styles (Layer-by-Layer Premium Design) */
+.welcome-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background-color: #08080f;
+  user-select: none;
+  isolation: isolate; /* Force mix-blend-mode to blend within this container only */
+}
+
+/* Layer 1: Background Wood Image */
+.welcome-bg-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+  filter: brightness(0.65) contrast(1.1);
+}
+
+/* Vignette / Overlay shading for depth */
+.welcome-bg-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, rgba(16, 17, 30, 0.1) 0%, rgba(8, 8, 15, 0.7) 70%, rgba(5, 5, 10, 0.95) 100%);
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Ambient glow in center */
+.welcome-center-glow {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 700px;
+  height: 700px;
+  background: radial-gradient(circle, rgba(222, 131, 8, 0.15) 0%, rgba(123, 174, 0, 0.05) 45%, rgba(0,0,0,0) 70%);
+  z-index: 3;
+  pointer-events: none;
+  animation: pulseGlow 10s infinite alternate ease-in-out;
+}
+
+@keyframes pulseGlow {
+  0% { transform: translate(-50%, -50%) scale(0.9); opacity: 0.6; }
+  100% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+}
+
+/* Layer 2: Corner Mandala Ornaments */
+.welcome-mandala-tl {
+  position: absolute;
+  top: -80px;
+  left: -80px;
+  width: 320px;
+  height: 320px;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255, 215, 0, 0.15)" stroke-width="0.5" stroke-dasharray="2 2"/><circle cx="50" cy="50" r="30" fill="none" stroke="rgba(255, 215, 0, 0.1)" stroke-width="0.3"/><path d="M50 2L53 10L61 8L57 16L65 17L59 24L66 28L58 33L63 40L54 42L57 50L48 50L50 42L41 40L46 33L38 28L45 24L39 17L47 16L43 8L51 10Z" fill="none" stroke="rgba(255, 215, 0, 0.12)" stroke-width="0.4" transform="rotate(15 50 50)"/><path d="M50 2L53 10L61 8L57 16L65 17L59 24L66 28L58 33L63 40L54 42L57 50L48 50L50 42L41 40L46 33L38 28L45 24L39 17L47 16L43 8L51 10Z" fill="none" stroke="rgba(255, 215, 0, 0.12)" stroke-width="0.4" transform="rotate(45 50 50)"/><path d="M50 2L53 10L61 8L57 16L65 17L59 24L66 28L58 33L63 40L54 42L57 50L48 50L50 42L41 40L46 33L38 28L45 24L39 17L47 16L43 8L51 10Z" fill="none" stroke="rgba(255, 215, 0, 0.12)" stroke-width="0.4" transform="rotate(75 50 50)"/><circle cx="50" cy="50" r="10" fill="none" stroke="rgba(255, 215, 0, 0.2)" stroke-width="0.5"/></svg>');
+  background-size: contain;
+  background-repeat: no-repeat;
+  z-index: 4;
+  animation: slowRotation 80s linear infinite;
+  opacity: 0.7;
+}
+
+.welcome-mandala-tr {
+  position: absolute;
+  top: -80px;
+  right: -80px;
+  width: 320px;
+  height: 320px;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255, 215, 0, 0.15)" stroke-width="0.5" stroke-dasharray="2 2"/><circle cx="50" cy="50" r="30" fill="none" stroke="rgba(255, 215, 0, 0.1)" stroke-width="0.3"/><path d="M50 2L53 10L61 8L57 16L65 17L59 24L66 28L58 33L63 40L54 42L57 50L48 50L50 42L41 40L46 33L38 28L45 24L39 17L47 16L43 8L51 10Z" fill="none" stroke="rgba(255, 215, 0, 0.12)" stroke-width="0.4" transform="rotate(15 50 50)"/><path d="M50 2L53 10L61 8L57 16L65 17L59 24L66 28L58 33L63 40L54 42L57 50L48 50L50 42L41 40L46 33L38 28L45 24L39 17L47 16L43 8L51 10Z" fill="none" stroke="rgba(255, 215, 0, 0.12)" stroke-width="0.4" transform="rotate(45 50 50)"/><path d="M50 2L53 10L61 8L57 16L65 17L59 24L66 28L58 33L63 40L54 42L57 50L48 50L50 42L41 40L46 33L38 28L45 24L39 17L47 16L43 8L51 10Z" fill="none" stroke="rgba(255, 215, 0, 0.12)" stroke-width="0.4" transform="rotate(75 50 50)"/><circle cx="50" cy="50" r="10" fill="none" stroke="rgba(255, 215, 0, 0.2)" stroke-width="0.5"/></svg>');
+  background-size: contain;
+  background-repeat: no-repeat;
+  z-index: 4;
+  animation: slowRotationReverse 80s linear infinite;
+  opacity: 0.7;
+}
+
+@keyframes slowRotation {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes slowRotationReverse {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(-360deg); }
+}
+
+/* Layer 3: Top Navigation on Wooden Plank */
+.welcome-top-nav {
+  position: absolute;
+  top: 25px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 30px;
+  padding: 10px 40px;
+  border-radius: 4px;
+  background: linear-gradient(rgba(241, 233, 212, 0.15), rgba(200, 185, 149, 0.2));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(241, 233, 212, 0.25);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4), inset 0 0 10px rgba(255,255,255,0.05);
+}
+
+.welcome-nav-link {
+  font-family: 'Poppins SemiBold', sans-serif;
+  font-size: 0.85rem;
+  letter-spacing: 2px;
+  color: #ebd7b3 !important;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  font-weight: 600;
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+}
+
+.welcome-nav-link:hover {
+  color: #ffd700 !important;
+  transform: translateY(-1px);
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+}
+
+/* Layer 4: Central Spice Whirl and Emblem */
+.welcome-center-stage {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.welcome-emblem-container {
+  position: relative;
+  width: 90vw;
+  max-width: 480px;
+  height: 90vw;
+  max-height: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.welcome-emblem-image {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  mix-blend-mode: screen;
+  animation: slowRotation 60s linear infinite;
+  filter: contrast(1.3) brightness(0.9) drop-shadow(0 0 35px rgba(230, 140, 10, 0.35));
+  border-radius: 50%;
+}
+
+.welcome-brand-content {
+  position: absolute;
+  z-index: 6;
+  text-align: center;
+  max-width: 280px;
+  padding: 15px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  animation: floatContent 6s infinite ease-in-out;
+}
+
+@keyframes floatContent {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+  100% { transform: translateY(0px); }
+}
+
+.welcome-brand-subtitle {
+  font-family: 'Poppins SemiBold', 'Noto Sans Devanagari', sans-serif;
+  color: #ffffff !important;
+  font-size: 1.15rem;
+  letter-spacing: 1px;
+  margin-bottom: 5px;
+  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 4px 12px rgba(0, 0, 0, 0.95);
+  font-weight: 700;
+}
+
+.welcome-brand-title {
+  font-family: 'Poppins Bold', 'Noto Sans Devanagari', sans-serif;
+  font-size: 3.2rem;
+  font-weight: 900;
+  color: #ffe680 !important;
+  margin-bottom: 5px;
+  letter-spacing: 1px;
+  text-shadow: -2px -2px 0 #4a1200, 2px -2px 0 #4a1200, -2px 2px 0 #4a1200, 2px 2px 0 #4a1200, 0 6px 15px rgba(0, 0, 0, 0.95);
+}
+
+/* Company Logo styled like the image */
+.ra-logo-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin-top: 15px;
+  transform: scale(0.92);
+}
+
+.ra-logo-top {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 250px;
+  margin-bottom: -5px;
+  position: relative;
+  z-index: 2;
+}
+
+.ra-logo-ribbon {
+  background: linear-gradient(135deg, #1d74b4 0%, #2f94d8 100%);
+  border: 1px solid #ffffff;
+  border-radius: 20px 20px 0 20px;
+  padding: 2px 10px;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 0.55rem;
+  font-weight: bold;
+  transform: rotate(-5deg);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+.ra-since {
+  color: #d11212;
+  font-size: 0.5rem;
+  font-weight: 800;
+}
+
+.ra-tradition {
+  color: #ffffff;
+  font-size: 0.6rem;
+  font-weight: 700;
+}
+
+.ra-logo-torch {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid #ffd700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #e65c00;
+  font-size: 1rem;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+.ra-logo-middle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.ra-logo-blue-box {
+  background: #004d99;
+  border: 3px solid #ffcc00;
+  border-radius: 12px;
+  padding: 2px 28px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+  z-index: 3;
+}
+
+.ra-logo-text-ra {
+  font-family: 'Poppins Black', 'Outfit', sans-serif;
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: -2px;
+  text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.3);
+}
+
+.ra-logo-ribbon-red-left {
+  width: 15px;
+  height: 25px;
+  background: #cc1818;
+  margin-right: -5px;
+  border-radius: 3px 0 0 3px;
+  z-index: 2;
+}
+
+.ra-logo-ribbon-red-right {
+  width: 25px;
+  height: 25px;
+  background: #cc1818;
+  margin-left: -5px;
+  clip-path: polygon(0 0, 100% 0, 75% 50%, 100% 100%, 0 100%);
+  z-index: 2;
+}
+
+.ra-logo-bottom {
+  font-family: 'Poppins Bold', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #d11212;
+  letter-spacing: 0.5px;
+  margin-top: 5px;
+  text-shadow: 1.5px 1.5px 0px #ffffff, -1.5px -1.5px 0px #ffffff, 1.5px -1.5px 0px #ffffff, -1.5px 1.5px 0px #ffffff;
+}
+
+@media (min-width: 576px) {
+  .welcome-brand-subtitle {
+    font-size: 1.25rem;
+  }
+  .welcome-brand-title {
+    font-size: 3.5rem;
+  }
+  .ra-logo-container {
+    transform: scale(1.05);
+  }
+}
+
+.welcome-brand-desc {
+  font-family: 'Poppins Light', sans-serif;
+  color: #ebd7b3;
+  font-size: 0.7rem;
+  line-height: 1.4;
+  margin-top: 8px;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+}
+
+/* Layer 5: Foreground Spices Bags & Bottom Section Wrapper */
+.welcome-bottom-section {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 1200px;
+  height: 250px;
+  z-index: 7;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+
+.welcome-bags-foreground {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  mix-blend-mode: screen;
+  filter: contrast(1.35) brightness(0.85) drop-shadow(0 -10px 30px rgba(0,0,0,0.8));
+}
+
+/* Layer 6: Traditional Indian Brass Lamp (Diya) with slow fade and flicker */
+.welcome-lamp-foreground {
+  position: absolute;
+  bottom: 30px;
+  right: 6%;
+  height: 380px;
+  width: auto;
+  object-fit: contain;
+  z-index: 8;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: lampFlicker 8s infinite alternate ease-in-out, slowFadeIn 4s ease-out;
+  filter: contrast(1.5) brightness(0.8) drop-shadow(0 0 20px rgba(255, 140, 0, 0.5));
+}
+
+@keyframes slowFadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes lampFlicker {
+  0% { transform: scale(1); opacity: 0.92; filter: contrast(1.5) brightness(0.8) drop-shadow(0 0 15px rgba(255, 140, 0, 0.4)); }
+  50% { transform: scale(1.02) rotate(0.5deg); opacity: 1; filter: contrast(1.55) brightness(0.85) drop-shadow(0 0 25px rgba(255, 140, 0, 0.6)); }
+  100% { transform: scale(0.99) rotate(-0.5deg); opacity: 0.95; filter: contrast(1.5) brightness(0.78) drop-shadow(0 0 18px rgba(255, 140, 0, 0.45)); }
+}
+
+/* Layer 7: Interactive Actions Overlay */
+.welcome-actions-overlay {
+  position: absolute;
+  bottom: 85px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  justify-content: center;
+  width: 90%;
+  max-width: 600px;
+  flex-wrap: wrap;
+}
+
+.welcome-cta-btn {
+  background: linear-gradient(135deg, #c68a18 0%, #a0690c 100%) !important;
+  color: #fff !important;
+  padding: 12px 35px;
+  font-family: 'Poppins SemiBold', sans-serif;
+  font-size: 0.95rem;
+  letter-spacing: 2px;
+  font-weight: 600;
+  text-transform: uppercase;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 215, 0, 0.35);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6), 0 0 15px rgba(198, 138, 24, 0.2);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.welcome-cta-btn:hover {
+  transform: translateY(-4px) scale(1.03);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.8), 0 0 25px rgba(255, 215, 0, 0.55);
+  background: linear-gradient(135deg, #e6a427 0%, #b87b12 100%) !important;
+  border-color: rgba(255, 215, 0, 0.7);
+}
+
+.welcome-sec-btn {
+  background: rgba(0, 0, 0, 0.6) !important;
+  color: #ebd7b3 !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 12px 24px;
+  font-family: 'Poppins Regular', sans-serif;
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.welcome-sec-btn:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 215, 0, 0.4) !important;
+  color: #ffffff !important;
+  transform: translateY(-3px);
+}
+
+/* Layer 8: Bottom Caption (Aligned with Spices Bags Container) */
+.welcome-bottom-caption {
+  position: absolute;
+  bottom: 25px;
+  z-index: 9;
+  font-family: 'Poppins Light', 'Noto Sans Devanagari', sans-serif;
+  color: #ffcca3;
+  font-size: 1.15rem;
+  letter-spacing: 1px;
+  text-align: center;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9), 0 0 10px rgba(255, 140, 0, 0.2);
+  width: 100%;
+}
+
+/* Mobile Responsiveness Rules */
+@media (max-width: 768px) {
+  .welcome-top-nav {
+    width: 90%;
+    padding: 10px 15px;
+    gap: 15px;
+  }
+  .welcome-nav-link {
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+  }
+  .welcome-lamp-foreground {
+    height: 250px;
+    right: 2%;
+    bottom: 20px;
+  }
+  .welcome-bags-foreground {
+    height: 180px;
+  }
+  .welcome-actions-overlay {
+    bottom: 95px;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .welcome-cta-btn, .welcome-sec-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .welcome-bottom-caption {
+    font-size: 0.95rem;
+    bottom: 15px;
+  }
+}
+
+
