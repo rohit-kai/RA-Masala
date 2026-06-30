@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import RoutePaths from '../config';
 import { useLanguage } from '../context/LanguageContext';
+import { getAssetPath } from '../Utils/imageHelper';
 
 const Welcome: React.FC = () => {
   const { t } = useLanguage();
@@ -10,7 +11,7 @@ const Welcome: React.FC = () => {
     <div className="welcome-container">
       {/* Layer 1: Background Wood Image */}
       <img 
-        src="/img/welcome_bg.png" 
+        src={getAssetPath('img/welcome_bg.png')} 
         className="welcome-bg-image" 
         alt="Rustic Wooden Kitchen Background" 
       />
@@ -26,7 +27,7 @@ const Welcome: React.FC = () => {
       <div className="welcome-center-stage animate__animated animate__zoomIn">
         <div className="welcome-emblem-container">
           <img 
-            src="/img/welcome_central.png" 
+            src={getAssetPath('img/welcome_central.png')} 
             className="welcome-emblem-image" 
             alt="Golden Swirling Spices Emblem" 
           />
@@ -37,7 +38,7 @@ const Welcome: React.FC = () => {
             
             {/* Transparent Company Logo Image */}
             <img 
-              src="/img/welcome_logo.png" 
+              src={getAssetPath('img/welcome_logo.png')} 
               className="welcome-brand-logo-img img-fluid" 
               alt="RA Masale Pvt. Ltd. Logo" 
               style={{ maxHeight: '160px', marginTop: '15px', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.5))' }}
@@ -49,7 +50,7 @@ const Welcome: React.FC = () => {
       {/* Layer 5 & 8: Centered Bottom Spices Bags & Caption Wrapper */}
       <div className="welcome-bottom-section">
         <img 
-          src="/img/welcome_bags.png" 
+          src={getAssetPath('img/welcome_bags.png')} 
           className="welcome-bags-foreground animate__animated animate__fadeInUp" 
           alt="Burlap bags filled with spices" 
         />
@@ -60,7 +61,7 @@ const Welcome: React.FC = () => {
 
       {/* Layer 6: Traditional Indian Brass Lamp (Diya) with slow fade-in */}
       <img 
-        src="/img/welcome_lamp.png" 
+        src={getAssetPath('img/welcome_lamp.png')} 
         className="welcome-lamp-foreground" 
         alt="Flickering Brass Lamp" 
       />

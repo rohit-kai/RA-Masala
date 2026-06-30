@@ -22,6 +22,7 @@ const Lang = () => {
     const getLangLabel = () => {
         if (language === 'mr') return 'मराठी';
         if (language === 'kn') return 'ಕನ್ನಡ';
+        if (language === 'hi') return 'हिंदी';
         return 'English';
     };
 
@@ -46,6 +47,7 @@ const Lang = () => {
                 <a href="#" className="lang-option" onClick={(e) => handleLangChange(e, 'en')}>English</a>
                 <a href="#" className="lang-option" onClick={(e) => handleLangChange(e, 'mr')}>मराठी (Marathi)</a>
                 <a href="#" className="lang-option" onClick={(e) => handleLangChange(e, 'kn')}>ಕನ್ನಡ (Kannada)</a>
+                <a href="#" className="lang-option" onClick={(e) => handleLangChange(e, 'hi')}>हिंदी (Hindi)</a>
             </div>
 
             <style>{`

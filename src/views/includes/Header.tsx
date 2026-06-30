@@ -5,6 +5,7 @@ import Lang from '../../components/Lang'
 import RoutePaths from '../../config'
 import { toggleLinkClass } from '../../Utils/Generals'
 import { useLanguage } from '../../context/LanguageContext'
+import { getAssetPath } from '../../Utils/imageHelper'
 
 const Header: FC = () => {
     const [isNavOpen, setIsNavOpen] = useState(false);
@@ -58,7 +59,7 @@ const Header: FC = () => {
                         <div className="d-flex justify-content-between align-items-center w-100">
                             {/* Brand Logo */}
                             <Link to={RoutePaths.home} className='navbar-brand d-flex align-items-center traditional-logo-wrapper me-4'>
-                                <img src="images/ra_waa.png" alt="RA Masala Logo" style={{ maxHeight: '75px', objectFit: 'contain', filter: 'drop-shadow(0px 6px 12px rgba(0,0,0,0.3))' }} />
+                                <img src={getAssetPath('images/ra_waa.png')} alt="RA Masala Logo" style={{ maxHeight: '75px', objectFit: 'contain', filter: 'drop-shadow(0px 6px 12px rgba(0,0,0,0.3))' }} />
                             </Link>
                             
                             {/* Toggler Button - Hidden on desktop */}

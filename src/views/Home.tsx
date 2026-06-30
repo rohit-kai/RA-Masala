@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Header from './includes/Header';
 import Footer from './includes/Footer';
 import { useLanguage } from '../context/LanguageContext';
+import { getAssetPath } from '../Utils/imageHelper';
 
 const Home = () => {
   const { t } = useLanguage();
@@ -20,12 +21,12 @@ const Home = () => {
   // Define the sliding content or background panels
   const brandPanels = [
     {
-      image: '/images/b1.png', 
+      image: getAssetPath('images/b1.png'), 
       headline: t('home_headline_1'),
       subtext: t('home_subtext_1'),
     },
     {
-      image: '/images/b2.png',
+      image: getAssetPath('images/b2.png'),
       headline: t('home_headline_2'),
       subtext: t('home_subtext_2'),
     },
@@ -37,42 +38,42 @@ const Home = () => {
       id: 1,
       name: t('p1_name'),
       price: '$12.99',
-      image: '/images/product1.jpg',
+      image: getAssetPath('img/product/1.png'),
       description: t('p1_desc')
     },
     {
       id: 2,
       name: t('p2_name'),
       price: '$15.99',
-      image: '/images/product2.jpg',
+      image: getAssetPath('img/product/2.png'),
       description: t('p2_desc')
     },
     {
       id: 3,
       name: t('p3_name'),
       price: '$9.99',
-      image: '/images/product3.jpg',
+      image: getAssetPath('img/product/3.png'),
       description: t('p3_desc')
     },
     {
       id: 4,
       name: t('p4_name'),
       price: '$8.99',
-      image: '/images/product4.jpg',
+      image: getAssetPath('img/product/4.png'),
       description: t('p4_desc')
     },
     {
       id: 5,
       name: t('p5_name'),
       price: '$18.99',
-      image: '/images/product5.jpg',
+      image: getAssetPath('img/product/5.png'),
       description: t('p5_desc')
     },
     {
       id: 6,
       name: t('p6_name'),
       price: '$11.99',
-      image: '/images/product6.jpg',
+      image: getAssetPath('img/product/6.png'),
       description: t('p6_desc')
     },
   ];
@@ -96,7 +97,7 @@ const Home = () => {
       <main 
         className="homepage-content position-relative"
         style={{
-          backgroundImage: `url('images/sp2.png')`,
+          backgroundImage: `url(${getAssetPath('images/sp2.png')})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundAttachment: 'fixed',
@@ -533,7 +534,7 @@ const Home = () => {
         }
         .promo-modal-image-sec {
           flex: 1;
-          background-image: url('images/welcome_central_spices_1782269826725.png');
+          background-image: url('${getAssetPath('images/welcome_central_spices_1782269826725.png')}');
           background-size: cover;
           background-position: center;
           position: relative;

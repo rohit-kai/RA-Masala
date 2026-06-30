@@ -3,6 +3,7 @@ import Header from './includes/Header';
 import Banner from '../components/Banner';
 import Footer from './includes/Footer';
 import { useLanguage } from '../context/LanguageContext';
+import { getAssetPath } from '../Utils/imageHelper';
 
 const Brands: React.FC = () => {
   const { t } = useLanguage();
@@ -15,7 +16,7 @@ const Brands: React.FC = () => {
       icon: 'bi-fire',
       badge: 'Spices',
       color: '#4A1525',
-      logo: 'images/log1.jpg'
+      logo: getAssetPath('images/log1.jpg')
     },
     {
       id: 'namkeen',
@@ -24,7 +25,7 @@ const Brands: React.FC = () => {
       icon: 'bi-basket',
       badge: 'Snacks',
       color: '#0A4D68',
-      logo: 'images/logo2.jpg'
+      logo: getAssetPath('images/logo2.jpg')
     },
     {
       id: 'spicehome',
@@ -33,7 +34,7 @@ const Brands: React.FC = () => {
       icon: 'bi-house-heart',
       badge: 'Blends',
       color: '#05bfdb',
-      logo: 'images/logo3.jpg'
+      logo: getAssetPath('images/logo3.jpg')
     },
     {
       id: 'chaha',
@@ -42,7 +43,7 @@ const Brands: React.FC = () => {
       icon: 'bi-cup-hot',
       badge: 'Tea',
       color: '#D2691E',
-      logo: 'images/logo4.jpg'
+      logo: getAssetPath('images/logo4.jpg')
     },
     {
       id: 'agro',
@@ -51,7 +52,7 @@ const Brands: React.FC = () => {
       icon: 'bi-tree',
       badge: 'Agro',
       color: '#1A5F7A',
-      logo: 'images/logo5.jpg'
+      logo: getAssetPath('images/logo5.jpg')
     }
   ];
 
@@ -74,7 +75,7 @@ const Brands: React.FC = () => {
                 borderRadius: '50%'
               }}>
                 <img
-                  src="images/since_1972_torch.png"
+                  src={getAssetPath('images/since_1972_torch.png')}
                   alt="RA Masala Torch Since 1972"
                   className="img-fluid"
                   style={{ maxHeight: '380px', filter: 'drop-shadow(0 8px 20px rgba(0,0,0,0.25))' }}
@@ -211,7 +212,7 @@ const Brands: React.FC = () => {
                         Brand Range Showcase
                       </h4>
                       <img 
-                        src="images/brand_products_showcase.png" 
+                        src={getAssetPath('images/brand_products_showcase.png')} 
                         alt="RA Brands Products Showcase" 
                         className="img-fluid rounded w-100"
                         style={{ maxHeight: '850px', objectFit: 'contain' }}
@@ -224,7 +225,7 @@ const Brands: React.FC = () => {
                         Exhibition Showroom Showcase
                       </h4>
                       <img 
-                        src="images/brand_showroom_display.jpg" 
+                        src={getAssetPath('images/brand_showroom_display.jpg')} 
                         alt="RA Brands Showroom Display" 
                         className="img-fluid rounded w-100"
                         style={{ maxHeight: '850px', objectFit: 'contain' }}
