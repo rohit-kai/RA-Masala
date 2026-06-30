@@ -37,44 +37,56 @@ const Home = () => {
     {
       id: 1,
       name: t('p1_name'),
-      price: '$12.99',
       image: getAssetPath('img/product/1.png'),
       description: t('p1_desc')
     },
     {
       id: 2,
       name: t('p2_name'),
-      price: '$15.99',
       image: getAssetPath('img/product/2.png'),
       description: t('p2_desc')
     },
     {
       id: 3,
       name: t('p3_name'),
-      price: '$9.99',
       image: getAssetPath('img/product/3.png'),
       description: t('p3_desc')
     },
     {
       id: 4,
       name: t('p4_name'),
-      price: '$8.99',
       image: getAssetPath('img/product/4.png'),
       description: t('p4_desc')
     },
     {
       id: 5,
       name: t('p5_name'),
-      price: '$18.99',
       image: getAssetPath('img/product/5.png'),
       description: t('p5_desc')
     },
     {
       id: 6,
       name: t('p6_name'),
-      price: '$11.99',
       image: getAssetPath('img/product/6.png'),
       description: t('p6_desc')
+    },
+    {
+      id: 7,
+      name: t('p7_name'),
+      image: getAssetPath('img/product/7.png'),
+      description: t('p7_desc')
+    },
+    {
+      id: 8,
+      name: t('p8_name'),
+      image: getAssetPath('img/product/8.png'),
+      description: t('p8_desc')
+    },
+    {
+      id: 9,
+      name: t('p9_name'),
+      image: getAssetPath('img/product/9.png'),
+      description: t('p9_desc')
     },
   ];
 
