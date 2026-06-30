@@ -15,12 +15,12 @@ const Footer: FC = () => {
 
     return (
         <footer className='mt-5 text-white position-relative overflow-hidden' style={{ borderTop: '5px solid #FFD700' }}>
-            
+
             {/* Main Premium Traditional Container with Background Image Only */}
-            <div 
-                className='footer-content px-3 px-lg-5 py-5 position-relative' 
-                style={{ 
-                    backgroundImage: `url(${getAssetPath('images/sp4.jpg')})`,
+            <div
+                className='footer-content px-3 px-lg-5 py-5 position-relative'
+                style={{
+                    backgroundImage: `url(${getAssetPath('images/f1.png')})`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     backgroundAttachment: 'fixed'
@@ -36,12 +36,12 @@ const Footer: FC = () => {
                     background: 'linear-gradient(to bottom, rgba(42, 6, 15, 0.65), rgba(20, 2, 6, 0.82))',
                     zIndex: 1
                 }}></div>
-                
+
                 {/* Cultural overlay grid background matching the header layout */}
                 <div className="traditional-footer-overlay"></div>
 
                 <div className="container-fluid position-relative p-0" style={{ zIndex: 3 }}>
-                    
+
                     {/* Ornamental Gold Divider Line */}
                     <div className="text-center mb-4">
                         <div className="traditional-mandala-divider"></div>
@@ -49,7 +49,7 @@ const Footer: FC = () => {
 
                     {/* Adjusted Grid from row-cols-lg-5 to a well-balanced row-cols-lg-3 */}
                     <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4 justify-content-between">
-                        
+
                         {/* Column 1: Brand Info & Contacts */}
                         <div className="col">
                             <h5 className="fw-bold mb-4 text-uppercase border-bottom pb-2 position-relative d-inline-block" style={{ color: '#FFD700', letterSpacing: '1px' }}>
@@ -123,9 +123,9 @@ const Footer: FC = () => {
                             </div>
                         </div>
                     </div>
-                    
+
                     <hr style={{ backgroundColor: '#FFD700', height: '2px', opacity: 0.4 }} />
-                    
+
                     {/* Footnote details */}
                     <div className="d-flex flex-wrap justify-content-between align-items-center gap-3 pt-2">
                         <p className="mb-0 small opacity-90 text-white">
