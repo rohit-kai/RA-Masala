@@ -529,13 +529,26 @@ a {color: #fff!important; text-decoration: none!important;}
     font-size: 0.7rem;
     letter-spacing: 1px;
   }
+  .welcome-emblem-container {
+    max-width: 320px;
+    max-height: 320px;
+  }
+  .welcome-brand-title {
+    font-size: 2.2rem !important;
+  }
+  .welcome-brand-subtitle {
+    font-size: 0.95rem !important;
+  }
+  .welcome-brand-logo-img {
+    max-height: 100px !important;
+  }
   .welcome-lamp-foreground {
-    height: 250px;
+    height: 160px;
     right: 2%;
     bottom: 20px;
   }
   .welcome-bags-foreground {
-    height: 180px;
+    height: 120px;
   }
   .welcome-actions-overlay {
     bottom: 95px;
@@ -547,7 +560,7 @@ a {color: #fff!important; text-decoration: none!important;}
     justify-content: center;
   }
   .welcome-bottom-caption {
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     bottom: 15px;
   }
 }

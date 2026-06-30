@@ -167,25 +167,11 @@ const Home = () => {
               color: '#fff',
               textAlign: 'center',
             }}>
-              <h1 className="hero-headline" style={{ 
-                fontSize: '3.6rem',
-                marginBottom: '20px', 
-                fontWeight: 'bold', 
-                color: '#FFD700',
-                fontFamily: 'serif',
-                textShadow: '0 4px 12px rgba(0,0,0,0.7)',
-                lineHeight: '1.2'
-              }}>
+               <h1 className="hero-headline">
                 {currentPanel.headline}
               </h1>
               
-              <p style={{ 
-                fontSize: '1.4rem', 
-                fontWeight: '400', 
-                marginBottom: '35px',
-                color: '#FDF6ED',
-                textShadow: '0 2px 6px rgba(0,0,0,0.6)'
-              }}>
+              <p className="hero-subtext">
                 {currentPanel.subtext}
               </p>
 
@@ -209,26 +195,13 @@ const Home = () => {
               {/* Elegant Mandala Motif above Title */}
               <div className="mandala-title-icon mb-3"></div>
 
-              <h2 style={{
-                fontSize: '3rem',
-                color: '#FFD700',  
-                marginBottom: '15px',
-                fontWeight: 'bold',
-                fontFamily: 'serif',
-                textShadow: '0 2px 10px rgba(0,0,0,0.6)', 
-              }}>
+              <h2 className="products-title">
                 {t('home_title')}
               </h2>
               
               <div className="title-divider mb-3"></div>
 
-              <p style={{
-                fontSize: '1.25rem',
-                color: '#FDF6ED',  
-                maxWidth: '650px',
-                margin: '0 auto',
-                textShadow: '0 1px 5px rgba(0,0,0,0.4)',
-              }}>
+              <p className="products-subtitle">
                 {t('home_subtitle')}
               </p>
             </div>
@@ -342,6 +315,41 @@ const Home = () => {
           background-size: 24px 24px;
           pointer-events: none;
           z-index: 1;
+        }
+
+        .hero-headline {
+          font-size: 3.6rem;
+          margin-bottom: 20px; 
+          font-weight: bold; 
+          color: #FFD700;
+          font-family: serif;
+          text-shadow: 0 4px 12px rgba(0,0,0,0.7);
+          line-height: 1.2;
+        }
+
+        .hero-subtext {
+          font-size: 1.4rem; 
+          font-weight: 400; 
+          margin-bottom: 35px;
+          color: #FDF6ED;
+          text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+        }
+
+        .products-title {
+          font-size: 3rem;
+          color: #FFD700;  
+          margin-bottom: 15px;
+          font-weight: bold;
+          font-family: serif;
+          text-shadow: 0 2px 10px rgba(0,0,0,0.6); 
+        }
+
+        .products-subtitle {
+          font-size: 1.25rem;
+          color: #FDF6ED;  
+          max-width: 650px;
+          margin: 0 auto;
+          text-shadow: 0 1px 5px rgba(0,0,0,0.4);
         }
 
         .hero-cta-button {
@@ -526,9 +534,10 @@ const Home = () => {
           border-radius: 20px;
           max-width: 850px;
           width: 100%;
+          max-height: 90vh;
+          overflow-y: auto;
           display: flex;
           flex-direction: row;
-          overflow: hidden;
           position: relative;
           box-shadow: 0 25px 60px rgba(0,0,0,0.5), 0 0 30px rgba(255, 215, 0, 0.15);
         }
@@ -673,6 +682,26 @@ const Home = () => {
 
         /* Responsive stack for mobile */
         @media (max-width: 768px) {
+          .hero-headline {
+            font-size: 2.2rem !important;
+          }
+          .hero-subtext {
+            font-size: 1.05rem !important;
+            margin-bottom: 25px !important;
+          }
+          .products-title {
+            font-size: 2.2rem !important;
+          }
+          .products-subtitle {
+            font-size: 1rem !important;
+          }
+          .hero-cta-button {
+            padding: 12px 28px !important;
+            font-size: 1rem !important;
+          }
+          .products-section {
+            padding: 40px 10px !important;
+          }
           .promo-modal-content {
             flex-direction: column;
             max-width: 450px;

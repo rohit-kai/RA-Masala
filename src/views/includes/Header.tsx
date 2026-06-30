@@ -83,12 +83,7 @@ const Header: FC = () => {
                         
                         {/* Navigation Links - Always in one line on desktop */}
                         <div className={`${isNavOpen ? 'd-block' : 'd-none d-lg-block'} w-100 mt-3 mt-lg-0`}>
-                            <ul className="navbar-nav d-lg-flex gap-3" style={{ 
-                                flexDirection: 'row',  // Always row on desktop
-                                flexWrap: 'nowrap',    // Prevent wrapping
-                                alignItems: 'center',
-                                justifyContent: 'flex-start'
-                            }}>
+                            <ul className="navbar-nav d-lg-flex gap-3 traditional-navbar-nav">
                                 {navsBar.map((link) => {
                                     const isActive = toggleLinkClass(link.path, 'active');
                                     return (
@@ -208,8 +203,20 @@ const Header: FC = () => {
                     box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.4);
                 }
 
+                .traditional-navbar-nav {
+                    flex-direction: row;
+                    flex-wrap: nowrap;
+                    align-items: center;
+                    justify-content: flex-start;
+                }
+
                 /* Mobile responsiveness */
                 @media (max-width: 991.98px) {
+                    .traditional-navbar-nav {
+                        flex-direction: column !important;
+                        flex-wrap: wrap !important;
+                        align-items: flex-start !important;
+                    }
                     .navbar-nav {
                         flex-direction: column !important;
                         padding: 10px 0;

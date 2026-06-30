@@ -3,6 +3,7 @@ import { SocialsNetworks } from '../../components/SocialsNetworks'
 import { Link } from 'react-router-dom'
 import RoutePaths from '../../config'
 import { useLanguage } from '../../context/LanguageContext'
+import { getAssetPath } from '../../Utils/imageHelper'
 
 const Footer: FC = () => {
     // Current year calculation for copyright signature
@@ -19,7 +20,7 @@ const Footer: FC = () => {
             <div 
                 className='footer-content px-3 px-lg-5 py-5 position-relative' 
                 style={{ 
-                    backgroundImage: `url('images/sp4.jpg')`,
+                    backgroundImage: `url(${getAssetPath('images/sp4.jpg')})`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     backgroundAttachment: 'fixed'
