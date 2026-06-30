@@ -521,47 +521,52 @@ a {color: #fff!important; text-decoration: none!important;}
 /* Mobile Responsiveness Rules */
 @media (max-width: 768px) {
   .welcome-top-nav {
-    width: 90%;
-    padding: 10px 15px;
-    gap: 15px;
+    width: 95%;
+    padding: 8px 12px;
+    gap: 12px;
   }
   .welcome-nav-link {
-    font-size: 0.7rem;
-    letter-spacing: 1px;
+    font-size: 0.65rem;
+    letter-spacing: 0.5px;
   }
   .welcome-emblem-container {
-    max-width: 320px;
-    max-height: 320px;
+    max-width: 290px;
+    max-height: 290px;
   }
   .welcome-brand-title {
-    font-size: 2.2rem !important;
+    font-size: 2.0rem !important;
   }
   .welcome-brand-subtitle {
-    font-size: 0.95rem !important;
+    font-size: 0.85rem !important;
   }
   .welcome-brand-logo-img {
-    max-height: 100px !important;
+    max-height: 80px !important;
+    margin-top: 10px !important;
   }
   .welcome-lamp-foreground {
-    height: 160px;
-    right: 2%;
-    bottom: 20px;
+    display: none !important; /* Hide diya on mobile to avoid overlapping */
+  }
+  .welcome-bottom-section {
+    height: 110px !important;
   }
   .welcome-bags-foreground {
-    height: 120px;
+    height: 90px !important;
   }
   .welcome-actions-overlay {
-    bottom: 95px;
+    bottom: 80px;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
+    width: 85%;
   }
   .welcome-cta-btn, .welcome-sec-btn {
     width: 100%;
     justify-content: center;
+    padding: 10px 20px;
+    font-size: 0.85rem;
   }
   .welcome-bottom-caption {
-    font-size: 0.85rem;
-    bottom: 15px;
+    font-size: 0.75rem;
+    bottom: 10px;
   }
 }
 

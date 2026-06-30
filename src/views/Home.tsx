@@ -36,57 +36,57 @@ const Home = () => {
   const products = [
     {
       id: 1,
-      name: t('p1_name'),
+      name: "Onion Garlic Masala",
       image: getAssetPath('img/product/1.png'),
-      description: t('p1_desc')
+      description: "Traditional savory spice blend of onions, garlic, and handpicked hot spices."
     },
     {
       id: 2,
-      name: t('p2_name'),
+      name: "Authentic Garam Masala",
       image: getAssetPath('img/product/2.png'),
-      description: t('p2_desc')
+      description: "Generations-old recipe blending 12 aromatic and premium spices."
     },
     {
       id: 3,
-      name: t('p3_name'),
+      name: "Kashmiri Red Chili",
       image: getAssetPath('img/product/3.png'),
-      description: t('p3_desc')
+      description: "Mild heat with a rich, vibrant red color for premium culinary dishes."
     },
     {
       id: 4,
-      name: t('p4_name'),
+      name: "Premium Turmeric Powder",
       image: getAssetPath('img/product/4.png'),
-      description: t('p4_desc')
+      description: "Pure, high-curcumin turmeric powder with authentic color and flavor."
     },
     {
       id: 5,
-      name: t('p5_name'),
+      name: "Kolhapuri Ghati Masala",
       image: getAssetPath('img/product/5.png'),
-      description: t('p5_desc')
+      description: "Spicy and bold traditional blend capturing the authentic flavors of Kolhapur."
     },
     {
       id: 6,
-      name: t('p6_name'),
+      name: "Traditional Goda Masala",
       image: getAssetPath('img/product/6.png'),
-      description: t('p6_desc')
+      description: "Aromatic Maharashtrian blend featuring roasted coconut, sesame, and spices."
     },
     {
       id: 7,
-      name: t('p7_name'),
+      name: "Coriander Powder",
       image: getAssetPath('img/product/7.png'),
-      description: t('p7_desc')
+      description: "Finely ground from premium coriander seeds, yielding a sweet aromatic scent."
     },
     {
       id: 8,
-      name: t('p8_name'),
+      name: "Shahi Biryani Masala",
       image: getAssetPath('img/product/8.png'),
-      description: t('p8_desc')
+      description: "A royal blend of spices to create perfectly aromatic and flavorful biryani."
     },
     {
       id: 9,
-      name: t('p9_name'),
+      name: "Special Pav Bhaji Masala",
       image: getAssetPath('img/product/9.png'),
-      description: t('p9_desc')
+      description: "The perfect spice blend for making delicious, Mumbai-style street pav bhaji."
     },
   ];
 
@@ -134,7 +134,6 @@ const Home = () => {
           <section className="hero-slider" style={{ 
             position: 'relative',
             width: '100%',
-            minHeight: '85vh',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -327,6 +326,10 @@ const Home = () => {
           background-size: 24px 24px;
           pointer-events: none;
           z-index: 1;
+        }
+
+        .hero-slider {
+          min-height: 85vh;
         }
 
         .hero-headline {
@@ -694,6 +697,9 @@ const Home = () => {
 
         /* Responsive stack for mobile */
         @media (max-width: 768px) {
+          .hero-slider {
+            min-height: 55vh !important;
+          }
           .hero-headline {
             font-size: 2.2rem !important;
           }
