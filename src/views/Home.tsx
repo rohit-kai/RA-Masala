@@ -3,6 +3,9 @@ import Header from './includes/Header';
 import Footer from './includes/Footer';
 import { useLanguage } from '../context/LanguageContext';
 import { getAssetPath } from '../Utils/imageHelper';
+import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
+import Swal from 'sweetalert2';
 
 const Home = () => {
   const { t } = useLanguage();
@@ -32,63 +35,8 @@ const Home = () => {
     },
   ];
 
-  // Sample product data
-  const products = [
-    {
-      id: 1,
-      name: "Onion Garlic Masala",
-      image: getAssetPath('img/product/1.png'),
-      description: "Traditional savory spice blend of onions, garlic, and handpicked hot spices."
-    },
-    {
-      id: 2,
-      name: "Authentic Garam Masala",
-      image: getAssetPath('img/product/2.png'),
-      description: "Generations-old recipe blending 12 aromatic and premium spices."
-    },
-    {
-      id: 3,
-      name: "Kashmiri Red Chili",
-      image: getAssetPath('img/product/3.png'),
-      description: "Mild heat with a rich, vibrant red color for premium culinary dishes."
-    },
-    {
-      id: 4,
-      name: "Premium Turmeric Powder",
-      image: getAssetPath('img/product/4.png'),
-      description: "Pure, high-curcumin turmeric powder with authentic color and flavor."
-    },
-    {
-      id: 5,
-      name: "Kolhapuri Ghati Masala",
-      image: getAssetPath('img/product/5.png'),
-      description: "Spicy and bold traditional blend capturing the authentic flavors of Kolhapur."
-    },
-    {
-      id: 6,
-      name: "Traditional Goda Masala",
-      image: getAssetPath('img/product/6.png'),
-      description: "Aromatic Maharashtrian blend featuring roasted coconut, sesame, and spices."
-    },
-    {
-      id: 7,
-      name: "Coriander Powder",
-      image: getAssetPath('img/product/7.png'),
-      description: "Finely ground from premium coriander seeds, yielding a sweet aromatic scent."
-    },
-    {
-      id: 8,
-      name: "Shahi Biryani Masala",
-      image: getAssetPath('img/product/8.png'),
-      description: "A royal blend of spices to create perfectly aromatic and flavorful biryani."
-    },
-    {
-      id: 9,
-      name: "Special Pav Bhaji Masala",
-      image: getAssetPath('img/product/9.png'),
-      description: "The perfect spice blend for making delicious, Mumbai-style street pav bhaji."
-    },
-  ];
+  const { addToCart } = useCart();
+  const { products } = useAuth();
 
   // Automatic panel cross-fade every 7 seconds
   useEffect(() => {
@@ -232,20 +180,62 @@ const Home = () => {
                     <div className="product-image-zoom" style={{
                       backgroundImage: `url(${product.image})`
                     }}></div>
-                    <div className="product-image-badge">100% NATURAL</div>
+                    <div className="product-image-badge">{product.category.toUpperCase()}</div>
                   </div>
 
-                  <div className="product-card-body">
-                    <h3 className="product-card-title text-center">
+                  <div className="product-card-body d-flex flex-column h-100">
+                    <h3 className="product-card-title text-center mb-1">
                       {product.name}
                     </h3>
-                    <p className="product-card-desc text-center">
+                    <div className="text-center fw-bold fs-5 mb-2" style={{ color: '#aa1a31' }}>
+                      ₹{product.price} <span className="text-muted fw-normal" style={{ fontSize: '0.85rem' }}>/ {product.unit}</span>
+                    </div>
+                    <p className="product-card-desc text-center flex-grow-1 mb-3">
                       {product.description}
                     </p>
                     
-                    <div className="product-card-footer">
-                      <button className="product-card-btn w-100">
-                        <i className="bi bi-info-circle me-2"></i>
+                    <div className="product-card-footer d-flex flex-column gap-2 mt-auto">
+                      <button 
+                        className="btn w-100 fw-bold text-white border-0 py-2"
+                        style={{ backgroundColor: '#aa1a31', borderRadius: '8px' }}
+                        onClick={() => {
+                          if (product.stock <= 0) {
+                            Swal.fire('Out of Stock', 'Sorry, this product is temporarily unavailable.', 'warning');
+                            return;
+                          }
+                          addToCart(product);
+                          Swal.fire({
+                            icon: 'success',
+                            title: 'Added to Cart',
+                            text: `${product.name} has been added to your shopping cart.`,
+                            timer: 1200,
+                            showConfirmButton: false
+                          });
+                        }}
+                      >
+                        <i className="bi bi-cart-plus me-2"></i>
+                        {t('home_add_to_cart')}
+                      </button>
+                      <button 
+                        className="btn btn-outline-secondary w-100 py-1.5"
+                        style={{ borderRadius: '8px', fontSize: '0.88rem' }}
+                        onClick={() => {
+                          Swal.fire({
+                            title: product.name,
+                            html: `
+                              <div class="text-start">
+                                <p><strong>Category:</strong> ${product.category}</p>
+                                <p><strong>Pack Unit:</strong> ${product.unit}</p>
+                                <p><strong>Price:</strong> ₹${product.price}</p>
+                                <p><strong>Stock Status:</strong> ${product.stock > 0 ? `<span class="text-success">${product.stock} units available</span>` : '<span class="text-danger">Out of stock</span>'}</p>
+                                <p class="mt-3 text-muted"><em>${product.description}</em></p>
+                              </div>
+                            `,
+                            confirmButtonColor: '#4A1525'
+                          });
+                        }}
+                      >
+                        <i className="bi bi-info-circle me-1"></i>
                         {t('home_more_info')}
                       </button>
                     </div>

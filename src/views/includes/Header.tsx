@@ -6,15 +6,24 @@ import RoutePaths from '../../config'
 import { toggleLinkClass } from '../../Utils/Generals'
 import { useLanguage } from '../../context/LanguageContext'
 import { getAssetPath } from '../../Utils/imageHelper'
+import { useCart } from '../../context/CartContext'
+import { useAuth } from '../../context/AuthContext'
 
 const Header: FC = () => {
     const [isNavOpen, setIsNavOpen] = useState(false);
     const { t } = useLanguage();
+    const { cartCount } = useCart();
+    const { user } = useAuth();
 
     const navsBar = [
         { path: RoutePaths.home, name: t('nav_home') },
         { path: RoutePaths.ourstory, name: t('nav_our_story') },
         { path: RoutePaths.brands, name: t('nav_brands') },
+        { path: RoutePaths.cart, name: `🛒 CART (${cartCount})` },
+        { 
+          path: user ? RoutePaths.userAccount : RoutePaths.login, 
+          name: user ? `👤 ${user.name.split(' ')[0]}` : '👤 LOGIN' 
+        }
     ];
 
     const toggleNav = () => {
