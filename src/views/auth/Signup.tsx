@@ -13,7 +13,7 @@ const Signup = () => {
   const { signup } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email || !password) {
       Swal.fire({
@@ -25,7 +25,7 @@ const Signup = () => {
       return;
     }
 
-    const res = signup(name, email, password);
+    const res = await signup(name, email, password);
     if (res.success) {
       Swal.fire({
         icon: 'success',

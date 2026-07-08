@@ -36,7 +36,7 @@ const Checkout = () => {
     }
   }, [user]);
 
-  const handlePlaceOrder = (e: React.FormEvent) => {
+  const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !phone || !address || !city || !zip) {
       Swal.fire({
@@ -58,45 +58,54 @@ const Checkout = () => {
       return;
     }
 
-    // Call placeOrder
-    const order = placeOrder({
-      customerId: user ? user.id : 'guest',
-      customerName: name,
-      customerEmail: user ? user.email : 'guest@ramasala.com',
-      items: cartItems.map(item => ({
-        id: item.id,
-        name: item.name,
-        price: item.price,
-        quantity: item.quantity,
-        image: item.image
-      })),
-      subtotal: cartTotal,
-      tax: tax,
-      shipping: shipping,
-      total: total,
-      paymentMethod: paymentMethod,
-      shippingAddress: {
-        name,
-        phone,
-        address,
-        city,
-        zip
-      }
-    });
+    try {
+      // Call placeOrder
+      const order = await placeOrder({
+        customerId: user ? user.id : 'guest',
+        customerName: name,
+        customerEmail: user ? user.email : 'guest@ramasala.com',
+        items: cartItems.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          image: item.image
+        })),
+        subtotal: cartTotal,
+        tax: tax,
+        shipping: shipping,
+        total: total,
+        paymentMethod: paymentMethod,
+        shippingAddress: {
+          name,
+          phone,
+          address,
+          city,
+          zip
+        }
+      });
 
-    Swal.fire({
-      icon: 'success',
-      title: 'Order Placed!',
-      text: `Thank you! Your order ID is ${order.id}. Generating your E-Invoice now...`,
-      timer: 2500,
-      showConfirmButton: false
-    });
+      Swal.fire({
+        icon: 'success',
+        title: 'Order Placed!',
+        text: `Thank you! Your order ID is ${order.id}. Generating your E-Invoice now...`,
+        timer: 2500,
+        showConfirmButton: false
+      });
 
-    // Clear cart and redirect
-    clearCart();
-    setTimeout(() => {
-      navigate(`/invoice/${order.id}`);
-    }, 2500);
+      // Clear cart and redirect
+      clearCart();
+      setTimeout(() => {
+        navigate(`/invoice/${order.id}`);
+      }, 2500);
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Order Error',
+        text: 'Failed to place order in database backend.',
+        confirmButtonColor: '#aa1a31'
+      });
+    }
   };
 
   return (
