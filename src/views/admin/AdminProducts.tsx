@@ -6,6 +6,7 @@ import Footer from '../includes/Footer';
 import RoutePaths from '../../config';
 import Swal from 'sweetalert2';
 import { Product } from '../../config/products';
+import { getAssetPath } from '../../Utils/imageHelper';
 
 const AdminProducts = () => {
   const { user, products, addProduct, updateProduct, deleteProduct } = useAuth();
@@ -28,6 +29,11 @@ const AdminProducts = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isAdding, setIsAdding] = useState(false);
 
+  // Filter States
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [sortBy, setSortBy] = useState<'name' | 'priceAsc' | 'priceDesc' | 'stockAsc'>('name');
+
   // New Product States
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -35,6 +41,7 @@ const AdminProducts = () => {
   const [stock, setStock] = useState(0);
   const [category, setCategory] = useState('Masale');
   const [unit, setUnit] = useState('250g');
+  const [image, setImage] = useState('/images/ra_waa.png');
 
   const resetForm = () => {
     setName('');
@@ -43,6 +50,7 @@ const AdminProducts = () => {
     setStock(0);
     setCategory('Masale');
     setUnit('250g');
+    setImage('/images/ra_waa.png');
     setIsAdding(false);
     setEditingProduct(null);
   };
@@ -60,7 +68,7 @@ const AdminProducts = () => {
       stock,
       category,
       unit,
-      image: '/images/ra_waa.png' // Default image
+      image: image || '/images/ra_waa.png'
     });
     Swal.fire('Success', 'Product added successfully!', 'success');
     resetForm();
@@ -74,6 +82,7 @@ const AdminProducts = () => {
     setStock(prod.stock);
     setCategory(prod.category);
     setUnit(prod.unit);
+    setImage(prod.image || '/images/ra_waa.png');
   };
 
   const handleUpdate = (e: React.FormEvent) => {
@@ -86,7 +95,8 @@ const AdminProducts = () => {
       price,
       stock,
       category,
-      unit
+      unit,
+      image
     });
     Swal.fire('Success', 'Product updated successfully!', 'success');
     resetForm();
@@ -109,6 +119,19 @@ const AdminProducts = () => {
     });
   };
 
+  const filteredProducts = products.filter(prod => {
+    const matchesSearch = prod.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          prod.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === 'All' || prod.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  }).sort((a, b) => {
+    if (sortBy === 'name') return a.name.localeCompare(b.name);
+    if (sortBy === 'priceAsc') return a.price - b.price;
+    if (sortBy === 'priceDesc') return b.price - a.price;
+    if (sortBy === 'stockAsc') return a.stock - b.stock;
+    return 0;
+  });
+
   if (!user || user.role !== 'admin') return null;
 
   return (
@@ -122,13 +145,13 @@ const AdminProducts = () => {
             <h2 className="mb-1" style={{ fontFamily: 'serif', color: '#4A1525', fontWeight: 'bold' }}>
               Inventory Management
             </h2>
-            <p className="text-secondary mb-0">Total Products: <strong>{products.length}</strong> items</p>
+            <p className="text-secondary mb-0">Total Products: <strong>{products.length}</strong> items • Filtered: <strong>{filteredProducts.length}</strong></p>
           </div>
           <div className="d-flex gap-2 mt-3 mt-sm-0">
             <button className="btn btn-danger fw-bold" onClick={() => { resetForm(); setIsAdding(true); }}>
               <i className="bi bi-plus-circle me-1"></i> Add Product
             </button>
-            <Link to={RoutePaths.admin} className="btn btn-outline-dark fw-bold">Back to Dashboard</Link>
+            <Link to={RoutePaths.admin} className="btn btn-sm text-white fw-bold d-flex align-items-center" style={{ backgroundColor: '#4A1525', border: '1px solid #FFB300' }}>Back to Dashboard</Link>
           </div>
         </div>
 
@@ -167,6 +190,31 @@ const AdminProducts = () => {
                   <input type="number" className="form-control" required value={stock} onChange={(e) => setStock(Number(e.target.value))} />
                 </div>
                 <div className="col-md-6">
+                  <label className="form-label text-muted fw-semibold">Product Image</label>
+                  <div className="input-group">
+                    <input
+                      type="file"
+                      className="form-control"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setImage(reader.result as string);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                    {image && (
+                      <span className="input-group-text bg-light p-1" style={{ width: '45px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <img src={getAssetPath(image)} alt="Preview" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="col-md-12">
                   <label className="form-label text-muted fw-semibold">Description</label>
                   <input type="text" className="form-control" required value={description} onChange={(e) => setDescription(e.target.value)} />
                 </div>
@@ -175,7 +223,7 @@ const AdminProducts = () => {
                 <button type="submit" className="btn text-white fw-bold px-4" style={{ backgroundColor: '#aa1a31' }}>
                   {isAdding ? 'Save Product' : 'Update Details'}
                 </button>
-                <button type="button" className="btn btn-outline-secondary px-4" onClick={resetForm}>
+                <button type="button" className="btn text-white px-4" style={{ backgroundColor: '#6c757d', border: '1px solid #5a6268' }} onClick={resetForm}>
                   Cancel
                 </button>
               </div>
@@ -183,58 +231,98 @@ const AdminProducts = () => {
           </div>
         )}
 
+        {/* Filter Controls Bar */}
+        <div className="card border-0 shadow-sm rounded-4 p-3 bg-white mb-4">
+          <div className="row g-3">
+            <div className="col-md-5">
+              <div className="input-group">
+                <span className="input-group-text bg-light border-end-0 text-muted"><i className="bi bi-search"></i></span>
+                <input 
+                  type="text" 
+                  className="form-control bg-light border-start-0" 
+                  placeholder="Search products by name or description..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="col-md-3">
+              <select className="form-select bg-light" value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)}>
+                <option value="All">All Categories</option>
+                <option value="Masale">Masale</option>
+                <option value="Namkeen">Namkeen</option>
+                <option value="Spice Home">Spice Home</option>
+                <option value="Chaha">Tea/Chaha</option>
+                <option value="Agro">Agro</option>
+              </select>
+            </div>
+            <div className="col-md-4">
+              <select className="form-select bg-light" value={sortBy} onChange={(e) => setSortBy(e.target.value as any)}>
+                <option value="name">Sort by Name</option>
+                <option value="priceAsc">Price: Low to High</option>
+                <option value="priceDesc">Price: High to Low</option>
+                <option value="stockAsc">Stock: Low to High</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
         {/* Products Table */}
         <div className="card border-0 shadow-sm rounded-4 p-4 bg-white">
-          <div className="table-responsive">
-            <table className="table align-middle">
-              <thead>
-                <tr className="table-light text-secondary" style={{ fontSize: '0.85rem' }}>
-                  <th>ID</th>
-                  <th>Product Details</th>
-                  <th>Category</th>
-                  <th>Price</th>
-                  <th>Stock</th>
-                  <th className="text-end">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {products.map(prod => (
-                  <tr key={prod.id}>
-                    <td>#{prod.id}</td>
-                    <td>
-                      <div className="d-flex align-items-center">
-                        <div className="p-1 bg-light rounded-2 me-3" style={{ width: '40px', height: '40px', overflow: 'hidden' }}>
-                          <img src={prod.image} alt={prod.name} className="w-100 h-100 object-fit-contain" />
-                        </div>
-                        <div>
-                          <strong className="text-dark d-block">{prod.name}</strong>
-                          <small className="text-muted">{prod.unit} • {prod.description.substring(0, 50)}...</small>
-                        </div>
-                      </div>
-                    </td>
-                    <td><span className="badge bg-light text-dark border">{prod.category}</span></td>
-                    <td className="fw-semibold">₹{prod.price}</td>
-                    <td>
-                      <span className={`fw-bold ${prod.stock < 10 ? 'text-danger' : 'text-success'}`}>
-                        {prod.stock} units
-                      </span>
-                      {prod.stock < 10 && <small className="text-danger d-block text-xs">Low Stock!</small>}
-                    </td>
-                    <td className="text-end">
-                      <div className="d-inline-flex gap-2">
-                        <button className="btn btn-sm btn-outline-secondary" onClick={() => handleEditInit(prod)}>
-                          <i className="bi bi-pencil"></i>
-                        </button>
-                        <button className="btn btn-sm btn-outline-danger" onClick={() => handleDelete(prod.id)}>
-                          <i className="bi bi-trash"></i>
-                        </button>
-                      </div>
-                    </td>
+          {filteredProducts.length === 0 ? (
+            <div className="text-center py-5 text-muted">No products match your filters.</div>
+          ) : (
+            <div className="table-responsive">
+              <table className="table align-middle">
+                <thead>
+                  <tr className="table-light text-secondary" style={{ fontSize: '0.85rem' }}>
+                    <th>ID</th>
+                    <th>Product Details</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Stock</th>
+                    <th className="text-end">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {filteredProducts.map(prod => (
+                    <tr key={prod.id}>
+                      <td>#{prod.id}</td>
+                      <td>
+                        <div className="d-flex align-items-center">
+                          <div className="p-1 bg-light rounded-2 me-3" style={{ width: '40px', height: '40px', overflow: 'hidden' }}>
+                            <img src={getAssetPath(prod.image)} alt={prod.name} className="w-100 h-100 object-fit-contain" />
+                          </div>
+                          <div>
+                            <strong className="text-dark d-block">{prod.name}</strong>
+                            <small className="text-muted">{prod.unit} • {prod.description.substring(0, 50)}...</small>
+                          </div>
+                        </div>
+                      </td>
+                      <td><span className="badge bg-light text-dark border">{prod.category}</span></td>
+                      <td className="fw-semibold">₹{prod.price}</td>
+                      <td>
+                        <span className={`fw-bold ${prod.stock < 10 ? 'text-danger' : 'text-success'}`}>
+                          {prod.stock} units
+                        </span>
+                        {prod.stock < 10 && <small className="text-danger d-block text-xs">Low Stock!</small>}
+                      </td>
+                      <td className="text-end">
+                        <div className="d-inline-flex gap-2">
+                           <button className="btn btn-sm text-white" style={{ backgroundColor: '#4A1525', border: '1px solid #FFB300' }} onClick={() => handleEditInit(prod)}>
+                            <i className="bi bi-pencil"></i>
+                          </button>
+                          <button className="btn btn-sm text-white bg-danger" onClick={() => handleDelete(prod.id)}>
+                            <i className="bi bi-trash"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
       </div>

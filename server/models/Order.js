@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 const OrderItemSchema = new mongoose.Schema({
-  id: { type: Number, required: true }, // FE reference
+  id: { type: String, required: true }, // FE reference
   name: { type: String, required: true },
   price: { type: Number, required: true },
   quantity: { type: Number, required: true },

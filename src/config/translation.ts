@@ -5,6 +5,7 @@ export const translations = {
     // Header & Footer
     nav_home: "होम",
     nav_our_story: "हमारी कहानी",
+    nav_contact: "संपर्क करें",
     nav_brands: "हमारे ब्रांड्स",
     header_contact: "contact@ramasala.com",
     header_subtitle: "शुद्ध और प्रामाणिक भारतीय मसालों की विरासत",
@@ -99,6 +100,7 @@ export const translations = {
     // Header & Footer
     nav_home: "HOME",
     nav_our_story: "OUR STORY",
+    nav_contact: "CONTACT US",
     nav_brands: "OUR BRANDS",
     header_contact: "contact@ramasala.com",
     header_subtitle: "A Legacy of Pure & Authentic Indian Spices",
@@ -193,6 +195,7 @@ export const translations = {
     // Header & Footer
     nav_home: "होम",
     nav_our_story: "आमची गोष्ट",
+    nav_contact: "संपर्क साधा",
     nav_brands: "आमचे ब्रँड्स",
     header_contact: "contact@ramasala.com",
     header_subtitle: "शुद्ध आणि अस्सल भारतीय मसाल्यांचा वारसा",
@@ -287,6 +290,7 @@ export const translations = {
     // Header & Footer
     nav_home: "ಮನೆ",
     nav_our_story: "ನಮ್ಮ ಕಥೆ",
+    nav_contact: "ಸಂಪರ್ಕಿಸಿ",
     nav_brands: "ನಮ್ಮ ಬ್ರ್ಯಾಂಡ್‌ಗಳು",
     header_contact: "contact@ramasala.com",
     header_subtitle: "ಶುದ್ಧ ಮತ್ತು ಅಧಿಕೃತ ಭಾರತೀಯ ಮಸಾಲೆಗಳ ಪರಂಪರೆ",

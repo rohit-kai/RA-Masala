@@ -1,0 +1,21 @@
+{
+  "name": "RA Masala",
+  "short_name": "RA Masala",
+  "description": "Discover authentic, high-quality spices and blends online with RA Masala.",
+  "icons": [
+    {
+      "src": "/images/logo4.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "/images/logo4.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ],
+  "start_url": "/RA-Masala/",
+  "display": "standalone",
+  "theme_color": "#5b1a2c",
+  "background_color": "#2c0b14"
+}

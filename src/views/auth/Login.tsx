@@ -6,7 +6,7 @@ import Footer from '../includes/Footer';
 import RoutePaths from '../../config';
 import Swal from 'sweetalert2';
 
-const Login = () => {
+const Login = ({ isMaintenanceMode = false }: { isMaintenanceMode?: boolean }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { login } = useAuth();
@@ -59,6 +59,12 @@ const Login = () => {
             <p className="mb-0 text-white-50" style={{ fontSize: '0.9rem' }}>Pure taste, Rich Heritage since 1972</p>
           </div>
           <div className="card-body p-4 p-md-5">
+            {isMaintenanceMode && (
+              <div className="alert alert-warning border border-warning rounded-3 mb-4 text-center fw-semibold" style={{ fontSize: '0.88rem', backgroundColor: '#FFF3CD', color: '#664D03' }}>
+                <i className="bi bi-exclamation-triangle-fill me-2 fs-6"></i>
+                Note: There is issue in login pls try after some time
+              </div>
+            )}
             <h4 className="text-center mb-4" style={{ color: '#4A1525', fontFamily: 'serif', fontWeight: 'bold' }}>Sign In</h4>
             <form onSubmit={handleSubmit}>
               <div className="mb-3">
@@ -92,21 +98,26 @@ const Login = () => {
               </button>
             </form>
 
-            <div className="mt-4 text-center">
+            <div className="mt-4 text-center login-card-links">
               <p className="mb-1 text-muted" style={{ fontSize: '0.9rem' }}>
-                Don't have an account? <Link to={RoutePaths.signup} style={{ color: '#aa1a31', fontWeight: 'bold', textDecoration: 'none' }}>Sign Up</Link>
+                Don't have an account? <Link to={RoutePaths.signup}>Sign Up</Link>
               </p>
-            </div>
-
-            <div className="mt-4 p-3 rounded-3 bg-light border border-warning" style={{ fontSize: '0.82rem' }}>
-              <strong className="text-warning-dark">Quick Access:</strong>
-              <div className="mt-1"><strong>Customer:</strong> <code>ramesh@gmail.com</code> (any password)</div>
-              <div><strong>Admin:</strong> <code>admin@ramasala.com</code> / password: <code>admin123</code></div>
             </div>
           </div>
         </div>
       </div>
       <Footer />
+      <style>{`
+        .login-card-links a {
+          color: #aa1a31 !important;
+          font-weight: bold;
+          text-decoration: none !important;
+        }
+        .login-card-links a:hover {
+          color: #8c1224 !important;
+          text-decoration: underline !important;
+        }
+      `}</style>
     </div>
   );
 };

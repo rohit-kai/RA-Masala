@@ -63,7 +63,7 @@ const Footer: FC = () => {
                                 </div>
                                 <div className="d-flex align-items-center">
                                     <i className="bi bi-telephone-fill me-2 fs-5" style={{ color: '#FFD700' }}></i>
-                                    <span>+91 98765 43210</span>
+                                    <span>+91 7447749962</span>
                                 </div>
                                 <div className="d-flex align-items-center">
                                     <i className="bi bi-envelope-fill me-2 fs-5" style={{ color: '#FFD700' }}></i>
@@ -85,9 +85,9 @@ const Footer: FC = () => {
                                 <Link to={RoutePaths.home} className="text-white text-decoration-none py-1">{t('nav_home')}</Link>
                                 <Link to={RoutePaths.ourstory} className="text-white text-decoration-none py-1">{t('nav_our_story')}</Link>
                                 <Link to={RoutePaths.brands} className="text-white text-decoration-none py-1">{t('nav_brands')}</Link>
+                                <Link to={RoutePaths.contact} className="text-white text-decoration-none py-1">{t('nav_contact')}</Link>
                                 <a href="#" className="text-white text-decoration-none py-1">Privacy Policy</a>
-                                <a href="#" className="text-white text-decoration-none py-1">Help Center</a>
-                                <a href="#" className="text-white text-decoration-none py-1">Quality Assurance Policy</a>
+                                
                             </div>
                         </div>
 
@@ -104,25 +104,7 @@ const Footer: FC = () => {
 
                     </div>
 
-                    {/* Spice Category Fast Navigation Badges (Pills) */}
-                    <div className='my-4'>
-                        <div className="d-flex flex-wrap gap-2 align-items-center mb-3">
-                            <h6 className='fw-bold mb-0 text-uppercase me-2' style={{ color: '#FFD700', fontSize: '0.85rem', letterSpacing: '0.5px' }}>Authentic Blends:</h6>
-                            <div className='d-flex flex-wrap gap-1'>
-                                {blends.map((item, idx) => (
-                                    <span key={idx} className="spice-tag">{item}</span>
-                                ))}
-                            </div>
-                        </div>
-                        <div className="d-flex flex-wrap gap-2 align-items-center">
-                            <h6 className='fw-bold mb-0 text-uppercase me-2' style={{ color: '#FFD700', fontSize: '0.85rem', letterSpacing: '0.5px' }}>Pure Powders:</h6>
-                            <div className='d-flex flex-wrap gap-1'>
-                                {powders.map((item, idx) => (
-                                    <span key={idx} className="spice-tag">{item}</span>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
+
 
                     <hr style={{ backgroundColor: '#FFD700', height: '2px', opacity: 0.4 }} />
 

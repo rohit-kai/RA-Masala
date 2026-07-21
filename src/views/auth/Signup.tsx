@@ -99,15 +99,26 @@ const Signup = () => {
               </button>
             </form>
 
-            <div className="mt-4 text-center">
+            <div className="mt-4 text-center signup-card-links">
               <p className="mb-0 text-muted" style={{ fontSize: '0.9rem' }}>
-                Already have an account? <Link to={RoutePaths.login} style={{ color: '#aa1a31', fontWeight: 'bold', textDecoration: 'none' }}>Sign In</Link>
+                Already have an account? <Link to={RoutePaths.login}>Sign In</Link>
               </p>
             </div>
           </div>
         </div>
       </div>
       <Footer />
+      <style>{`
+        .signup-card-links a {
+          color: #aa1a31 !important;
+          font-weight: bold;
+          text-decoration: none !important;
+        }
+        .signup-card-links a:hover {
+          color: #8c1224 !important;
+          text-decoration: underline !important;
+        }
+      `}</style>
     </div>
   );
 };

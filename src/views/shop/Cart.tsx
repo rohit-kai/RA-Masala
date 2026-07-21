@@ -5,6 +5,7 @@ import Header from '../includes/Header';
 import Footer from '../includes/Footer';
 import RoutePaths from '../../config';
 import Swal from 'sweetalert2';
+import { getAssetPath } from '../../Utils/imageHelper';
 
 const Cart = () => {
   const { cartItems, updateQuantity, removeFromCart, cartTotal, clearCart } = useCart();
@@ -90,7 +91,7 @@ const Cart = () => {
                           <td className="py-3">
                             <div className="d-flex align-items-center">
                               <div className="p-1 bg-light rounded-3 me-3" style={{ width: '60px', height: '60px', overflow: 'hidden' }}>
-                                <img src={item.image} alt={item.name} className="w-100 h-100 object-fit-contain" />
+                                <img src={getAssetPath(item.image)} alt={item.name} className="w-100 h-100 object-fit-contain" />
                               </div>
                               <div>
                                 <h6 className="mb-0 fw-bold" style={{ color: '#4A1525' }}>{item.name}</h6>

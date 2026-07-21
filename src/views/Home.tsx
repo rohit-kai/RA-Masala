@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Header from './includes/Header';
 import Footer from './includes/Footer';
 import { useLanguage } from '../context/LanguageContext';
 import { getAssetPath } from '../Utils/imageHelper';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useWishlist } from '../context/WishlistContext';
 import Swal from 'sweetalert2';
 
 const Home = () => {
+  const navigate = useNavigate();
   const { t } = useLanguage();
   const [currentPanelIndex, setCurrentPanelIndex] = useState(0);
   const [showPromoModal, setShowPromoModal] = useState(false);
@@ -37,6 +40,7 @@ const Home = () => {
 
   const { addToCart } = useCart();
   const { products } = useAuth();
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
 
   // Automatic panel cross-fade every 7 seconds
   useEffect(() => {
@@ -134,8 +138,11 @@ const Home = () => {
                 {currentPanel.subtext}
               </p>
 
-              <button className="hero-cta-button">
-                {t('home_explore_btn')}
+              <button 
+                className="hero-cta-button"
+                onClick={() => navigate('/shop')}
+              >
+                Explore Our Spices
               </button>
             </div>
           </section>
@@ -176,11 +183,25 @@ const Home = () => {
                 <div key={product.id} className="premium-product-card">
                   
                   {/* Image container with hover zoom effect */}
-                  <div className="product-image-container">
+                  <div className="product-image-container position-relative">
                     <div className="product-image-zoom" style={{
-                      backgroundImage: `url(${product.image})`
+                      backgroundImage: `url(${getAssetPath(product.image)})`
                     }}></div>
                     <div className="product-image-badge">{product.category.toUpperCase()}</div>
+                    <button 
+                      className="btn position-absolute top-0 end-0 m-2 rounded-circle bg-white shadow-sm d-flex align-items-center justify-content-center border-0"
+                      style={{ width: '32px', height: '32px', zIndex: 10 }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (isInWishlist(product._id || product.id)) {
+                          removeFromWishlist(product._id || product.id);
+                        } else {
+                          addToWishlist(product);
+                        }
+                      }}
+                    >
+                      <i className={`bi ${isInWishlist(product._id || product.id) ? 'bi-heart-fill text-danger' : 'bi-heart text-muted'}`} style={{ fontSize: '1.1rem', marginTop: '2px' }}></i>
+                    </button>
                   </div>
 
                   <div className="product-card-body d-flex flex-column h-100">
@@ -217,22 +238,10 @@ const Home = () => {
                         {t('home_add_to_cart')}
                       </button>
                       <button 
-                        className="btn btn-outline-secondary w-100 py-1.5"
-                        style={{ borderRadius: '8px', fontSize: '0.88rem' }}
+                        className="btn w-100 py-1.5 fw-semibold"
+                        style={{ borderRadius: '8px', fontSize: '0.88rem', backgroundColor: 'transparent', color: '#4A1525', border: '2px solid #4A1525' }}
                         onClick={() => {
-                          Swal.fire({
-                            title: product.name,
-                            html: `
-                              <div class="text-start">
-                                <p><strong>Category:</strong> ${product.category}</p>
-                                <p><strong>Pack Unit:</strong> ${product.unit}</p>
-                                <p><strong>Price:</strong> ₹${product.price}</p>
-                                <p><strong>Stock Status:</strong> ${product.stock > 0 ? `<span class="text-success">${product.stock} units available</span>` : '<span class="text-danger">Out of stock</span>'}</p>
-                                <p class="mt-3 text-muted"><em>${product.description}</em></p>
-                              </div>
-                            `,
-                            confirmButtonColor: '#4A1525'
-                          });
+                          navigate(`/product/${product._id || product.id}`);
                         }}
                       >
                         <i className="bi bi-info-circle me-1"></i>
@@ -358,23 +367,25 @@ const Home = () => {
         }
 
         .hero-cta-button {
-          background: linear-gradient(135deg, #D2691E 0%, #B85C1A 100%);
+          background-color: #c85c17;
           color: #fff; 
-          border: 2px solid #FFD700; 
-          padding: 16px 36px; 
-          font-size: 1.15rem; 
+          border: 3.5px solid #FFD700; 
+          padding: 18px 48px; 
+          font-size: 1.5rem; 
           cursor: pointer; 
-          border-radius: 30px;
-          font-weight: bold;
-          text-shadow: none;
-          box-shadow: 0 4px 15px rgba(210, 105, 30, 0.4);
-          transition: all 0.3s ease;
+          border-radius: 50px;
+          font-weight: 700;
+          text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+          transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          font-family: 'Outfit', 'Inter', sans-serif;
+          letter-spacing: 0.25px;
         }
         .hero-cta-button:hover {
-          background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-          color: #4A1525;
-          transform: translateY(-3px);
-          box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
+          background-color: #b14f11;
+          color: #fff;
+          transform: scale(1.06);
+          box-shadow: 0 10px 25px rgba(255, 215, 0, 0.35);
         }
 
         .mandala-title-icon {

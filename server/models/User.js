@@ -8,7 +8,9 @@ const UserSchema = new mongoose.Schema({
   phone: { type: String, default: '' },
   address: { type: String, default: '' },
   city: { type: String, default: '' },
-  zip: { type: String, default: '' }
+  zip: { type: String, default: '' },
+  isActive: { type: Boolean, default: true },
+  failedLoginAttempts: { type: Number, default: 0 }
 }, { timestamps: true });
 
 export default mongoose.model('User', UserSchema);

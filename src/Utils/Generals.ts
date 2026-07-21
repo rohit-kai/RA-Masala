@@ -20,4 +20,4 @@ export const removeItem = (keyname : string) => {
     return localStorage.removeItem(keyname);
 }
 
-export const link = (url : string) : string => 'https://friedshop.username-blakvghost.com/storage/' + url;
+export const link = (url : string) : string => 'https://ramasala.com/storage/' + url;

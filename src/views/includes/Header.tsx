@@ -8,23 +8,36 @@ import { useLanguage } from '../../context/LanguageContext'
 import { getAssetPath } from '../../Utils/imageHelper'
 import { useCart } from '../../context/CartContext'
 import { useAuth } from '../../context/AuthContext'
+import { useWishlist } from '../../context/WishlistContext'
 
 const Header: FC = () => {
     const [isNavOpen, setIsNavOpen] = useState(false);
     const { t } = useLanguage();
     const { cartCount } = useCart();
     const { user } = useAuth();
+    const { wishlistItems } = useWishlist();
+
+    const isSuperAdmin = user?.role === 'admin' && user?.email !== 'admin@ramasala.com';
 
     const navsBar = [
         { path: RoutePaths.home, name: t('nav_home') },
         { path: RoutePaths.ourstory, name: t('nav_our_story') },
         { path: RoutePaths.brands, name: t('nav_brands') },
-        { path: RoutePaths.cart, name: `🛒 CART (${cartCount})` },
-        { 
-          path: user ? RoutePaths.userAccount : RoutePaths.login, 
-          name: user ? `👤 ${user.name.split(' ')[0]}` : '👤 LOGIN' 
-        }
+        { path: RoutePaths.contact, name: t('nav_contact') },
     ];
+
+    if (isSuperAdmin) {
+        navsBar.push({ path: RoutePaths.recipes, name: 'RECIPES' });
+    }
+
+    navsBar.push(
+        { path: RoutePaths.wishlist, name: `WISHLIST (${wishlistItems.length})` },
+        { path: RoutePaths.cart, name: `CART (${cartCount})` },
+        {
+            path: user ? RoutePaths.userAccount : RoutePaths.login,
+            name: user ? `${user.name.split(' ')[0]}` : '👤 LOGIN'
+        }
+    );
 
     const toggleNav = () => {
         setIsNavOpen(!isNavOpen);
@@ -34,11 +47,11 @@ const Header: FC = () => {
         <>
             {/* Main Header Container */}
             <div className="header sticky-top shadow-lg traditional-header-entry" style={{ backgroundColor: '#fff', borderBottom: '4px solid #FFB300' }}>
-                
+
                 {/* Top Info Bar */}
-                <div className="d-lg-flex justify-content-between px-3 py-2 px-lg-5 position-relative" 
-                     style={{ backgroundColor: '#4A1525', color: '#FDF6ED', fontSize: '0.88rem', borderBottom: '2px solid #FFB300', zIndex: 10 }}>
-                    
+                <div className="d-lg-flex justify-content-between px-3 py-2 px-lg-5 position-relative"
+                    style={{ backgroundColor: '#4A1525', color: '#FDF6ED', fontSize: '0.88rem', borderBottom: '2px solid #FFB300', zIndex: 10 }}>
+
                     <div className="indian-cultural-overlay"></div>
 
                     <div className="d-flex header-contacts d-none d-lg-block gap-4 position-relative" style={{ zIndex: 2, fontFamily: 'serif' }}>
@@ -59,21 +72,21 @@ const Header: FC = () => {
                 </div>
 
                 {/* Primary Navigation Bar: Vermilion Red Spices Gradient with Pattern overlay */}
-                <div className="navigation d-flex flex-wrap justify-content-between px-3 px-lg-5 py-3 align-items-center position-relative" 
-                     style={{ background: 'linear-gradient(90deg, #800c1e 0%, #aa1a31 50%, #800c1e 100%)' }}>
-                    
+                <div className="navigation d-flex flex-wrap justify-content-between px-3 px-lg-5 py-3 align-items-center position-relative"
+                    style={{ background: 'linear-gradient(90deg, #800c1e 0%, #aa1a31 50%, #800c1e 100%)' }}>
+
                     <div className="indian-cultural-overlay-nav"></div>
-                    
-                    <nav className='navbar col-12 navbar-expand-lg p-0' style={{ zIndex: 2 }}>
+
+                    <nav className='navbar col-12 navbar-expand-xl p-0' style={{ zIndex: 2 }}>
                         <div className="d-flex justify-content-between align-items-center w-100">
                             {/* Brand Logo */}
                             <Link to={RoutePaths.home} className='navbar-brand d-flex align-items-center traditional-logo-wrapper me-4'>
                                 <img src={getAssetPath('images/ra_waa.png')} alt="RA Masala Logo" style={{ maxHeight: '75px', objectFit: 'contain', filter: 'drop-shadow(0px 6px 12px rgba(0,0,0,0.3))' }} />
                             </Link>
-                            
+
                             {/* Toggler Button - Hidden on desktop */}
-                            <button 
-                                className="navbar-toggler traditional-toggler-btn d-lg-none" 
+                            <button
+                                className="navbar-toggler traditional-toggler-btn d-xl-none"
                                 onClick={toggleNav}
                                 aria-expanded={isNavOpen}
                                 style={{
@@ -89,30 +102,30 @@ const Header: FC = () => {
                                 </span>
                             </button>
                         </div>
-                        
+
                         {/* Navigation Links - Always in one line on desktop */}
-                        <div className={`${isNavOpen ? 'd-block' : 'd-none d-lg-block'} w-100 mt-3 mt-lg-0`}>
-                            <ul className="navbar-nav d-lg-flex gap-3 traditional-navbar-nav">
+                        <div className={`${isNavOpen ? 'd-block animate__animated animate__fadeInDown' : 'd-none d-xl-block'} w-100 mt-3 mt-xl-0`}>
+                            <ul className="navbar-nav d-xl-flex gap-2 gap-xxl-3 traditional-navbar-nav">
                                 {navsBar.map((link) => {
                                     const isActive = toggleLinkClass(link.path, 'active');
                                     return (
-                                        <li key={link.name} className="navbar-item" style={{ 
+                                        <li key={link.name} className="navbar-item" style={{
                                             padding: '0',
                                             borderBottom: 'none',
                                             whiteSpace: 'nowrap'
                                         }}>
-                                            <Link 
-                                                to={link.path} 
-                                                className="navbar-link text-decoration-none fw-bold text-uppercase tracking-wider traditional-nav-item" 
+                                            <Link
+                                                to={link.path}
+                                                className="navbar-link text-decoration-none fw-bold text-uppercase tracking-wider traditional-nav-item"
                                                 onClick={() => setIsNavOpen(false)}
-                                                style={{ 
+                                                style={{
                                                     color: isActive ? '#FFD700' : '#FFFFFF',
                                                     position: 'relative',
                                                     paddingBottom: '6px',
                                                     fontSize: '0.88rem',
                                                     letterSpacing: '0.75px',
                                                     display: 'inline-block',
-                                                    padding: '6px 14px',
+                                                    padding: '6px 12px',
                                                     whiteSpace: 'nowrap'
                                                 }}
                                             >
@@ -220,23 +233,36 @@ const Header: FC = () => {
                 }
 
                 /* Mobile responsiveness */
-                @media (max-width: 991.98px) {
+                @media (max-width: 1199.98px) {
                     .traditional-navbar-nav {
                         flex-direction: column !important;
                         flex-wrap: wrap !important;
-                        align-items: flex-start !important;
+                        align-items: center !important;
+                        width: 100%;
+                        background: rgba(74, 21, 37, 0.98);
+                        backdrop-filter: blur(10px);
+                        border: 2px solid #FFD700;
+                        border-radius: 12px;
+                        padding: 15px !important;
+                        margin-top: 15px;
+                        box-shadow: 0 10px 30px rgba(0,0,0,0.25);
                     }
                     .navbar-nav {
                         flex-direction: column !important;
-                        padding: 10px 0;
+                        padding: 5px 0;
                     }
                     .navbar-item {
                         width: 100%;
+                        text-align: center;
                     }
                     .traditional-nav-item {
-                        display: block !important;
-                        padding: 10px 0 !important;
+                        display: inline-block !important;
+                        padding: 10px 20px !important;
                         font-size: 1rem !important;
+                        width: 100%;
+                    }
+                    .traditional-nav-line {
+                        bottom: 4px;
                     }
                 }
             `}</style>

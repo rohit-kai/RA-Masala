@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import Header from '../includes/Header';
 import Footer from '../includes/Footer';
 import RoutePaths from '../../config';
+import { getAssetPath } from '../../Utils/imageHelper';
 
 const Invoice = () => {
   const { orderId } = useParams<{ orderId: string }>();
@@ -44,7 +45,7 @@ const Invoice = () => {
         
         {/* Print controls bar */}
         <div className="d-flex justify-content-between align-items-center w-100 max-width-invoice mb-4 print-hide" style={{ maxWidth: '800px' }}>
-          <Link to={RoutePaths.home} className="btn btn-outline-secondary fw-semibold">
+          <Link to={RoutePaths.home} className="btn btn-sm text-white fw-bold d-flex align-items-center" style={{ backgroundColor: '#4A1525', border: '1px solid #FFB300' }}>
             <i className="bi bi-arrow-left me-2"></i> Return to Shopping
           </Link>
           <button className="btn text-white fw-bold d-flex align-items-center gap-2" style={{ backgroundColor: '#aa1a31' }} onClick={handlePrint}>
@@ -59,11 +60,16 @@ const Invoice = () => {
           style={{ maxWidth: '800px', borderTop: '8px solid #aa1a31' }}
         >
           {/* Header */}
-          <div className="row mb-5 align-items-center">
+          <div className="row mb-4 align-items-center">
             <div className="col-sm-6 mb-3 mb-sm-0">
-              <h2 className="fw-bold mb-1" style={{ color: '#4A1525', fontFamily: 'serif' }}>RA MASALA</h2>
-              <span className="text-muted d-block" style={{ fontSize: '0.85rem' }}>PURE & AUTHENTIC INDIAN SPICES</span>
-              <small className="text-secondary mt-2 d-block">
+              <div className="d-flex align-items-center gap-3 mb-2">
+                <img src={getAssetPath('images/ra_waa.png')} alt="RA Masala Logo" style={{ maxHeight: '60px', objectFit: 'contain' }} />
+                <div>
+                  <h3 className="fw-bold mb-0" style={{ color: '#4A1525', fontFamily: 'serif' }}>RA MASALA</h3>
+                  <span className="text-muted d-block" style={{ fontSize: '0.75rem', fontWeight: 'bold' }}>PURE & AUTHENTIC INDIAN SPICES</span>
+                </div>
+              </div>
+              <small className="text-secondary d-block" style={{ fontSize: '0.8rem', lineHeight: '1.3' }}>
                 RA Masala Private Limited<br />
                 Gat No. 45, Devde Industrial Area, Pune Road<br />
                 Maharashtra, India - 411048<br />
@@ -194,21 +200,72 @@ const Invoice = () => {
       {/* Styled styles for Printing */}
       <style>{`
         @media print {
-          .print-hide, .header, .footer, footer, div.header {
-            display: none !important;
+          @page {
+            size: A4;
+            margin: 10mm 15mm 10mm 15mm !important;
           }
           body, html {
             background-color: #ffffff !important;
             margin: 0 !important;
             padding: 0 !important;
+            height: 100%;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          .print-hide, .header, .footer, footer, div.header {
+            display: none !important;
           }
           .print-invoice {
             box-shadow: none !important;
             border: 0 !important;
-            border-top: 5px solid #000 !important;
+            border-top: 5px solid #aa1a31 !important;
             margin: 0 !important;
+            padding: 0 !important;
             width: 100% !important;
             max-width: 100% !important;
+            background: #fff !important;
+          }
+          /* Adjust layout to fit on a single A4 page */
+          .card {
+            border: none !important;
+          }
+          .row {
+            margin-bottom: 0.3rem !important;
+            margin-top: 0.3rem !important;
+          }
+          .mb-5 {
+            margin-bottom: 0.8rem !important;
+          }
+          .my-4 {
+            margin-top: 0.3rem !important;
+            margin-bottom: 0.3rem !important;
+          }
+          .mt-5 {
+            margin-top: 1rem !important;
+          }
+          hr {
+            margin: 0.4rem 0 !important;
+          }
+          .table-responsive {
+            margin-bottom: 0.3rem !important;
+          }
+          table {
+            font-size: 0.8rem !important;
+          }
+          td, th {
+            padding: 3px 6px !important;
+          }
+          .p-3 {
+            padding: 6px !important;
+          }
+          .fs-4 {
+            font-size: 1.15rem !important;
+          }
+          .fs-5 {
+            font-size: 0.95rem !important;
+          }
+          .border-bottom {
+            height: 25px !important;
           }
         }
       `}</style>

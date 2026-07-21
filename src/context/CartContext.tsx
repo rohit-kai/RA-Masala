@@ -1,8 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Product } from '../config/products';
+import { useAuth } from './AuthContext';
+import axios from 'axios';
 
 export interface CartItem {
-  id: number;
+  id: number | string;
   name: string;
   price: number;
   quantity: number;
@@ -12,8 +14,8 @@ export interface CartItem {
 interface CartContextType {
   cartItems: CartItem[];
   addToCart: (product: Product, quantity?: number) => void;
-  removeFromCart: (productId: number) => void;
-  updateQuantity: (productId: number, quantity: number) => void;
+  removeFromCart: (productId: number | string) => void;
+  updateQuantity: (productId: number | string, quantity: number) => void;
   clearCart: () => void;
   cartCount: number;
   cartTotal: number;
@@ -22,24 +24,100 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
 
-  // Load cart from localStorage on mount
+  // Load cart from DB or localStorage on mount/user change
   useEffect(() => {
-    const storedCart = localStorage.getItem('ra_cart');
-    if (storedCart) {
-      setCartItems(JSON.parse(storedCart));
-    }
-  }, []);
+    const loadCart = async () => {
+      if (user) {
+        const userId = user.id || user._id;
+        try {
+          const res = await axios.get(`/api/cart/${userId}`);
+          const dbItems = res.data.items || [];
+          
+          const mappedDbItems: CartItem[] = dbItems.map((item: any) => ({
+            id: isNaN(Number(item.productId)) ? item.productId : Number(item.productId),
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            image: item.image
+          }));
 
-  // Save cart to localStorage on change
-  const saveCart = (items: CartItem[]) => {
+          // Read guest items directly from localStorage to merge
+          const storedCart = localStorage.getItem('ra_cart');
+          const guestItems: CartItem[] = storedCart ? JSON.parse(storedCart) : [];
+          
+          const mergedItems = [...mappedDbItems];
+          let hasNewGuestItems = false;
+
+          for (const guestItem of guestItems) {
+            const existingIdx = mergedItems.findIndex(item => String(item.id) === String(guestItem.id));
+            if (existingIdx > -1) {
+              if (mergedItems[existingIdx].quantity < guestItem.quantity) {
+                mergedItems[existingIdx].quantity = guestItem.quantity;
+                hasNewGuestItems = true;
+              }
+            } else {
+              mergedItems.push(guestItem);
+              hasNewGuestItems = true;
+            }
+          }
+
+          setCartItems(mergedItems);
+          localStorage.setItem('ra_cart', JSON.stringify(mergedItems));
+
+          // If we added guest items to the DB cart, sync it back to DB
+          if (hasNewGuestItems && guestItems.length > 0) {
+            const dbPayload = mergedItems.map(item => ({
+              productId: String(item.id),
+              name: item.name,
+              price: item.price,
+              quantity: item.quantity,
+              image: item.image
+            }));
+            await axios.post(`/api/cart/${userId}`, { items: dbPayload });
+          }
+        } catch (err) {
+          console.error('Error fetching user cart from DB:', err);
+        }
+      } else {
+        const storedCart = localStorage.getItem('ra_cart');
+        if (storedCart) {
+          setCartItems(JSON.parse(storedCart));
+        } else {
+          setCartItems([]);
+        }
+      }
+    };
+
+    loadCart();
+  }, [user]);
+
+  // Save cart to localStorage and DB on change
+  const saveCart = async (items: CartItem[]) => {
     setCartItems(items);
     localStorage.setItem('ra_cart', JSON.stringify(items));
+
+    if (user) {
+      const userId = user.id || user._id;
+      try {
+        const dbPayload = items.map(item => ({
+          productId: String(item.id),
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          image: item.image
+        }));
+        await axios.post(`/api/cart/${userId}`, { items: dbPayload });
+      } catch (err) {
+        console.error('Error syncing cart to database:', err);
+      }
+    }
   };
 
   const addToCart = (product: Product, quantity: number = 1) => {
-    const existingIndex = cartItems.findIndex(item => item.id === product.id);
+    const existingIndex = cartItems.findIndex(item => String(item.id) === String(product.id));
     if (existingIndex > -1) {
       const updated = [...cartItems];
       updated[existingIndex].quantity += quantity;
@@ -56,18 +134,18 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const removeFromCart = (productId: number) => {
-    const updated = cartItems.filter(item => item.id !== productId);
+  const removeFromCart = (productId: number | string) => {
+    const updated = cartItems.filter(item => String(item.id) !== String(productId));
     saveCart(updated);
   };
 
-  const updateQuantity = (productId: number, quantity: number) => {
+  const updateQuantity = (productId: number | string, quantity: number) => {
     if (quantity <= 0) {
       removeFromCart(productId);
       return;
     }
     const updated = cartItems.map(item => 
-      item.id === productId ? { ...item, quantity } : item
+      String(item.id) === String(productId) ? { ...item, quantity } : item
     );
     saveCart(updated);
   };
