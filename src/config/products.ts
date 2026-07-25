@@ -10,6 +10,8 @@ export interface Product {
   stock: number;
   category: string;
   unit: string;
+  brand?: string;
+  subCategory?: string;
 }
 
 export const INITIAL_PRODUCTS: Product[] = [
@@ -21,7 +23,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     price: 80,
     stock: 50,
     category: "Masale",
-    unit: "250g"
+    unit: "250g",
+    brand: "masale"
   },
   {
     id: 2,
@@ -31,7 +34,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     price: 120,
     stock: 45,
     category: "Masale",
-    unit: "200g"
+    unit: "200g",
+    brand: "masale"
   },
   {
     id: 3,
@@ -41,7 +45,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     price: 95,
     stock: 60,
     category: "Masale",
-    unit: "250g"
+    unit: "250g",
+    brand: "masale"
   },
   {
     id: 4,
@@ -51,7 +56,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     price: 65,
     stock: 80,
     category: "Spice Home",
-    unit: "250g"
+    unit: "250g",
+    brand: "spicehome"
   },
   {
     id: 5,
@@ -61,7 +67,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     price: 90,
     stock: 35,
     category: "Masale",
-    unit: "250g"
+    unit: "250g",
+    brand: "masale"
   },
   {
     id: 6,
@@ -71,7 +78,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     price: 110,
     stock: 40,
     category: "Masale",
-    unit: "200g"
+    unit: "200g",
+    brand: "masale"
   },
   {
     id: 7,
@@ -81,7 +89,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     price: 55,
     stock: 90,
     category: "Spice Home",
-    unit: "250g"
+    unit: "250g",
+    brand: "spicehome"
   },
   {
     id: 8,
@@ -91,7 +100,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     price: 150,
     stock: 25,
     category: "Masale",
-    unit: "100g"
+    unit: "100g",
+    brand: "masale"
   },
   {
     id: 9,
@@ -101,6 +111,73 @@ export const INITIAL_PRODUCTS: Product[] = [
     price: 75,
     stock: 55,
     category: "Masale",
-    unit: "100g"
+    unit: "100g",
+    brand: "masale"
+  },
+  {
+    id: 10,
+    name: "Spicy Potato Chips",
+    image: getAssetPath('images/ra_waa.png'),
+    description: "Crispy fried golden potato chips seasoned with our special spice blend.",
+    price: 40,
+    stock: 100,
+    category: "Namkeen",
+    unit: "150g",
+    brand: "namkeen"
+  },
+  {
+    id: 11,
+    name: "Traditional Sev Bhujia",
+    image: getAssetPath('images/ra_waa.png'),
+    description: "Crispy and savory chickpea flour noodles infused with traditional spices.",
+    price: 50,
+    stock: 80,
+    category: "Namkeen",
+    unit: "200g",
+    brand: "namkeen"
+  },
+  {
+    id: 12,
+    name: "Royal Masala Chai Blend",
+    image: getAssetPath('images/ra_waa.png'),
+    description: "Rich premium black tea leaves blended with cardamom, ginger, and cinnamon.",
+    price: 180,
+    stock: 40,
+    category: "Chaha",
+    unit: "250g",
+    brand: "chaha"
+  },
+  {
+    id: 13,
+    name: "Premium Green Tea",
+    image: getAssetPath('images/ra_waa.png'),
+    description: "Handpicked whole green tea leaves rich in antioxidants and refreshing flavor.",
+    price: 220,
+    stock: 35,
+    category: "Chaha",
+    unit: "150g",
+    brand: "chaha"
+  },
+  {
+    id: 14,
+    name: "Organic Wheat Flour",
+    image: getAssetPath('images/ra_waa.png'),
+    description: "100% organic, stone-ground whole wheat flour packed with fiber and nutrients.",
+    price: 90,
+    stock: 50,
+    category: "Agro",
+    unit: "1kg",
+    brand: "agro"
+  },
+  {
+    id: 15,
+    name: "Pure Agro Mustard Oil",
+    image: getAssetPath('images/ra_waa.png'),
+    description: "Cold-pressed pure mustard oil extracted from high-quality yellow mustard seeds.",
+    price: 210,
+    stock: 30,
+    category: "Agro",
+    unit: "1L",
+    brand: "agro"
   }
 ];

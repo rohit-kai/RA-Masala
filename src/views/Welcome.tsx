@@ -41,7 +41,7 @@ const Welcome: React.FC = () => {
               src={getAssetPath('img/welcome_logo.png')} 
               className="welcome-brand-logo-img img-fluid" 
               alt="RA Masale Pvt. Ltd. Logo" 
-              style={{ maxHeight: '160px', marginTop: '15px', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.5))' }}
+              style={{ maxHeight: '250px', marginTop: '10px', filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.6))' }}
             />
           </div>
         </div>

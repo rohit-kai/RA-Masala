@@ -73,15 +73,21 @@ async function seedDatabase() {
     const productCount = await Product.countDocuments();
     if (productCount === 0) {
       const initialProducts = [
-        { name: "Onion Garlic Masala", price: 80, stock: 50, category: "Masale", unit: "250g", description: "Traditional savory spice blend of onions, garlic, and handpicked hot spices.", image: "/images/ra_waa.png" },
-        { name: "Authentic Garam Masala", price: 120, stock: 45, category: "Masale", unit: "200g", description: "Generations-old recipe blending 12 aromatic and premium spices.", image: "/images/ra_waa.png" },
-        { name: "Kashmiri Red Chili", price: 95, stock: 60, category: "Masale", unit: "250g", description: "Mild heat with a rich, vibrant red color for premium culinary dishes.", image: "/images/ra_waa.png" },
-        { name: "Premium Turmeric Powder", price: 65, stock: 80, category: "Spice Home", unit: "250g", description: "Pure, high-curcumin turmeric powder with authentic color and flavor.", image: "/images/ra_waa.png" },
-        { name: "Kolhapuri Ghati Masala", price: 90, stock: 35, category: "Masale", unit: "250g", description: "Spicy and bold traditional blend capturing the authentic flavors of Kolhapur.", image: "/images/ra_waa.png" },
-        { name: "Traditional Goda Masala", price: 110, stock: 40, category: "Masale", unit: "200g", description: "Aromatic Maharashtrian blend featuring roasted coconut, sesame, and spices.", image: "/images/ra_waa.png" },
-        { name: "Coriander Powder", price: 55, stock: 90, category: "Spice Home", unit: "250g", description: "Finely ground from premium coriander seeds, yielding a sweet aromatic scent.", image: "/images/ra_waa.png" },
-        { name: "Shahi Biryani Masala", price: 150, stock: 25, category: "Masale", unit: "100g", description: "A royal blend of spices to create perfectly aromatic and flavorful biryani.", image: "/images/ra_waa.png" },
-        { name: "Special Pav Bhaji Masala", price: 75, stock: 55, category: "Masale", unit: "100g", description: "The perfect spice blend for making delicious, Mumbai-style street pav bhaji.", image: "/images/ra_waa.png" }
+        { name: "Onion Garlic Masala", price: 80, stock: 50, category: "Masale", unit: "250g", description: "Traditional savory spice blend of onions, garlic, and handpicked hot spices.", image: "/images/ra_waa.png", brand: "masale" },
+        { name: "Authentic Garam Masala", price: 120, stock: 45, category: "Masale", unit: "200g", description: "Generations-old recipe blending 12 aromatic and premium spices.", image: "/images/ra_waa.png", brand: "masale" },
+        { name: "Kashmiri Red Chili", price: 95, stock: 60, category: "Masale", unit: "250g", description: "Mild heat with a rich, vibrant red color for premium culinary dishes.", image: "/images/ra_waa.png", brand: "masale" },
+        { name: "Premium Turmeric Powder", price: 65, stock: 80, category: "Spice Home", unit: "250g", description: "Pure, high-curcumin turmeric powder with authentic color and flavor.", image: "/images/ra_waa.png", brand: "spicehome" },
+        { name: "Kolhapuri Ghati Masala", price: 90, stock: 35, category: "Masale", unit: "250g", description: "Spicy and bold traditional blend capturing the authentic flavors of Kolhapur.", image: "/images/ra_waa.png", brand: "masale" },
+        { name: "Traditional Goda Masala", price: 110, stock: 40, category: "Masale", unit: "200g", description: "Aromatic Maharashtrian blend featuring roasted coconut, sesame, and spices.", image: "/images/ra_waa.png", brand: "masale" },
+        { name: "Coriander Powder", price: 55, stock: 90, category: "Spice Home", unit: "250g", description: "Finely ground from premium coriander seeds, yielding a sweet aromatic scent.", image: "/images/ra_waa.png", brand: "spicehome" },
+        { name: "Shahi Biryani Masala", price: 150, stock: 25, category: "Masale", unit: "100g", description: "A royal blend of spices to create perfectly aromatic and flavorful biryani.", image: "/images/ra_waa.png", brand: "masale" },
+        { name: "Special Pav Bhaji Masala", price: 75, stock: 55, category: "Masale", unit: "100g", description: "The perfect spice blend for making delicious, Mumbai-style street pav bhaji.", image: "/images/ra_waa.png", brand: "masale" },
+        { name: "Spicy Potato Chips", price: 40, stock: 100, category: "Namkeen", unit: "150g", description: "Crispy fried golden potato chips seasoned with our special spice blend.", image: "/images/ra_waa.png", brand: "namkeen" },
+        { name: "Traditional Sev Bhujia", price: 50, stock: 80, category: "Namkeen", unit: "200g", description: "Crispy and savory chickpea flour noodles infused with traditional spices.", image: "/images/ra_waa.png", brand: "namkeen" },
+        { name: "Royal Masala Chai Blend", price: 180, stock: 40, category: "Chaha", unit: "250g", description: "Rich premium black tea leaves blended with cardamom, ginger, and cinnamon.", image: "/images/ra_waa.png", brand: "chaha" },
+        { name: "Premium Green Tea", price: 220, stock: 35, category: "Chaha", unit: "150g", description: "Handpicked whole green tea leaves rich in antioxidants and refreshing flavor.", image: "/images/ra_waa.png", brand: "chaha" },
+        { name: "Organic Wheat Flour", price: 90, stock: 50, category: "Agro", unit: "1kg", description: "100% organic, stone-ground whole wheat flour packed with fiber and nutrients.", image: "/images/ra_waa.png", brand: "agro" },
+        { name: "Pure Agro Mustard Oil", price: 210, stock: 30, category: "Agro", unit: "1L", description: "Cold-pressed pure mustard oil extracted from high-quality yellow mustard seeds.", image: "/images/ra_waa.png", brand: "agro" }
       ];
       await Product.insertMany(initialProducts);
       console.log('Default products seeded');
@@ -199,7 +205,7 @@ app.post('/api/users/login', async (req, res) => {
         console.log(`Body: Admin account ${user.email} has been deactivated/blocked due to 3 consecutive failed login attempts. Please review the customer management board to activate this account.`);
         console.log(`==================================================\n`);
 
-        return res.status(403).json({ message: 'Account blocked due to 3 failed login attempts. An alert was sent to the Super Admin.' });
+        return res.status(403).json({ message: 'Account blocked due to 3 failed login attempts.' });
       }
       await user.save();
     }

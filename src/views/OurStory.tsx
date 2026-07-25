@@ -11,28 +11,35 @@ const OurStory: React.FC = () => {
   return (
     <>
       <Header />
-      
+
       <Banner page={t('nav_our_story')} path={[t('nav_home'), t('nav_our_story')]} />
 
       {/* Main Story Container with subtle traditional background pattern */}
-      <div className="our-story-wrapper py-5" style={{ backgroundColor: '#FDF6ED', minHeight: '80vh', position: 'relative' }}>
+      <div className="our-story-wrapper py-5" style={{
+        backgroundImage: "linear-gradient(rgba(253, 246, 237, 0.85), rgba(253, 246, 237, 0.85)), url('/images/sp2.png')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+        minHeight: '80vh',
+        position: 'relative'
+      }}>
         <div className="traditional-pattern-overlay"></div>
-        
+
         <div className="container px-3 px-lg-5 position-relative" style={{ zIndex: 2 }}>
-          
+
           {/* Main Intro Section */}
           <div className="row align-items-center g-5 mb-5">
-            
+
             {/* Image Section with Elegant Gold Traditional Frame */}
             <div className="col-12 col-md-5">
-              <div className="story-image-frame position-relative p-2" style={{ 
+              <div className="story-image-frame position-relative p-2" style={{
                 background: 'linear-gradient(135deg, #FFD700 0%, #B8860B 100%)',
                 borderRadius: '15px',
                 boxShadow: '0 10px 30px rgba(0,0,0,0.15)'
               }}>
-                <img 
-                  src={getAssetPath('images/story.png')} 
-                  alt="RA Masala Story" 
+                <img
+                  src={getAssetPath('images/story.png')}
+                  alt="RA Masala Story"
                   className="img-fluid rounded w-100"
                   style={{ objectFit: 'cover', maxHeight: '550px', display: 'block', borderRadius: '10px' }}
                 />
@@ -52,16 +59,16 @@ const OurStory: React.FC = () => {
               <h2 className="fw-bold mb-4 mt-2 display-6" style={{ color: '#4A1525', fontFamily: 'serif' }}>
                 {t('story_title')}
               </h2>
-              
+
               <div className="lead mb-4 fw-medium text-dark border-start border-4 px-3" style={{ borderColor: '#FFD700', lineHeight: '1.8' }}>
                 {t('story_lead')}
               </div>
-              
+
               <div className="story-paragraphs" style={{ color: '#4E3629', lineHeight: '1.75', fontSize: '1.05rem' }}>
                 <p className="mb-3">
                   {t('story_p1')}
                 </p>
-                
+
                 <p className="mb-3">
                   {t('story_p2')}
                 </p>
@@ -122,10 +129,10 @@ const OurStory: React.FC = () => {
               </p>
             </div>
             <div className="col-12 col-md-5 order-1 order-md-2 text-center">
-              <img 
-                src={getAssetPath('img/welcome_bags.png')} 
-                alt="Spice Assortment Bags" 
-                className="img-fluid" 
+              <img
+                src={getAssetPath('img/welcome_bags.png')}
+                alt="Spice Assortment Bags"
+                className="img-fluid"
                 style={{ maxHeight: '280px', filter: 'drop-shadow(0px 8px 16px rgba(0,0,0,0.15))' }}
               />
             </div>

@@ -21,8 +21,8 @@ const Shop = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [sortBy, setSortBy] = useState<'name' | 'priceAsc' | 'priceDesc'>('name');
 
-  // Extract unique categories from products dynamically
-  const categories = ['All', ...Array.from(new Set(products.map((p) => p.category)))];
+  // Static list to ensure all five brand categories are always visible for filtration
+  const categories = ['All', 'Masale', 'Namkeen', 'Spice Home', 'Chaha', 'Agro'];
 
   // Filter and sort products
   const filteredProducts = products

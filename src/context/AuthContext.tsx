@@ -38,6 +38,7 @@ export interface Order {
   createdAt?: string;
   status: 'Pending' | 'Processing' | 'Shipped' | 'Cancelled';
   paymentMethod: string;
+  transactionId?: string;
   shippingAddress: {
     name: string;
     phone: string;
@@ -151,12 +152,16 @@ interface AuthContextType {
   deleteReview: (id: string) => Promise<void>;
   toggleUserStatus: (userId: string, isActive: boolean) => Promise<void>;
   securityLogs: SecurityLog[];
+  loadData: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    const saved = localStorage.getItem('ra_current_user');
+    return saved ? JSON.parse(saved) : null;
+  });
   const [users, setUsers] = useState<User[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
@@ -481,7 +486,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       addProduct, updateProduct, deleteProduct,
       updateOrderStatus, addTicket, resolveTicket, placeOrder,
       updatePaymentStatus, updateShipping, addDiscount, updateDiscount, deleteDiscount,
-      addReview, deleteReview, toggleUserStatus, securityLogs
+      addReview, deleteReview, toggleUserStatus, securityLogs, loadData
     }}>
       {children}
     </AuthContext.Provider>

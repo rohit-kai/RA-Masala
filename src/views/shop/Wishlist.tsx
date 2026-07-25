@@ -29,7 +29,15 @@ const Wishlist = () => {
   };
 
   return (
-    <div style={{ backgroundColor: '#FDF6ED', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div style={{
+      backgroundImage: "linear-gradient(rgba(253, 246, 237, 0.85), rgba(253, 246, 237, 0.85)), url('/images/sp2.png')",
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundAttachment: 'fixed',
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column'
+    }}>
       <Header />
       <div className="container py-5 flex-grow-1">
         <h2 className="mb-4 text-start" style={{ fontFamily: 'serif', color: '#4A1525', fontWeight: 'bold', borderBottom: '3px solid #FFB300', paddingBottom: '10px' }}>
@@ -51,8 +59,8 @@ const Wishlist = () => {
               <div key={item.productId} className="col-md-6 col-lg-4 col-xl-3 animate__animated animate__fadeIn">
                 <div className="card h-100 border-0 shadow-sm rounded-4 overflow-hidden bg-white text-center p-3">
                   <div className="position-relative">
-                    <button 
-                      className="btn btn-sm btn-light rounded-circle shadow-sm position-absolute top-0 end-0 m-2 text-danger border-0" 
+                    <button
+                      className="btn btn-sm btn-light rounded-circle shadow-sm position-absolute top-0 end-0 m-2 text-danger border-0"
                       onClick={() => removeFromWishlist(item.productId)}
                       style={{ zIndex: 5 }}
                     >
@@ -67,7 +75,7 @@ const Wishlist = () => {
                       <h6 className="fw-bold mb-1" style={{ color: '#4A1525' }}>{item.name}</h6>
                       <p className="text-secondary fw-semibold mb-3">₹{item.price}</p>
                     </div>
-                    <button 
+                    <button
                       className="btn w-100 text-white fw-bold py-2 rounded-3 shadow-sm border-0"
                       style={{ background: 'linear-gradient(90deg, #800c1e 0%, #aa1a31 100%)' }}
                       onClick={() => handleMoveToCart(item)}

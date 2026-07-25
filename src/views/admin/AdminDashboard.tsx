@@ -12,7 +12,7 @@ const AdminDashboard = () => {
     user, orders, users, products, tickets, resolveTicket, updateOrderStatus,
     payments, shippingList, discounts, reviews, inventoryLogs,
     updatePaymentStatus, updateShipping, addDiscount, updateDiscount, deleteDiscount,
-    deleteReview, securityLogs, toggleUserStatus
+    deleteReview, securityLogs, toggleUserStatus, loadData
   } = useAuth();
   
   const navigate = useNavigate();
@@ -177,6 +177,121 @@ const AdminDashboard = () => {
       date: l.createdAt ? new Date(l.createdAt).toLocaleString() : ''
     }));
     exportToCSV(logList, 'inventory_logs.csv', ['id', 'productId', 'productName', 'changeType', 'quantityChanged', 'newStock', 'date']);
+  };
+
+  const handleImportCSV = () => {
+    const importTypeEl = document.getElementById('importType') as HTMLSelectElement;
+    const fileInputEl = document.getElementById('importFile') as HTMLInputElement;
+    const importType = importTypeEl?.value || 'products';
+    const file = fileInputEl?.files?.[0];
+
+    if (!file) {
+      Swal.fire('Error', 'Please select a CSV file first.', 'error');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const text = e.target?.result as string;
+        if (!text) return;
+
+        const rows = text.split('\n').map(row => {
+          // Splitting columns while preserving commas inside double quotes
+          const matches = row.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
+          return matches.map(val => val.replace(/^"|"$/g, '').trim());
+        }).filter(row => row.length > 0);
+
+        if (rows.length < 2) {
+          Swal.fire('Error', 'CSV file has no data rows.', 'error');
+          return;
+        }
+
+        const headers = rows[0].map(h => h.toLowerCase().trim());
+        const dataRows = rows.slice(1);
+
+        Swal.fire({
+          title: 'Importing Data',
+          text: 'Uploading records to database. Please wait...',
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+
+        let successCount = 0;
+        let failCount = 0;
+
+        for (const row of dataRows) {
+          if (row.length === 0 || row.join('').trim() === '') continue;
+
+          const record: any = {};
+          headers.forEach((header, index) => {
+            record[header] = row[index] || '';
+          });
+
+          try {
+            if (importType === 'products') {
+              const name = record.name || '';
+              const price = parseFloat(record.price) || 0;
+              const category = record.category || 'Masale';
+              const stock = parseInt(record.stock) || 0;
+              const unit = record.unit || '250g';
+              const description = record.description || '';
+
+              let brand = 'masale';
+              const catLower = category.toLowerCase().trim();
+              if (catLower === 'namkeen') brand = 'namkeen';
+              else if (catLower === 'spice home' || catLower === 'spicehome') brand = 'spicehome';
+              else if (catLower === 'chaha' || catLower === 'tea' || catLower === 'tea/chaha') brand = 'chaha';
+              else if (catLower === 'agro') brand = 'agro';
+
+              if (name && price > 0) {
+                await axios.post('/api/products', {
+                  name,
+                  price,
+                  category,
+                  stock,
+                  unit,
+                  description,
+                  image: '/images/ra_waa.png',
+                  brand
+                });
+                successCount++;
+              } else {
+                failCount++;
+              }
+            } else if (importType === 'customers') {
+              const name = record.name || '';
+              const email = record.email || '';
+              const password = record.password || 'user123';
+
+              if (name && email) {
+                await axios.post('/api/users/signup', { name, email, password });
+                successCount++;
+              } else {
+                failCount++;
+              }
+            }
+          } catch (err) {
+            console.error(err);
+            failCount++;
+          }
+        }
+
+        await loadData();
+        Swal.fire({
+          icon: 'success',
+          title: 'Import Completed',
+          text: `Success: ${successCount} records imported. Failed/Skipped: ${failCount} records.`,
+        });
+        if (fileInputEl) fileInputEl.value = '';
+      } catch (err) {
+        console.error(err);
+        Swal.fire('Error', 'An error occurred while reading the file.', 'error');
+      }
+    };
+    reader.readAsText(file);
   };
 
   // Coupon Form States
@@ -437,10 +552,10 @@ const AdminDashboard = () => {
                 <h5 className="mb-4 text-start fw-bold" style={{ fontFamily: 'serif', color: '#4A1525' }}>
                   <i className="bi bi-gear-fill me-2 text-danger"></i> System Operations (Super Admin)
                 </h5>
-                <div className="row g-3 align-items-center">
+                <div className="row g-4 align-items-start">
                   {/* Maintenance Mode Toggle */}
-                  <div className="col-md-6 border-end">
-                    <div className="d-flex align-items-center justify-content-between pe-md-4">
+                  <div className="col-lg-4 border-end pb-3">
+                    <div className="d-flex align-items-center justify-content-between pe-lg-3">
                       <div>
                         <strong className="d-block text-dark">Site Maintenance Mode</strong>
                         <span className="text-muted small">Redirect all non-admin visitors to placeholder page.</span>
@@ -459,7 +574,7 @@ const AdminDashboard = () => {
                   </div>
 
                   {/* CSV Data Export */}
-                  <div className="col-md-6 ps-md-4">
+                  <div className="col-lg-4 border-end pb-3 px-lg-3">
                     <strong className="d-block text-dark mb-2">Export System Databases</strong>
                     <div className="d-flex flex-wrap gap-2">
                       <button className="btn btn-sm text-white fw-bold" style={{ backgroundColor: '#4A1525', border: '1px solid #FFB300' }} onClick={handleExportCustomers}>
@@ -477,6 +592,37 @@ const AdminDashboard = () => {
                       <button className="btn btn-sm text-white fw-bold" style={{ backgroundColor: '#4A1525', border: '1px solid #FFB300' }} onClick={handleExportInventoryLogs}>
                         <i className="bi bi-journal-text me-1"></i> Inventory Logs
                       </button>
+                    </div>
+                  </div>
+
+                  {/* CSV Data Import */}
+                  <div className="col-lg-4 pb-3 ps-lg-3">
+                    <strong className="d-block text-dark mb-2">Import System Databases</strong>
+                    <div className="d-flex flex-column gap-2">
+                      <div className="d-flex gap-2">
+                        <select className="form-select form-select-sm" id="importType" defaultValue="products" style={{ border: '1px solid #FFB300', backgroundColor: '#FFF', maxWidth: '120px' }}>
+                          <option value="products">Products</option>
+                          <option value="customers">Customers</option>
+                        </select>
+                        <input 
+                          type="file" 
+                          id="importFile"
+                          accept=".csv"
+                          className="form-control form-control-sm"
+                          style={{ border: '1px solid #FFD700' }}
+                        />
+                      </div>
+                      <button 
+                        className="btn btn-sm text-white fw-bold w-100" 
+                        style={{ backgroundColor: '#4A1525', border: '1.5px solid #FFB300' }}
+                        onClick={handleImportCSV}
+                      >
+                        <i className="bi bi-file-earmark-arrow-up-fill me-1"></i> Upload & Import CSV
+                      </button>
+                      <small className="text-secondary" style={{ fontSize: '0.72rem', lineHeight: '1.3' }}>
+                        <strong>Products CSV:</strong> name, price, category, stock, unit, description<br />
+                        <strong>Customers CSV:</strong> name, email, password
+                      </small>
                     </div>
                   </div>
                 </div>

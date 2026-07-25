@@ -50,7 +50,15 @@ const Login = ({ isMaintenanceMode = false }: { isMaintenanceMode?: boolean }) =
   };
 
   return (
-    <div style={{ backgroundColor: '#FDF6ED', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div style={{
+      backgroundImage: "linear-gradient(rgba(253, 246, 237, 0.85), rgba(253, 246, 237, 0.85)), url('/images/sp2.png')",
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundAttachment: 'fixed',
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column'
+    }}>
       <Header />
       <div className="container py-5 flex-grow-1 d-flex justify-content-center align-items-center">
         <div className="card shadow-lg border-0 rounded-4" style={{ maxWidth: '450px', width: '100%', overflow: 'hidden' }}>

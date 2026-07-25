@@ -42,9 +42,17 @@ const Contact: React.FC = () => {
   };
 
   return (
-    <div style={{ backgroundColor: '#FDF6ED', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div style={{
+      backgroundImage: "linear-gradient(rgba(253, 246, 237, 0.85), rgba(253, 246, 237, 0.85)), url('/images/sp2.png')",
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundAttachment: 'fixed',
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column'
+    }}>
       <Header />
-      
+
       <Banner page={t('nav_contact')} path={[t('nav_home'), t('nav_contact')]} />
 
       <div className="container py-5 flex-grow-1 position-relative" style={{ zIndex: 2 }}>
@@ -104,6 +112,49 @@ const Contact: React.FC = () => {
                     contact@ramasala.com<br />
                     support@ramasala.com
                   </p>
+                </div>
+              </div>
+
+              {/* Developers Card */}
+              <div className="p-3 bg-white shadow-sm rounded-4 border-start border-4" style={{ borderColor: '#aa1a31' }}>
+                <div className="d-flex align-items-start mb-3">
+                  <div className="p-2 bg-light rounded-circle text-danger me-3" style={{ height: 'fit-content' }}>
+                    <i className="bi bi-code-slash fs-4" style={{ color: '#aa1a31' }}></i>
+                  </div>
+                  <div>
+                    <h5 className="fw-bold mb-1" style={{ color: '#4A1525' }}>Technical Developers</h5>
+                    <p className="text-muted mb-0 small" style={{ fontSize: '0.82rem' }}>
+                      RA Masala Dev Team •{' '}
+                      <a href="mailto:rohitdongale3@gmail.com" className="text-decoration-none fw-semibold dev-email-link">
+                        rohitdongale3@gmail.com
+                      </a>
+                      {' | '}
+                      <a href="mailto:akashmahadik259@gmail.com" className="text-decoration-none fw-semibold dev-email-link">
+                        akashmahadik259@gmail.com
+                      </a>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="row g-2 mt-1">
+                  <div className="col-6">
+                    <div className="p-2 rounded bg-light border text-center">
+                      <strong className="d-block small text-dark">Rohit Dongale</strong>
+                      <span className="text-secondary d-block mb-2" style={{ fontSize: '0.75rem' }}>UI/UX Engineer</span>
+                      <a href="https://rohit-kai.github.io/cyber-portfolio/" target="_blank" rel="noopener noreferrer" className="btn btn-sm text-white w-100 py-1 fw-semibold" style={{ backgroundColor: '#aa1a31', fontSize: '0.75rem' }}>
+                        <i className="bi bi-briefcase me-1"></i> Visit Portfolio
+                      </a>
+                    </div>
+                  </div>
+                  <div className="col-6">
+                    <div className="p-2 rounded bg-light border text-center">
+                      <strong className="d-block small text-dark">Akash Mahadik</strong>
+                      <span className="text-secondary d-block mb-2" style={{ fontSize: '0.75rem' }}>Backend Architect</span>
+                      <a href="https://akash-mahadik.github.io/portfolio1/" target="_blank" rel="noopener noreferrer" className="btn btn-sm text-white w-100 py-1 fw-semibold" style={{ backgroundColor: '#aa1a31', fontSize: '0.75rem' }}>
+                        <i className="bi bi-briefcase me-1"></i> Visit Portfolio
+                      </a>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -197,8 +248,15 @@ const Contact: React.FC = () => {
         .card:hover {
           box-shadow: 0 10px 25px rgba(0,0,0,0.08) !important;
         }
+        .dev-email-link {
+          color: #aa1a31 !important;
+          text-decoration: underline !important;
+        }
+        .dev-email-link:hover {
+          color: #D2691E !important;
+        }
       `}</style>
-      
+
       <Footer />
     </div>
   );

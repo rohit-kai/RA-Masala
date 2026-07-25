@@ -3,6 +3,7 @@ import Home from "./views/Home"
 import Welcome from "./views/Welcome"
 import OurStory from "./views/OurStory"
 import Brands from "./views/Brands"
+import BrandDetail from "./views/BrandDetail"
 import Recipes from "./views/Recipes"
 import BreakfastRecipes from "./views/recipescate/BreakfastRecipes"
 import DessertRecipes from "./views/recipescate/DessertRecipes"
@@ -59,6 +60,17 @@ function AppContent() {
     return () => clearInterval(interval);
   }, []);
 
+  // Prevent back-forward cache restoration security bypasses
+  useEffect(() => {
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        window.location.reload();
+      }
+    };
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
+  }, []);
+
   if (isMaintenance && user?.role !== 'admin') {
     return (
       <Routes>
@@ -73,6 +85,7 @@ function AppContent() {
       <Route path={RoutePaths.home} element={<Home />}></Route>
       <Route path={RoutePaths.ourstory} element={<OurStory />}></Route>
       <Route path={RoutePaths.brands} element={<Brands />}></Route>
+      <Route path={RoutePaths.brandDetail} element={<BrandDetail />}></Route>
       <Route path={RoutePaths.contact} element={<Contact />}></Route>
       <Route path={RoutePaths.recipes} element={<Recipes />}></Route>
       <Route path={RoutePaths.breakfastRecipes} element={<BreakfastRecipes />}></Route>

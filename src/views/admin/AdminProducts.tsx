@@ -40,6 +40,8 @@ const AdminProducts = () => {
   const [price, setPrice] = useState(0);
   const [stock, setStock] = useState(0);
   const [category, setCategory] = useState('Masale');
+  const [brand, setBrand] = useState('masale');
+  const [subCategory, setSubCategory] = useState('');
   const [unit, setUnit] = useState('250g');
   const [image, setImage] = useState('/images/ra_waa.png');
 
@@ -49,6 +51,8 @@ const AdminProducts = () => {
     setPrice(0);
     setStock(0);
     setCategory('Masale');
+    setBrand('masale');
+    setSubCategory('');
     setUnit('250g');
     setImage('/images/ra_waa.png');
     setIsAdding(false);
@@ -68,7 +72,9 @@ const AdminProducts = () => {
       stock,
       category,
       unit,
-      image: image || '/images/ra_waa.png'
+      image: image || '/images/ra_waa.png',
+      brand,
+      subCategory
     });
     Swal.fire('Success', 'Product added successfully!', 'success');
     resetForm();
@@ -83,6 +89,8 @@ const AdminProducts = () => {
     setCategory(prod.category);
     setUnit(prod.unit);
     setImage(prod.image || '/images/ra_waa.png');
+    setBrand(prod.brand || 'masale');
+    setSubCategory(prod.subCategory || '');
   };
 
   const handleUpdate = (e: React.FormEvent) => {
@@ -96,7 +104,9 @@ const AdminProducts = () => {
       stock,
       category,
       unit,
-      image
+      image,
+      brand,
+      subCategory
     });
     Swal.fire('Success', 'Product updated successfully!', 'success');
     resetForm();
@@ -169,7 +179,15 @@ const AdminProducts = () => {
                 </div>
                 <div className="col-md-3">
                   <label className="form-label text-muted fw-semibold">Category</label>
-                  <select className="form-select" value={category} onChange={(e) => setCategory(e.target.value)}>
+                  <select className="form-select" value={category} onChange={(e) => {
+                    const cat = e.target.value;
+                    setCategory(cat);
+                    if (cat === 'Masale') setBrand('masale');
+                    else if (cat === 'Namkeen') setBrand('namkeen');
+                    else if (cat === 'Spice Home') setBrand('spicehome');
+                    else if (cat === 'Chaha') setBrand('chaha');
+                    else if (cat === 'Agro') setBrand('agro');
+                  }}>
                     <option value="Masale">Masale</option>
                     <option value="Namkeen">Namkeen</option>
                     <option value="Spice Home">Spice Home</option>
@@ -177,6 +195,32 @@ const AdminProducts = () => {
                     <option value="Agro">Agro</option>
                   </select>
                 </div>
+                <div className="col-md-3">
+                  <label className="form-label text-muted fw-semibold">Associated Brand</label>
+                  <select className="form-select" value={brand} onChange={(e) => setBrand(e.target.value)}>
+                    <option value="masale">RA Masale</option>
+                    <option value="namkeen">RA Namkeen</option>
+                    <option value="spicehome">RA Spice Home</option>
+                    <option value="chaha">RA Chaha</option>
+                    <option value="agro">RA Agro</option>
+                  </select>
+                </div>
+                {brand === 'spicehome' && (
+                  <div className="col-md-3">
+                    <label className="form-label text-muted fw-semibold">Spice Subcategory</label>
+                    <select className="form-select" value={subCategory} onChange={(e) => setSubCategory(e.target.value)}>
+                      <option value="">None</option>
+                      <option value="Ground Spices">Ground Spices</option>
+                      <option value="Pickles & Papad">Pickles & Papad</option>
+                      <option value="Ready Mix Spices">Ready Mix Spices</option>
+                      <option value="Seasonal Range">Seasonal Range</option>
+                      <option value="Chutneys">Chutneys</option>
+                      <option value="Kitchen Favourites">Kitchen Favourites</option>
+                      <option value="Premium Range">Premium Range</option>
+                      <option value="Dessert">Dessert</option>
+                    </select>
+                  </div>
+                )}
                 <div className="col-md-3">
                   <label className="form-label text-muted fw-semibold">Unit Size</label>
                   <input type="text" className="form-control" placeholder="250g, 100g, etc." required value={unit} onChange={(e) => setUnit(e.target.value)} />
@@ -295,7 +339,7 @@ const AdminProducts = () => {
                           </div>
                           <div>
                             <strong className="text-dark d-block">{prod.name}</strong>
-                            <small className="text-muted">{prod.unit} • {prod.description.substring(0, 50)}...</small>
+                            <small className="text-muted">{prod.unit} • Brand: <strong className="text-capitalize">{prod.brand || 'masale'}</strong> • {prod.description.substring(0, 50)}...</small>
                           </div>
                         </div>
                       </td>

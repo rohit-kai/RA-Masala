@@ -53,7 +53,15 @@ const Cart = () => {
   };
 
   return (
-    <div style={{ backgroundColor: '#FDF6ED', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div style={{
+      backgroundImage: "linear-gradient(rgba(253, 246, 237, 0.85), rgba(253, 246, 237, 0.85)), url('/images/sp2.png')",
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundAttachment: 'fixed',
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column'
+    }}>
       <Header />
       <div className="container py-5 flex-grow-1">
         <h2 className="mb-4 text-start" style={{ fontFamily: 'serif', color: '#4A1525', fontWeight: 'bold', borderBottom: '3px solid #FFB300', paddingBottom: '10px' }}>
@@ -102,12 +110,12 @@ const Cart = () => {
                           <td className="text-center fw-semibold">₹{item.price}</td>
                           <td className="text-center">
                             <div className="d-inline-flex align-items-center border rounded-3 p-1">
-                              <button 
+                              <button
                                 className="btn btn-sm btn-link text-decoration-none px-2 py-0 fs-5 text-dark fw-bold"
                                 onClick={() => updateQuantity(item.id, item.quantity - 1)}
                               >-</button>
                               <span className="px-2 fw-bold">{item.quantity}</span>
-                              <button 
+                              <button
                                 className="btn btn-sm btn-link text-decoration-none px-2 py-0 fs-5 text-dark fw-bold"
                                 onClick={() => updateQuantity(item.id, item.quantity + 1)}
                               >+</button>
@@ -115,7 +123,7 @@ const Cart = () => {
                           </td>
                           <td className="text-end fw-bold text-dark">₹{item.price * item.quantity}</td>
                           <td className="text-end">
-                            <button 
+                            <button
                               className="btn btn-sm text-danger"
                               onClick={() => removeFromCart(item.id)}
                             >
@@ -143,11 +151,11 @@ const Cart = () => {
               <div className="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
                 <h5 className="mb-4" style={{ fontFamily: 'serif', color: '#4A1525', fontWeight: 'bold' }}>Apply Coupon</h5>
                 <form onSubmit={handleApplyPromo} className="d-flex gap-2">
-                  <input 
-                    type="text" 
-                    className="form-control" 
-                    placeholder="Enter Code (e.g. WELCOME15)" 
-                    value={promoCode} 
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Enter Code (e.g. WELCOME15)"
+                    value={promoCode}
                     onChange={(e) => setPromoCode(e.target.value)}
                   />
                   <button type="submit" className="btn text-white px-3 fw-bold" style={{ backgroundColor: '#4A1525' }}>
@@ -188,7 +196,7 @@ const Cart = () => {
                   <span className="fw-bold fs-5" style={{ color: '#4A1525' }}>Grand Total</span>
                   <span className="fw-bold fs-4" style={{ color: '#aa1a31' }}>₹{finalTotal.toFixed(1)}</span>
                 </div>
-                <button 
+                <button
                   className="btn w-100 py-3 text-white fw-bold border-0 rounded-3 shadow"
                   style={{ background: 'linear-gradient(90deg, #800c1e 0%, #aa1a31 100%)' }}
                   onClick={handleProceed}

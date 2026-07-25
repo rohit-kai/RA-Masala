@@ -7,7 +7,9 @@ const ProductSchema = new mongoose.Schema({
   price: { type: Number, required: true },
   stock: { type: Number, required: true },
   category: { type: String, required: true },
-  unit: { type: String, required: true }
+  unit: { type: String, required: true },
+  brand: { type: String, default: 'masale' },
+  subCategory: { type: String, default: '' }
 }, { timestamps: true });
 
 export default mongoose.model('Product', ProductSchema);

@@ -4,6 +4,7 @@ import Banner from '../components/Banner';
 import Footer from './includes/Footer';
 import { useLanguage } from '../context/LanguageContext';
 import { getAssetPath } from '../Utils/imageHelper';
+import { Link } from 'react-router-dom';
 
 const Brands: React.FC = () => {
   const { t } = useLanguage();
@@ -62,7 +63,14 @@ const Brands: React.FC = () => {
 
       <Banner page={t('nav_brands')} path={[t('nav_home'), t('nav_brands')]} />
 
-      <div className="brands-page-wrapper py-5" style={{ backgroundColor: '#FDF6ED', minHeight: '80vh', position: 'relative' }}>
+      <div className="brands-page-wrapper py-5" style={{
+        backgroundImage: "linear-gradient(rgba(253, 246, 237, 0.85), rgba(253, 246, 237, 0.85)), url('/images/sp2.png')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+        minHeight: '80vh',
+        position: 'relative'
+      }}>
         <div className="traditional-pattern-overlay"></div>
 
         <div className="container px-3 px-lg-5 position-relative" style={{ zIndex: 2 }}>
@@ -75,7 +83,7 @@ const Brands: React.FC = () => {
                 borderRadius: '50%'
               }}>
                 <img
-                  src={getAssetPath('images/since_1972_torch.png')}
+                  src={getAssetPath('images/since_1972_torch.jpg')}
                   alt="RA Masala Torch Since 1972"
                   className="img-fluid"
                   style={{ maxHeight: '380px', filter: 'drop-shadow(0 8px 20px rgba(0,0,0,0.25))' }}
@@ -172,7 +180,7 @@ const Brands: React.FC = () => {
                   </p>
 
                   {/* Action Button */}
-                  <button className="brand-action-btn w-100" style={{
+                  <Link to={`/brand/${brand.id}`} className="brand-action-btn w-100 text-center text-decoration-none d-block" style={{
                     backgroundColor: '#4A1525',
                     color: '#FFD700',
                     border: '1px solid #FFD700',
@@ -184,7 +192,7 @@ const Brands: React.FC = () => {
                   }}>
                     <i className="bi bi-box-seam me-2"></i>
                     {t('brands_more_products')}
-                  </button>
+                  </Link>
                 </div>
               </div>
             ))}
@@ -211,9 +219,9 @@ const Brands: React.FC = () => {
                       <h4 className="fw-bold mb-3 text-start" style={{ color: '#4A1525', fontFamily: 'serif' }}>
                         Brand Range Showcase
                       </h4>
-                      <img 
-                        src={getAssetPath('images/brand_products_showcase.png')} 
-                        alt="RA Brands Products Showcase" 
+                      <img
+                        src={getAssetPath('images/brand_products_showcase.png')}
+                        alt="RA Brands Products Showcase"
                         className="img-fluid rounded w-100"
                         style={{ maxHeight: '850px', objectFit: 'contain' }}
                       />
@@ -224,9 +232,9 @@ const Brands: React.FC = () => {
                       <h4 className="fw-bold mb-3 text-start" style={{ color: '#4A1525', fontFamily: 'serif' }}>
                         Exhibition Showroom Showcase
                       </h4>
-                      <img 
-                        src={getAssetPath('images/brand_showroom_display.jpg')} 
-                        alt="RA Brands Showroom Display" 
+                      <img
+                        src={getAssetPath('images/brand_showroom_display.jpg')}
+                        alt="RA Brands Showroom Display"
                         className="img-fluid rounded w-100"
                         style={{ maxHeight: '850px', objectFit: 'contain' }}
                       />
