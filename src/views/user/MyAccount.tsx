@@ -5,6 +5,7 @@ import Header from '../includes/Header';
 import Footer from '../includes/Footer';
 import RoutePaths from '../../config';
 import Swal from 'sweetalert2';
+import { getAssetPath } from '../../Utils/imageHelper';
 
 const MyAccount = () => {
   const { user, orders, updateProfile, logout, tickets, addTicket, reviews, addReview, products, changePassword } = useAuth();
@@ -177,7 +178,7 @@ const MyAccount = () => {
 
   return (
     <div style={{
-      backgroundImage: "linear-gradient(rgba(253, 246, 237, 0.85), rgba(253, 246, 237, 0.85)), url('/images/sp2.png')",
+      backgroundImage: `linear-gradient(rgba(253, 246, 237, 0.85), rgba(253, 246, 237, 0.85)), url('${getAssetPath('images/sp2.png')}')`,
       backgroundSize: 'cover',
       backgroundPosition: 'center',
       backgroundAttachment: 'fixed',

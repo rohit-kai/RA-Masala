@@ -5,6 +5,7 @@ import Header from '../includes/Header';
 import Footer from '../includes/Footer';
 import RoutePaths from '../../config';
 import Swal from 'sweetalert2';
+import { getAssetPath } from '../../Utils/imageHelper';
 
 const Login = ({ isMaintenanceMode = false }: { isMaintenanceMode?: boolean }) => {
   const [email, setEmail] = useState('');
@@ -51,7 +52,7 @@ const Login = ({ isMaintenanceMode = false }: { isMaintenanceMode?: boolean }) =
 
   return (
     <div style={{
-      backgroundImage: "linear-gradient(rgba(253, 246, 237, 0.85), rgba(253, 246, 237, 0.85)), url('/images/sp2.png')",
+      backgroundImage: `linear-gradient(rgba(253, 246, 237, 0.85), rgba(253, 246, 237, 0.85)), url('${getAssetPath('images/sp2.png')}')`,
       backgroundSize: 'cover',
       backgroundPosition: 'center',
       backgroundAttachment: 'fixed',

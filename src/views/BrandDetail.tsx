@@ -133,7 +133,7 @@ const BrandDetail: React.FC = () => {
       <Banner page={currentBrand.title} path={[t('nav_home'), t('nav_brands'), currentBrand.title]} />
 
       <div className="brand-detail-page py-5" style={{
-        backgroundImage: "linear-gradient(rgba(253, 246, 237, 0.94), rgba(253, 246, 237, 0.94)), url('/images/sp2.png')",
+        backgroundImage: `linear-gradient(rgba(253, 246, 237, 0.94), rgba(253, 246, 237, 0.94)), url('${getAssetPath('images/sp2.png')}')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed',

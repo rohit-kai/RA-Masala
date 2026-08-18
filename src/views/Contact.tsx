@@ -6,6 +6,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import Swal from 'sweetalert2';
 import axios from 'axios';
+import { getAssetPath } from '../Utils/imageHelper';
 
 const Contact: React.FC = () => {
   const { t } = useLanguage();
@@ -43,7 +44,7 @@ const Contact: React.FC = () => {
 
   return (
     <div style={{
-      backgroundImage: "linear-gradient(rgba(253, 246, 237, 0.85), rgba(253, 246, 237, 0.85)), url('/images/sp2.png')",
+      backgroundImage: `linear-gradient(rgba(253, 246, 237, 0.85), rgba(253, 246, 237, 0.85)), url('${getAssetPath('images/sp2.png')}')`,
       backgroundSize: 'cover',
       backgroundPosition: 'center',
       backgroundAttachment: 'fixed',
@@ -78,12 +79,21 @@ const Contact: React.FC = () => {
                   <i className="bi bi-geo-alt-fill fs-4" style={{ color: '#aa1a31' }}></i>
                 </div>
                 <div>
-                  <h5 className="fw-bold mb-1" style={{ color: '#4A1525' }}>Corporate Office</h5>
-                  <p className="text-muted mb-0 small">
-                    RA Masala Private Limited<br />
-                    abcd ichalkaranji,<br />
-                    Maharashtra, India - 411048
-                  </p>
+                  <h5 className="fw-bold mb-1" style={{ color: '#4A1525' }}>Our Locations</h5>
+                  <div className="text-muted mb-0 small">
+                    <p className="mb-1"><strong>K-At: Unit No. 1</strong><br />
+                      Gat No: 1814/A, Sangli-Tasgaon Road,<br />
+                      A/P Kavathe Ekand - 416307,<br />
+                      Tal. Tasgaon, Dist. Sangli (Mah), India</p>
+                    <p className="mb-1"><strong>S-At: Unit No. 2</strong><br />
+                      C.S. No: 2030/2031, Navjeevan Nagar,<br />
+                      Near Sanjay Industrial Estate,<br />
+                      Sangli - 416406, Dist. Sangli (Mah), India</p>
+                    <p className="mb-0"><strong>M-At: Unit No. 3</strong><br />
+                      Gat No: 24/25, Madhavnagar,<br />
+                      Near Sanjay Industrial Estate,<br />
+                      Sangli - 416406, Dist. Sangli (Mah), India</p>
+                  </div>
                 </div>
               </div>
 
@@ -95,7 +105,8 @@ const Contact: React.FC = () => {
                 <div>
                   <h5 className="fw-bold mb-1" style={{ color: '#4A1525' }}>Call / WhatsApp</h5>
                   <p className="text-muted mb-0 small">
-                    +91 74447749962(Customer Support)<br />
+                    Customer Care No: 7518166686<br />
+                    +91 9503993999 (Customer Support)<br />
                     Mon – Sat, 9:00 AM – 6:00 PM IST
                   </p>
                 </div>
@@ -109,8 +120,8 @@ const Contact: React.FC = () => {
                 <div>
                   <h5 className="fw-bold mb-1" style={{ color: '#4A1525' }}>Email Address</h5>
                   <p className="text-muted mb-0 small">
-                    contact@ramasala.com<br />
-                    support@ramasala.com
+                    ramasale@ymail.com<br />
+                    RAMASALE.6686@GMAIL.COM
                   </p>
                 </div>
               </div>
@@ -156,6 +167,26 @@ const Contact: React.FC = () => {
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Google Maps Card */}
+            <div className="p-3 bg-white shadow-sm rounded-4 border-start border-4" style={{ borderColor: '#4A1525' }}>
+              <div className="d-flex align-items-center mb-2">
+                <div className="p-2 bg-light rounded-circle text-danger me-3" style={{ height: 'fit-content' }}>
+                  <i className="bi bi-map-fill fs-5" style={{ color: '#aa1a31' }}></i>
+                </div>
+                <h5 className="fw-bold mb-0" style={{ color: '#4A1525' }}>Find Us on Google Maps</h5>
+              </div>
+              <div className="mt-2 rounded-3 overflow-hidden border" style={{ height: 260 }}>
+                <iframe
+                  title="RA Masala on Google Maps"
+                  src="https://www.google.com/maps?cid=2994242596398159361&output=embed"
+                  style={{ border: 0, width: '100%', height: '100%' }}
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                ></iframe>
               </div>
             </div>
           </div>

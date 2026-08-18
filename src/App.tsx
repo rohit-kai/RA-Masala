@@ -13,6 +13,7 @@ import LunchRecipes from "./views/recipescate/LunchRecipes"
 import ReadyMixRecipes from "./views/recipescate/ReadyMixRecipes"
 import RoutePaths from "./config"
 import Contact from "./views/Contact"
+import PrivacyPolicy from "./views/PrivacyPolicy"
 
 // Auth, Cart & Wishlist Contexts
 import { AuthProvider } from "./context/AuthContext"
@@ -87,6 +88,7 @@ function AppContent() {
       <Route path={RoutePaths.brands} element={<Brands />}></Route>
       <Route path={RoutePaths.brandDetail} element={<BrandDetail />}></Route>
       <Route path={RoutePaths.contact} element={<Contact />}></Route>
+      <Route path={RoutePaths.privacyPolicy} element={<PrivacyPolicy />}></Route>
       <Route path={RoutePaths.recipes} element={<Recipes />}></Route>
       <Route path={RoutePaths.breakfastRecipes} element={<BreakfastRecipes />}></Route>
       <Route path={RoutePaths.dessertRecipes} element={<DessertRecipes />}></Route>

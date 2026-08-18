@@ -13,6 +13,7 @@ export interface User {
   city?: string;
   zip?: string;
   isActive?: boolean;
+  token?: string;
 }
 
 export interface OrderItem {
@@ -33,6 +34,7 @@ export interface Order {
   subtotal: number;
   tax: number;
   shipping: number;
+  discount?: number;
   total: number;
   date: string;
   createdAt?: string;
@@ -176,7 +178,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Fetch all databases from MongoDB on mount
   const loadData = async () => {
     try {
-      // Products
+      // Determine role from persisted session (state may not be updated yet during login)
+      let currentUser: User | null = null;
+      try {
+        const raw = localStorage.getItem('ra_current_user');
+        currentUser = raw ? JSON.parse(raw) : null;
+      } catch (e) {
+        // ignore malformed storage
+      }
+
+      const isAdmin = currentUser?.role === 'admin';
+
+      // Products (public)
       const prodRes = await axios.get('/api/products');
       // Map MongoDB _id string to numeric id or just store both for compatibility
       const mappedProds = prodRes.data.map((p: any) => ({
@@ -189,50 +202,71 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setProducts(INITIAL_PRODUCTS);
       }
 
-      // Orders
-      const orderRes = await axios.get('/api/orders');
-      setOrders(orderRes.data);
-
-      // Users
-      const userRes = await axios.get('/api/users');
-      const mappedUsers = userRes.data.map((u: any) => ({
-        ...u,
-        id: u._id
-      }));
-      setUsers(mappedUsers);
-
-      // Tickets
-      const ticketRes = await axios.get('/api/tickets');
-      const mappedTickets = ticketRes.data.map((t: any) => ({
-        ...t,
-        id: t._id,
-        date: new Date(t.createdAt).toISOString().split('T')[0]
-      }));
-      setTickets(mappedTickets);
-
-      // Payments
-      const payRes = await axios.get('/api/payments');
-      setPayments(payRes.data);
-
-      // Shipping
-      const shipRes = await axios.get('/api/shipping');
-      setShippingList(shipRes.data);
-
-      // Discounts
-      const discRes = await axios.get('/api/discounts');
-      setDiscounts(discRes.data);
-
-      // Reviews
+      // Reviews (public - shown on product pages)
       const revRes = await axios.get('/api/reviews');
       setReviews(revRes.data);
 
-      // Inventory Logs
-      const logRes = await axios.get('/api/inventory-logs');
-      setInventoryLogs(logRes.data);
+      // Admin-only data
+      if (isAdmin && currentUser?.token) {
+        const orderRes = await axios.get('/api/orders');
+        setOrders(orderRes.data.map((o: any) => ({
+          ...o,
+          id: o.id || o._id,
+          date: o.date || (o.createdAt ? new Date(o.createdAt).toISOString().split('T')[0] : '')
+        })));
 
-      // Security Logs
-      const secRes = await axios.get('/api/security-logs');
-      setSecurityLogs(secRes.data);
+        const userRes = await axios.get('/api/users');
+        const mappedUsers = userRes.data.map((u: any) => ({
+          ...u,
+          id: u._id
+        }));
+        setUsers(mappedUsers);
+
+        const ticketRes = await axios.get('/api/tickets');
+        const mappedTickets = ticketRes.data.map((t: any) => ({
+          ...t,
+          id: t._id,
+          date: new Date(t.createdAt).toISOString().split('T')[0]
+        }));
+        setTickets(mappedTickets);
+
+        const payRes = await axios.get('/api/payments');
+        setPayments(payRes.data);
+
+        const shipRes = await axios.get('/api/shipping');
+        setShippingList(shipRes.data);
+
+        const discRes = await axios.get('/api/discounts');
+        setDiscounts(discRes.data);
+
+        const logRes = await axios.get('/api/inventory-logs');
+        setInventoryLogs(logRes.data);
+
+        const secRes = await axios.get('/api/security-logs');
+        setSecurityLogs(secRes.data);
+      } else if (currentUser?.token) {
+        // Customer: only their own orders and tickets
+        try {
+          const myOrders = await axios.get('/api/my/orders');
+          setOrders(myOrders.data.map((o: any) => ({
+            ...o,
+            id: o.id || o._id,
+            date: o.date || (o.createdAt ? new Date(o.createdAt).toISOString().split('T')[0] : '')
+          })));
+        } catch (e) {
+          console.error('Error fetching my orders:', e);
+        }
+        try {
+          const myTickets = await axios.get('/api/my/tickets');
+          setTickets(myTickets.data.map((t: any) => ({
+            ...t,
+            id: t._id,
+            date: new Date(t.createdAt).toISOString().split('T')[0]
+          })));
+        } catch (e) {
+          console.error('Error fetching my tickets:', e);
+        }
+      }
     } catch (error) {
       console.error('Error fetching MongoDB data:', error);
     }
@@ -289,6 +323,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const logout = () => {
+    // Invalidate the session token on the server (best effort)
+    axios.post('/api/users/logout').catch((err) => {
+      console.error('Error logging out on server:', err);
+    });
     setUser(null);
     localStorage.removeItem('ra_current_user');
     localStorage.removeItem('ra_cart');

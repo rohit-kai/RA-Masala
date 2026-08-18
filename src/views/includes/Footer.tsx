@@ -63,11 +63,11 @@ const Footer: FC = () => {
                                 </div>
                                 <div className="d-flex align-items-center">
                                     <i className="bi bi-telephone-fill me-2 fs-5" style={{ color: '#FFD700' }}></i>
-                                    <span>+91 7447749962</span>
+                                    <span>+91 9503993999</span>
                                 </div>
-                                <div className="d-flex align-items-center">
+                                <div className="d-flex align-items-start">
                                     <i className="bi bi-envelope-fill me-2 fs-5" style={{ color: '#FFD700' }}></i>
-                                    <span>contact@ramasala.com</span>
+                                    <span>ramasale@ymail.com<br />RAMASALE.6686@GMAIL.COM</span>
                                 </div>
                             </div>
                             <div className="mt-4 traditional-social-wrapper">
@@ -86,7 +86,7 @@ const Footer: FC = () => {
                                 <Link to={RoutePaths.ourstory} className="text-white text-decoration-none py-1">{t('nav_our_story')}</Link>
                                 <Link to={RoutePaths.brands} className="text-white text-decoration-none py-1">{t('nav_brands')}</Link>
                                 <Link to={RoutePaths.contact} className="text-white text-decoration-none py-1">{t('nav_contact')}</Link>
-                                <a href="#" className="text-white text-decoration-none py-1">Privacy Policy</a>
+                                <Link to={RoutePaths.privacyPolicy} className="text-white text-decoration-none py-1">Privacy Policy</Link>
                                 
                             </div>
                         </div>

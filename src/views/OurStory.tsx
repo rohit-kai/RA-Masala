@@ -16,7 +16,7 @@ const OurStory: React.FC = () => {
 
       {/* Main Story Container with subtle traditional background pattern */}
       <div className="our-story-wrapper py-5" style={{
-        backgroundImage: "linear-gradient(rgba(253, 246, 237, 0.85), rgba(253, 246, 237, 0.85)), url('/images/sp2.png')",
+        backgroundImage: `linear-gradient(rgba(253, 246, 237, 0.85), rgba(253, 246, 237, 0.85)), url('${getAssetPath('images/sp2.png')}')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed',

@@ -26,6 +26,7 @@ const RoutePaths = {
     passwordReset : '/reset-password',
     productView : '/product/:id',
     brandDetail : '/brand/:brandId',
+    privacyPolicy: '/privacy-policy',
 
     // USERS PATHS
 

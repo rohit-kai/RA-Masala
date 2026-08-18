@@ -1,6 +1,7 @@
-import React, { useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import axios from 'axios';
 import Header from '../includes/Header';
 import Footer from '../includes/Footer';
 import RoutePaths from '../../config';
@@ -10,9 +11,26 @@ const Invoice = () => {
   const { orderId } = useParams<{ orderId: string }>();
   const { orders } = useAuth();
   const invoiceRef = useRef<HTMLDivElement>(null);
+  const [fetchedOrder, setFetchedOrder] = useState<any>(null);
+
+  // Fetch the order directly so invoices work for guests and customers alike
+  useEffect(() => {
+    const fetchOrder = async () => {
+      try {
+        const res = await axios.get(`/api/orders/${orderId}`);
+        setFetchedOrder({
+          ...res.data,
+          date: res.data.date || (res.data.createdAt ? new Date(res.data.createdAt).toISOString().split('T')[0] : '')
+        });
+      } catch (err) {
+        console.error('Error fetching order:', err);
+      }
+    };
+    fetchOrder();
+  }, [orderId]);
 
   // Find order
-  const order = orders.find(o => o.id === orderId);
+  const order = fetchedOrder || orders.find(o => o.id === orderId);
 
   if (!order) {
     return (
@@ -125,7 +143,7 @@ const Invoice = () => {
                 </tr>
               </thead>
               <tbody>
-                {order.items.map((item, idx) => (
+                {order.items.map((item: any, idx: number) => (
                   <tr key={item.id}>
                     <td>{idx + 1}</td>
                     <td>

@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 import Razorpay from 'razorpay';
 
 // Import Models
@@ -56,7 +57,98 @@ const PORT = process.env.PORT || 5000;
 let isMaintenanceMode = false;
 
 app.use(cors());
+// Capture the RAW body for the payment webhook so signatures are verified over the exact bytes sent.
+app.use('/api/payments/webhook', express.raw({ type: '*/*' }));
 app.use(express.json());
+
+// True only when real (non-placeholder) Razorpay credentials are configured.
+function isRealGateway(cfg) {
+  return !!cfg &&
+    !!cfg.gatewayKeyId && !!cfg.gatewayKeySecret &&
+    !cfg.gatewayKeyId.includes('xxxx') && !cfg.gatewayKeyId.includes('mock') &&
+    !cfg.gatewayKeySecret.includes('xxxx') && !cfg.gatewayKeySecret.includes('mock');
+}
+
+// Idempotent helper to mark a payment + order as paid (safe to call multiple times).
+async function markOrderPaid(payment, transactionId) {
+  const wasPending = payment.status !== 'Completed';
+  payment.status = 'Completed';
+  payment.transactionId = transactionId || payment.transactionId || 'TXN-' + Math.floor(100000 + Math.random() * 900000);
+  await payment.save();
+
+  const order = await Order.findOne({ id: payment.orderId });
+  if (order && order.status === 'Pending') {
+    order.status = 'Processing';
+    await order.save();
+  }
+  return wasPending;
+}
+
+// ---------- Auth Helpers ----------
+const isHashed = (pw) => pw && /^\$2[aby]\$/.test(pw);
+
+function generateToken() {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+function toSafeUser(user) {
+  const obj = user && user.toObject ? user.toObject() : (user || {});
+  const { password, token, ...safe } = obj;
+  if (safe._id) {
+    safe.id = safe._id.toString();
+  }
+  return safe;
+}
+
+function getBearerToken(req) {
+  const header = req.headers.authorization || '';
+  return header.startsWith('Bearer ') ? header.slice(7) : null;
+}
+
+async function requireAuth(req, res, next) {
+  try {
+    const token = getBearerToken(req);
+    if (!token) return res.status(401).json({ message: 'Authentication required' });
+    const user = await User.findOne({ token });
+    if (!user) return res.status(401).json({ message: 'Invalid or expired session' });
+    req.user = user;
+    next();
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Error verifying session' });
+  }
+}
+
+async function requireAdmin(req, res, next) {
+  try {
+    const token = getBearerToken(req);
+    if (!token) return res.status(401).json({ message: 'Authentication required' });
+    const user = await User.findOne({ token });
+    if (!user) return res.status(401).json({ message: 'Invalid or expired session' });
+    if (user.role !== 'admin') return res.status(403).json({ message: 'Admin access required' });
+    req.user = user;
+    next();
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Error verifying session' });
+  }
+}
+
+async function verifyPassword(user, password) {
+  // Returns true + handles auto-migration of legacy plaintext passwords to bcrypt hashes.
+  try {
+    if (isHashed(user.password)) {
+      return await bcrypt.compare(password, user.password);
+    }
+    const ok = password === user.password;
+    if (ok) {
+      user.password = password; // pre-save hook hashes it
+      await user.save();
+    }
+    return ok;
+  } catch (error) {
+    console.error('Error verifying password:', error);
+    return false;
+  }
+}
 
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI)
@@ -101,7 +193,10 @@ async function seedDatabase() {
         { name: 'Sunita Deshmukh', email: 'sunita@gmail.com', role: 'customer', phone: '9822334455', address: '45, Ghati Lane', city: 'Pune', zip: '411002', password: 'user123' },
         { name: 'RA Masala Admin', email: 'admin@ramasala.com', role: 'admin', password: 'admin123' }
       ];
-      await User.insertMany(initialUsers);
+      // Use create() so the bcrypt pre-save hook hashes the passwords
+      for (const user of initialUsers) {
+        await User.create(user);
+      }
       console.log('Default users seeded');
     }
 
@@ -135,18 +230,23 @@ async function seedDatabase() {
 // --- API ROUTES ---
 
 // 1. Users API
-app.get('/api/users', async (req, res) => {
-  const users = await User.find();
-  res.json(users);
+app.get('/api/users', requireAdmin, async (req, res) => {
+  try {
+    const users = await User.find();
+    res.json(users.map(toSafeUser));
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Error fetching users' });
+  }
 });
 
 app.post('/api/users/login', async (req, res) => {
   const { email, password } = req.body;
-  const normalizedEmail = email.toLowerCase();
+  const normalizedEmail = (email || '').toLowerCase();
+  const enteredPassword = password || '';
 
   // Encrypted Default Admin Credentials check
   const emailHash = crypto.createHash('sha256').update(normalizedEmail).digest('hex');
-  const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
+  const passwordHash = crypto.createHash('sha256').update(enteredPassword).digest('hex');
 
   const adminEmailHash = process.env.ADMIN_EMAIL_HASH;
   const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH;
@@ -161,10 +261,12 @@ app.post('/api/users/login', async (req, res) => {
         name: adminName,
         email: normalizedEmail,
         role: 'admin',
-        password: password
+        password: enteredPassword
       });
     }
-    return res.json(adminUser);
+    adminUser.token = generateToken();
+    await adminUser.save();
+    return res.json({ ...toSafeUser(adminUser), token: adminUser.token });
   }
 
   const user = await User.findOne({ email: normalizedEmail });
@@ -178,7 +280,7 @@ app.post('/api/users/login', async (req, res) => {
     return res.status(403).json({ message: 'Note: There is issue in login pls try after some time' });
   }
 
-  const isCorrectPassword = (user.role === 'admin' && password === 'admin123') || (password === user.password);
+  const isCorrectPassword = await verifyPassword(user, enteredPassword);
   if (!isCorrectPassword) {
     if (user.role === 'admin') {
       user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
@@ -215,38 +317,60 @@ app.post('/api/users/login', async (req, res) => {
   // Reset counter on successful login
   if (user.failedLoginAttempts > 0) {
     user.failedLoginAttempts = 0;
-    await user.save();
   }
-  res.json(user);
+
+  user.token = generateToken();
+  await user.save();
+  res.json({ ...toSafeUser(user), token: user.token });
+});
+
+app.post('/api/users/logout', requireAuth, async (req, res) => {
+  try {
+    req.user.token = null;
+    await req.user.save();
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Error logging out' });
+  }
 });
 
 app.post('/api/users/signup', async (req, res) => {
   try {
     const { name, email, password } = req.body;
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: 'Name, email and password are required' });
+    }
     const exists = await User.findOne({ email: email.toLowerCase() });
     if (exists) return res.status(400).json({ message: 'Email already registered' });
     const newUser = await User.create({ name, email: email.toLowerCase(), password });
-    res.status(201).json(newUser);
+    newUser.token = generateToken();
+    await newUser.save();
+    res.status(201).json({ ...toSafeUser(newUser), token: newUser.token });
   } catch (error) {
     console.error('Signup error:', error);
     res.status(500).json({ message: error.message || 'Error creating user account' });
   }
 });
 
-app.put('/api/users/profile', async (req, res) => {
-  const { id, name, phone, address, city, zip } = req.body;
-  const updatedUser = await User.findByIdAndUpdate(id, { name, phone, address, city, zip }, { new: true });
-  res.json(updatedUser);
+app.put('/api/users/profile', requireAuth, async (req, res) => {
+  try {
+    const { name, phone, address, city, zip } = req.body;
+    const updatedUser = await User.findByIdAndUpdate(req.user._id, { name, phone, address, city, zip }, { new: true });
+    res.json(toSafeUser(updatedUser));
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Error updating profile' });
+  }
 });
 
-app.put('/api/users/change-password', async (req, res) => {
+app.put('/api/users/change-password', requireAuth, async (req, res) => {
   try {
-    const { id, currentPassword, newPassword } = req.body;
-    const user = await User.findById(id);
+    const { currentPassword, newPassword } = req.body;
+    const user = req.user;
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     // Check current password
-    if (user.password !== currentPassword) {
+    const isCorrect = await verifyPassword(user, currentPassword || '');
+    if (!isCorrect) {
       return res.status(400).json({ message: 'Incorrect current password' });
     }
 
@@ -260,14 +384,14 @@ app.put('/api/users/change-password', async (req, res) => {
 });
 
 // Update User Active/Inactive Status
-app.put('/api/users/:id/status', async (req, res) => {
+app.put('/api/users/:id/status', requireAdmin, async (req, res) => {
   try {
     const { isActive, adminName, adminEmail } = req.body;
-    const updatedUser = await User.findByIdAndUpdate(req.params.id, { 
+    const updatedUser = await User.findByIdAndUpdate(req.params.id, {
       isActive,
       failedLoginAttempts: 0
     }, { new: true });
-    
+
     if (updatedUser) {
       await SecurityLog.create({
         adminName: adminName || 'System Administrator',
@@ -279,14 +403,14 @@ app.put('/api/users/:id/status', async (req, res) => {
       });
     }
 
-    res.json(updatedUser);
+    res.json(toSafeUser(updatedUser));
   } catch (error) {
     res.status(500).json({ message: error.message || 'Error updating user status' });
   }
 });
 
 // Security Logs API
-app.get('/api/security-logs', async (req, res) => {
+app.get('/api/security-logs', requireAdmin, async (req, res) => {
   try {
     const logs = await SecurityLog.find().sort({ createdAt: -1 });
     res.json(logs);
@@ -304,6 +428,9 @@ app.get('/api/products', async (req, res) => {
 
 app.get('/api/products/:id', async (req, res) => {
   try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ message: 'Product not found' });
     res.json(product);
@@ -312,109 +439,186 @@ app.get('/api/products/:id', async (req, res) => {
   }
 });
 
-app.post('/api/products', async (req, res) => {
+app.post('/api/products', requireAdmin, async (req, res) => {
   const newProduct = await Product.create(req.body);
   res.status(201).json(newProduct);
 });
 
-app.put('/api/products/:id', async (req, res) => {
-  const updated = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
+app.put('/api/products/:id', requireAdmin, async (req, res) => {
+  const { _id, id, ...update } = req.body;
+  const updated = await Product.findByIdAndUpdate(req.params.id, update, { new: true });
   res.json(updated);
 });
 
-app.delete('/api/products/:id', async (req, res) => {
+app.delete('/api/products/:id', requireAdmin, async (req, res) => {
   await Product.findByIdAndDelete(req.params.id);
   res.json({ message: 'Product deleted' });
 });
 
 // 3. Orders API
-app.get('/api/orders', async (req, res) => {
+app.get('/api/orders', requireAdmin, async (req, res) => {
   const orders = await Order.find().sort({ createdAt: -1 });
   res.json(orders);
 });
 
-app.post('/api/orders', async (req, res) => {
-  const orderData = req.body;
-  const orderId = 'ORD-' + Math.floor(10000 + Math.random() * 90000);
-  const newOrder = await Order.create({ ...orderData, id: orderId });
+// A customer's own orders (for My Account page)
+app.get('/api/my/orders', requireAuth, async (req, res) => {
+  const orders = await Order.find({ customerId: req.user._id.toString() }).sort({ createdAt: -1 });
+  res.json(orders);
+});
 
-  let gatewayOrderId = '';
-  const cfg = await getPaymentConfig();
-  const isProdGateway = cfg.gatewayKeyId && !cfg.gatewayKeyId.includes('xxxx');
-
-  if (isProdGateway && (orderData.paymentMethod === 'UPI' || orderData.paymentMethod === 'CARD')) {
-    try {
-      const rzp = await getRazorpayClient();
-      const rzpOrder = await rzp.orders.create({
-        amount: Math.round(orderData.total * 100), // amount in paisa
-        currency: 'INR',
-        receipt: orderId
-      });
-      gatewayOrderId = rzpOrder.id;
-      console.log(`[Razorpay Order Created] RZP Order ID: ${gatewayOrderId}`);
-    } catch (err) {
-      console.error('Error creating Razorpay Order via SDK:', err);
-    }
+// Single order lookup by its custom ORD- id (needed for the invoice page, including guests)
+app.get('/api/orders/:orderId', async (req, res) => {
+  try {
+    const order = await Order.findOne({ id: req.params.orderId });
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+    res.json(order);
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Error fetching order' });
   }
+});
 
-  // 1. Create Payment record (Digital payments are set to Pending until verified/webhook captures success)
-  await Payment.create({
-    orderId,
-    amount: orderData.total,
-    method: orderData.paymentMethod,
-    status: (orderData.paymentMethod === 'COD' || orderData.paymentMethod === 'UPI' || orderData.paymentMethod === 'CARD') ? 'Pending' : 'Completed',
-    transactionId: gatewayOrderId || (orderData.paymentMethod === 'COD' ? '' : 'TXN-' + Math.floor(100000 + Math.random() * 900000))
-  });
+app.post('/api/orders', async (req, res) => {
+  try {
+    const orderData = req.body;
+    const items = Array.isArray(orderData.items) ? orderData.items : [];
+    const method = String(orderData.paymentMethod || '').toUpperCase();
+    const allowedMethods = ['COD', 'UPI', 'CARD', 'NETBANKING'];
+    const digitalMethod = method === 'UPI' || method === 'CARD' || method === 'NETBANKING';
 
-  // 2. Create Shipping record
-  await Shipping.create({
-    orderId,
-    carrier: 'RA Logistics',
-    status: 'Order Placed'
-  });
+    if (items.length === 0) {
+      return res.status(400).json({ message: 'Cart is empty' });
+    }
+    if (!allowedMethods.includes(method)) {
+      return res.status(400).json({ message: 'Invalid payment method' });
+    }
 
-  // Update product inventory stock & create OrderItem and InventoryLog records
-  for (const item of orderData.items) {
-    const p = await Product.findOne({ name: item.name });
-    const productDbId = p ? p._id.toString() : 'mock-prod-id';
+    // Digital payments require a real payment gateway - no test/simulation mode.
+    const cfg = await getPaymentConfig();
+    if (digitalMethod && !isRealGateway(cfg)) {
+      return res.status(400).json({
+        message: 'Online payment is not available right now. Please choose Cash on Delivery or contact support.'
+      });
+    }
 
-    // Create OrderItem
-    await OrderItem.create({
-      orderId,
-      productId: productDbId,
-      name: item.name,
-      price: item.price,
-      quantity: item.quantity,
-      image: item.image
+    // Recompute totals server-side from real product prices to prevent tampering
+    let subtotal = 0;
+    const verifiedItems = [];
+    for (const item of items) {
+      const name = (item.name || '').toString();
+      const qty = Math.max(1, Math.floor(Number(item.quantity) || 1));
+      const p = await Product.findOne({ name });
+      if (!p) return res.status(400).json({ message: `Product not found: ${name}` });
+      if (p.stock < qty) return res.status(409).json({ message: `Insufficient stock for ${p.name}` });
+      subtotal += p.price * qty;
+      verifiedItems.push({ product: p, qty, image: item.image });
+    }
+
+    const tax = Math.round(subtotal * 0.05); // 5% GST matches the UI
+    const clientShipping = Number(orderData.shipping);
+    const shipping = !isNaN(clientShipping) && clientShipping >= 0 ? clientShipping : 40;
+    const clientDiscount = Math.max(0, Number(orderData.discount) || 0);
+    const discount = Math.min(clientDiscount, subtotal);
+    const total = subtotal + tax + shipping - discount;
+
+    const orderId = 'ORD-' + crypto.randomBytes(4).toString('hex').toUpperCase();
+    const newOrder = await Order.create({
+      ...orderData,
+      paymentMethod: method,
+      id: orderId,
+      subtotal,
+      tax,
+      shipping,
+      total,
+      items: verifiedItems.map(({ product: p, qty, image }) => ({
+        id: String(p._id),
+        name: p.name,
+        price: p.price,
+        quantity: qty,
+        image
+      }))
     });
 
-    if (p) {
-      p.stock = Math.max(0, p.stock - item.quantity);
+    let gatewayOrderId = '';
+    if (digitalMethod) {
+      try {
+        const rzp = await getRazorpayClient();
+        const rzpOrder = await rzp.orders.create({
+          amount: Math.round(total * 100), // amount in paisa
+          currency: 'INR',
+          receipt: orderId
+        });
+        gatewayOrderId = rzpOrder.id;
+        console.log(`[Razorpay Order Created] RZP Order ID: ${gatewayOrderId}`);
+      } catch (err) {
+        console.error('Error creating Razorpay Order via SDK:', err);
+        // Payment gateway failed - do not leave an unpayable order behind
+        await Order.findByIdAndUpdate(newOrder._id, { status: 'Cancelled' });
+        return res.status(502).json({ message: 'Payment gateway error. Please try again.' });
+      }
+    }
+
+    // 1. Create Payment record (COD and digital orders start as Pending until paid)
+    await Payment.create({
+      orderId,
+      amount: total,
+      method,
+      status: 'Pending',
+      transactionId: gatewayOrderId || ''
+    });
+
+    // 2. Create Shipping record
+    await Shipping.create({
+      orderId,
+      carrier: 'RA Logistics',
+      status: 'Order Placed'
+    });
+
+    // 3. Update product inventory stock & create OrderItem and InventoryLog records
+    for (const { product: p, qty } of verifiedItems) {
+      await OrderItem.create({
+        orderId,
+        productId: String(p._id),
+        name: p.name,
+        price: p.price,
+        quantity: qty,
+        image: p.image
+      });
+
+      p.stock = Math.max(0, p.stock - qty);
       await p.save();
 
-      // Log Inventory change
       await InventoryLog.create({
-        productId: productDbId,
+        productId: String(p._id),
         productName: p.name,
         changeType: 'sale',
-        quantityChanged: -item.quantity,
+        quantityChanged: -qty,
         newStock: p.stock
       });
     }
-  }
 
-  res.status(201).json(newOrder);
+    res.status(201).json({ ...newOrder.toObject(), transactionId: gatewayOrderId });
+  } catch (error) {
+    console.error('Error creating order:', error);
+    res.status(500).json({ message: error.message || 'Error placing order' });
+  }
 });
 
-app.put('/api/orders/:id/status', async (req, res) => {
+app.put('/api/orders/:id/status', requireAdmin, async (req, res) => {
   const { status } = req.body;
   const updated = await Order.findOneAndUpdate({ id: req.params.id }, { status }, { new: true });
   res.json(updated);
 });
 
 // 4. Tickets API
-app.get('/api/tickets', async (req, res) => {
+app.get('/api/tickets', requireAdmin, async (req, res) => {
   const tickets = await Ticket.find().sort({ createdAt: -1 });
+  res.json(tickets);
+});
+
+// A user's own support tickets (for My Account page)
+app.get('/api/my/tickets', requireAuth, async (req, res) => {
+  const tickets = await Ticket.find({ customerEmail: req.user.email }).sort({ createdAt: -1 });
   res.json(tickets);
 });
 
@@ -423,13 +627,13 @@ app.post('/api/tickets', async (req, res) => {
   res.status(201).json(ticket);
 });
 
-app.put('/api/tickets/:id/resolve', async (req, res) => {
+app.put('/api/tickets/:id/resolve', requireAdmin, async (req, res) => {
   const resolved = await Ticket.findByIdAndUpdate(req.params.id, { status: 'Resolved' }, { new: true });
   res.json(resolved);
 });
 
 // 5. Payments API
-app.get('/api/payments', async (req, res) => {
+app.get('/api/payments', requireAdmin, async (req, res) => {
   const payments = await Payment.find().sort({ createdAt: -1 });
   res.json(payments);
 });
@@ -446,54 +650,87 @@ app.get('/api/payments/status/:orderId', async (req, res) => {
 
 app.post('/api/payments/webhook', async (req, res) => {
   try {
-    const { orderId, status, amount, utr } = req.body;
-    console.log(`[Webhook Received] Order: ${orderId}, Status: ${status}, Amount: ${amount}, UTR: ${utr}`);
-    
-    // Secure webhook signature verification using gateway secret key
+    // req.body is the raw Buffer (captured before express.json)
+    const rawBody = req.body;
+    const rawText = Buffer.isBuffer(rawBody) ? rawBody.toString('utf8') : String(rawBody || '');
+    let parsed = {};
+    try {
+      parsed = JSON.parse(rawText);
+    } catch (e) {
+      parsed = req.body && typeof req.body === 'object' ? req.body : {};
+    }
+    console.log(`[Webhook Received] ${rawText.substring(0, 300)}`);
+
     const cfg = await getPaymentConfig();
-    const gatewaySecret = cfg.gatewayKeySecret || 'rzp_test_mock_secret';
-    const isProdGateway = cfg.gatewayKeySecret && !cfg.gatewayKeySecret.includes('xxxx');
-    
-    const signature = req.headers['x-gateway-signature'] || req.headers['x-razorpay-signature'];
-    
-    if (isProdGateway && signature) {
-      try {
-        const shasum = crypto.createHmac('sha256', gatewaySecret);
-        shasum.update(JSON.stringify(req.body));
-        const digest = shasum.digest('hex');
-        if (digest !== signature) {
-          console.error('[Signature Error] Webhook signature mismatch.');
-          return res.status(401).json({ message: 'Unauthorized signature' });
-        }
-        console.log('[Signature OK] Validated official Razorpay Webhook signature.');
-      } catch (err) {
-        console.error('[Signature Exception] Validation failed:', err);
-        return res.status(401).json({ message: 'Signature verification error' });
+    const gatewaySecret = cfg.gatewayKeySecret || '';
+    const realGateway = isRealGateway(cfg);
+    const signature = req.headers['x-razorpay-signature'] || req.headers['x-gateway-signature'];
+
+    // Official Razorpay webhooks must always carry a valid signature.
+    if (realGateway) {
+      if (!signature) {
+        console.error('[Signature Error] Missing signature header.');
+        return res.status(401).json({ message: 'Unauthorized: missing signature' });
       }
+      const digest = crypto.createHmac('sha256', gatewaySecret).update(rawText).digest('hex');
+      if (digest !== signature) {
+        console.error('[Signature Error] Webhook signature mismatch.');
+        return res.status(401).json({ message: 'Unauthorized signature' });
+      }
+      console.log('[Signature OK] Validated official Razorpay Webhook signature.');
     } else {
-      console.log(`[Reconciliation Engine] Verifying simulated signature with secret: ${gatewaySecret.substring(0, 8)}...`);
+      console.log('[Reconciliation Engine] Test mode: signature not enforced (no real gateway configured).');
     }
-    
-    if (status === 'SUCCESS') {
-      const payment = await Payment.findOne({ orderId });
-      if (payment) {
-        payment.status = 'Completed';
-        payment.transactionId = utr || 'TXN-' + Math.floor(100000 + Math.random() * 900000);
+
+    // Determine order id, amount (in paisa) and success/failure from the payload.
+    // Supports both official Razorpay events (payment.captured / payment.failed) and
+    // the legacy custom { orderId, status, amount, utr } format.
+    let orderId = parsed.orderId;
+    let event = parsed.event;
+    let amountPaisa = parsed.amount != null ? Number(parsed.amount) : null;
+    let txnId = parsed.utr || parsed.razorpay_payment_id || '';
+
+    const entity = parsed.payload && parsed.payload.payment && parsed.payload.payment.entity;
+    if (entity) {
+      orderId = entity.receipt || orderId; // receipt is our ORD-xxxxx id
+      amountPaisa = entity.amount != null ? Number(entity.amount) : amountPaisa;
+      txnId = entity.id || txnId;
+    }
+
+    if (!orderId) return res.status(400).json({ message: 'Missing order id' });
+
+    const payment = await Payment.findOne({ orderId });
+    if (!payment) return res.status(404).json({ message: 'Payment record not found' });
+
+    // Amount tamper check (gateway amounts are in paisa)
+    if (amountPaisa != null && Math.round(payment.amount * 100) !== amountPaisa) {
+      console.error(`[Amount Mismatch] Expected ${Math.round(payment.amount * 100)} paisa, got ${amountPaisa}.`);
+      return res.status(400).json({ message: 'Amount mismatch' });
+    }
+
+    const isSuccess = !event
+      ? parsed.status === 'SUCCESS'
+      : (event === 'payment.captured' || event === 'order.paid');
+
+    if (isSuccess) {
+      await markOrderPaid(payment, txnId);
+      console.log(`[Webhook Success] Order ${orderId} marked as PAID / Processing.`);
+      return res.json({ status: 'reconciliation_complete' });
+    }
+
+    // Payment failed / authorization declined
+    if (event === 'payment.failed' || parsed.status === 'FAILED') {
+      if (payment.status === 'Pending') {
+        payment.status = 'Failed';
         await payment.save();
-        
-        // Also update Order status to Processing
-        const order = await Order.findOne({ id: orderId });
-        if (order) {
-          order.status = 'Processing';
-          await order.save();
-        }
-        
-        console.log(`[Webhook Success] Order ${orderId} successfully marked as PAID / Processing.`);
-        return res.json({ status: 'reconciliation_complete' });
+        console.log(`[Webhook Failed] Order ${orderId} marked as Failed.`);
       }
+      return res.json({ status: 'reconciliation_failed' });
     }
-    res.status(400).json({ status: 'reconciliation_failed' });
+
+    res.status(400).json({ status: 'unhandled_event' });
   } catch (error) {
+    console.error('[Webhook Error]', error);
     res.status(500).json({ message: error.message || 'Error processing webhook' });
   }
 });
@@ -501,13 +738,16 @@ app.post('/api/payments/webhook', async (req, res) => {
 app.post('/api/payments/verify', async (req, res) => {
   try {
     const { razorpay_payment_id, razorpay_order_id, razorpay_signature, orderId } = req.body;
+    if (!orderId || !razorpay_payment_id || !razorpay_order_id || !razorpay_signature) {
+      return res.status(400).json({ message: 'Missing payment verification fields' });
+    }
     console.log(`[Payment Verification] Verifying order: ${orderId}, Payment ID: ${razorpay_payment_id}`);
 
     const cfg = await getPaymentConfig();
-    const gatewaySecret = cfg.gatewayKeySecret || 'rzp_test_mock_secret';
-    const isProdGateway = cfg.gatewayKeySecret && !cfg.gatewayKeySecret.includes('xxxx');
+    const gatewaySecret = cfg.gatewayKeySecret || '';
 
-    if (isProdGateway && razorpay_signature) {
+    // Signature verification is mandatory for real gateways.
+    if (isRealGateway(cfg)) {
       const generated_signature = crypto
         .createHmac('sha256', gatewaySecret)
         .update(razorpay_order_id + "|" + razorpay_payment_id)
@@ -519,64 +759,61 @@ app.post('/api/payments/verify', async (req, res) => {
       }
       console.log('[Verification Success] Validated signature successfully.');
     } else {
-      console.log('[Verification Simulated] Signature auto-approved for simulation.');
+      return res.status(403).json({ message: 'Payment gateway is not configured. Use test-mode payment instead.' });
     }
 
     const payment = await Payment.findOne({ orderId });
-    if (payment) {
-      payment.status = 'Completed';
-      payment.transactionId = razorpay_payment_id || 'TXN-' + Math.floor(100000 + Math.random() * 900000);
-      await payment.save();
+    if (!payment) return res.status(404).json({ message: 'Payment record not found' });
 
-      const order = await Order.findOne({ id: orderId });
-      if (order) {
-        order.status = 'Processing';
-        await order.save();
-      }
-      return res.json({ success: true, message: 'Payment verified and saved' });
+    // Prevent attaching a payment that belongs to a different Razorpay order.
+    if (payment.transactionId && razorpay_order_id !== payment.transactionId) {
+      console.error(`[Verification Error] Order mismatch. Expected ${payment.transactionId}, got ${razorpay_order_id}.`);
+      return res.status(400).json({ message: 'Razorpay order does not match this payment' });
     }
-    res.status(404).json({ message: 'Payment record not found' });
+
+    await markOrderPaid(payment, razorpay_payment_id);
+    return res.json({ success: true, message: 'Payment verified and saved' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: error.message || 'Error verifying payment' });
   }
 });
 
-app.put('/api/payments/:id/status', async (req, res) => {
+app.put('/api/payments/:id/status', requireAdmin, async (req, res) => {
   const { status } = req.body;
   const updated = await Payment.findByIdAndUpdate(req.params.id, { status }, { new: true });
   res.json(updated);
 });
 
 // 6. Shipping API
-app.get('/api/shipping', async (req, res) => {
+app.get('/api/shipping', requireAdmin, async (req, res) => {
   const shipping = await Shipping.find().sort({ createdAt: -1 });
   res.json(shipping);
 });
 
-app.put('/api/shipping/:id', async (req, res) => {
+app.put('/api/shipping/:id', requireAdmin, async (req, res) => {
   const { carrier, trackingNumber, status } = req.body;
   const updated = await Shipping.findByIdAndUpdate(req.params.id, { carrier, trackingNumber, status }, { new: true });
   res.json(updated);
 });
 
 // 7. Discounts & Coupons API
-app.get('/api/discounts', async (req, res) => {
+app.get('/api/discounts', requireAdmin, async (req, res) => {
   const discounts = await Discount.find().sort({ createdAt: -1 });
   res.json(discounts);
 });
 
-app.post('/api/discounts', async (req, res) => {
+app.post('/api/discounts', requireAdmin, async (req, res) => {
   const newDiscount = await Discount.create(req.body);
   res.status(201).json(newDiscount);
 });
 
-app.put('/api/discounts/:id', async (req, res) => {
+app.put('/api/discounts/:id', requireAdmin, async (req, res) => {
   const updated = await Discount.findByIdAndUpdate(req.params.id, req.body, { new: true });
   res.json(updated);
 });
 
-app.delete('/api/discounts/:id', async (req, res) => {
+app.delete('/api/discounts/:id', requireAdmin, async (req, res) => {
   await Discount.findByIdAndDelete(req.params.id);
   res.json({ message: 'Discount deleted' });
 });
@@ -600,29 +837,29 @@ app.get('/api/reviews', async (req, res) => {
   res.json(reviews);
 });
 
-app.post('/api/reviews', async (req, res) => {
-  const newReview = await Review.create(req.body);
+app.post('/api/reviews', requireAuth, async (req, res) => {
+  const newReview = await Review.create({ ...req.body, customerEmail: req.user.email, customerName: req.body.customerName || req.user.name });
   res.status(201).json(newReview);
 });
 
-app.delete('/api/reviews/:id', async (req, res) => {
+app.delete('/api/reviews/:id', requireAdmin, async (req, res) => {
   await Review.findByIdAndDelete(req.params.id);
   res.json({ message: 'Review deleted' });
 });
 
 // 9. Inventory Logs API
-app.get('/api/inventory-logs', async (req, res) => {
+app.get('/api/inventory-logs', requireAdmin, async (req, res) => {
   const logs = await InventoryLog.find().sort({ createdAt: -1 });
   res.json(logs);
 });
 
 // 10. Wishlist API
-app.get('/api/wishlist/:userId', async (req, res) => {
+app.get('/api/wishlist/:userId', requireAuth, async (req, res) => {
   const wishlist = await Wishlist.findOne({ userId: req.params.userId });
   res.json(wishlist || { userId: req.params.userId, items: [] });
 });
 
-app.post('/api/wishlist/:userId/add', async (req, res) => {
+app.post('/api/wishlist/:userId/add', requireAuth, async (req, res) => {
   const { userId } = req.params;
   const item = req.body; // { productId, name, price, image }
   let wishlist = await Wishlist.findOne({ userId });
@@ -638,7 +875,7 @@ app.post('/api/wishlist/:userId/add', async (req, res) => {
   res.json(wishlist);
 });
 
-app.delete('/api/wishlist/:userId/remove/:productId', async (req, res) => {
+app.delete('/api/wishlist/:userId/remove/:productId', requireAuth, async (req, res) => {
   const { userId, productId } = req.params;
   const wishlist = await Wishlist.findOne({ userId });
   if (wishlist) {
@@ -649,12 +886,12 @@ app.delete('/api/wishlist/:userId/remove/:productId', async (req, res) => {
 });
 
 // 11. Cart API
-app.get('/api/cart/:userId', async (req, res) => {
+app.get('/api/cart/:userId', requireAuth, async (req, res) => {
   const cart = await Cart.findOne({ userId: req.params.userId });
   res.json(cart || { userId: req.params.userId, items: [] });
 });
 
-app.post('/api/cart/:userId', async (req, res) => {
+app.post('/api/cart/:userId', requireAuth, async (req, res) => {
   const { userId } = req.params;
   const { items } = req.body;
   let cart = await Cart.findOne({ userId });
@@ -672,7 +909,7 @@ app.get('/api/maintenance/status', (req, res) => {
   res.json({ isMaintenanceMode });
 });
 
-app.post('/api/maintenance/toggle', (req, res) => {
+app.post('/api/maintenance/toggle', requireAdmin, (req, res) => {
   const { status } = req.body;
   if (typeof status === 'boolean') {
     isMaintenanceMode = status;
@@ -689,14 +926,15 @@ app.get('/api/config/payment/public', async (req, res) => {
     res.json({
       merchantUpi: cfg.merchantUpi,
       merchantName: cfg.merchantName,
-      gatewayKeyId: cfg.gatewayKeyId
+      gatewayKeyId: cfg.gatewayKeyId,
+      isLive: isRealGateway(cfg)
     });
   } catch (error) {
     res.status(500).json({ message: error.message || 'Error getting public configuration' });
   }
 });
 
-app.get('/api/config/payment/admin', async (req, res) => {
+app.get('/api/config/payment/admin', requireAdmin, async (req, res) => {
   try {
     const cfg = await getPaymentConfig();
     res.json(cfg);
@@ -705,7 +943,7 @@ app.get('/api/config/payment/admin', async (req, res) => {
   }
 });
 
-app.post('/api/config/payment', async (req, res) => {
+app.post('/api/config/payment', requireAdmin, async (req, res) => {
   try {
     const { merchantUpi, merchantName, gatewayKeyId, gatewayKeySecret } = req.body;
     let config = await SystemConfig.findOne({ key: 'payment_settings' });

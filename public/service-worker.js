@@ -1,5 +1,6 @@
 const CACHE_NAME = 'ramasala_cache';
-const OFFLINE_URL = '/'
+// Use the SW's own scope (base-aware) so offline fallback works under any sub-path
+const OFFLINE_URL = self.registration && self.registration.scope ? self.registration.scope : '/';
 
 
 self.addEventListener('install', function(event) {
