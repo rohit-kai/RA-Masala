@@ -14,7 +14,7 @@
       "type": "image/jpeg"
     }
   ],
-  "start_url": "/RA-Masala/",
+  "start_url": "/",
   "display": "standalone",
   "theme_color": "#5b1a2c",
   "background_color": "#2c0b14"

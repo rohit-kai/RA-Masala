@@ -46,10 +46,14 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// Derive the router basename from the configured base URL so it works both at
+// the domain root (Vercel) and under a sub-path (GitHub Pages build with VITE_BASE).
+const appBasename = (import.meta.env.BASE_URL || '/').replace(/\/+$/, '') || '/';
+
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
     <LanguageProvider>
-      <BrowserRouter basename="/RA-Masala">
+      <BrowserRouter basename={appBasename}>
           <ScrollToTop />
           <App />
         </BrowserRouter>

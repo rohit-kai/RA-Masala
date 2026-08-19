@@ -1,10 +1,13 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// https://vitejs.dev/config/
+// Base URL for built assets. Default '/' works on Vercel & custom domains.
+// For GitHub Pages (sub-path hosting) build with: VITE_BASE=/RA-Masala/ npm run build
+const base = process.env.VITE_BASE || '/';
+
 export default defineConfig({
   plugins: [react()],
-  base: '/RA-Masala/',
+  base,
   server: {
     proxy: {
       '/api': {
