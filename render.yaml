@@ -1,0 +1,45 @@
+# Render Blueprint for the RA Masala backend (Express + MongoDB).
+# Deploy: push this repo to GitHub, then in Render use "Blueprint"
+# and pick this repo. Render auto-detects render.yaml.
+services:
+  - type: web
+    name: ra-masala-api
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      # Fill every `sync: false` value in the Render dashboard when the
+      # service is created (they are kept secret there).
+      # MongoDB connection string (e.g. MongoDB Atlas).
+      - key: MONGODB_URI
+        sync: false
+      # Razorpay production keys (or test keys while testing).
+      - key: GATEWAY_KEY_ID
+        sync: false
+      - key: GATEWAY_KEY_SECRET
+        sync: false
+      # Public URL of the deployed FRONTEND (used to build password-reset links).
+      - key: APP_URL
+        sync: false
+      # Gmail SMTP sender used for password-reset emails.
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_SECURE
+        value: "false"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        value: "RA Masala <no-reply@ramasala.com>"
+      # Admin login (sha256 hex hashes — see server/scripts/generate-admin-hashes.js).
+      - key: ADMIN_EMAIL_HASH
+        sync: false
+      - key: ADMIN_PASSWORD_HASH
+        sync: false
+      - key: ADMIN_NAME
+        value: "Kai Super Admin"
