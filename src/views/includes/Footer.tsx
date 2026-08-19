@@ -86,7 +86,7 @@ const Footer: FC = () => {
                                 <Link to={RoutePaths.ourstory} className="text-white text-decoration-none py-1">{t('nav_our_story')}</Link>
                                 <Link to={RoutePaths.brands} className="text-white text-decoration-none py-1">{t('nav_brands')}</Link>
                                 <Link to={RoutePaths.contact} className="text-white text-decoration-none py-1">{t('nav_contact')}</Link>
-                                <Link to={RoutePaths.privacyPolicy} className="text-white text-decoration-none py-1">Privacy Policy</Link>
+                                <Link to={RoutePaths.privacyPolicy} className="text-white text-decoration-none py-1">{t('ftr_privacy_policy')}</Link>
                                 
                             </div>
                         </div>

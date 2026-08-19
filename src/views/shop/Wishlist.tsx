@@ -2,12 +2,14 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useWishlist } from '../../context/WishlistContext';
 import { useCart } from '../../context/CartContext';
+import { useLanguage } from '../../context/LanguageContext';
 import Header from '../includes/Header';
 import Footer from '../includes/Footer';
 import RoutePaths from '../../config';
 import { getAssetPath } from '../../Utils/imageHelper';
 
 const Wishlist = () => {
+  const { t, tp } = useLanguage();
   const { wishlistItems, removeFromWishlist } = useWishlist();
   const { addToCart } = useCart();
 
@@ -41,16 +43,16 @@ const Wishlist = () => {
       <Header />
       <div className="container py-5 flex-grow-1">
         <h2 className="mb-4 text-start" style={{ fontFamily: 'serif', color: '#4A1525', fontWeight: 'bold', borderBottom: '3px solid #FFB300', paddingBottom: '10px' }}>
-          My Wishlist
+          {t('wsh_title')}
         </h2>
 
         {wishlistItems.length === 0 ? (
           <div className="text-center py-5 bg-white rounded-4 shadow-sm border border-light">
             <i className="bi bi-heart fs-1 text-muted"></i>
-            <h4 className="mt-3" style={{ color: '#4A1525', fontFamily: 'serif' }}>Your wishlist is empty</h4>
-            <p className="text-secondary">Save your favorite premium spices here to purchase them later!</p>
+            <h4 className="mt-3" style={{ color: '#4A1525', fontFamily: 'serif' }}>{t('wsh_empty_title')}</h4>
+            <p className="text-secondary">{t('wsh_empty_msg')}</p>
             <Link to={RoutePaths.home} className="btn text-white mt-2 px-4 py-2 fw-semibold" style={{ backgroundColor: '#aa1a31' }}>
-              Explore Spices
+              {t('wsh_explore_spices')}
             </Link>
           </div>
         ) : (
@@ -67,12 +69,12 @@ const Wishlist = () => {
                       <i className="bi bi-trash fs-5"></i>
                     </button>
                     <div className="p-3 bg-light rounded-4 mb-3" style={{ height: '180px', overflow: 'hidden' }}>
-                      <img src={getAssetPath(item.image)} alt={item.name} className="w-100 h-100 object-fit-contain" />
+                      <img src={getAssetPath(item.image)} alt={tp(item.name)} className="w-100 h-100 object-fit-contain" />
                     </div>
                   </div>
                   <div className="card-body p-1 d-flex flex-column justify-content-between">
                     <div>
-                      <h6 className="fw-bold mb-1" style={{ color: '#4A1525' }}>{item.name}</h6>
+                      <h6 className="fw-bold mb-1" style={{ color: '#4A1525' }}>{tp(item.name)}</h6>
                       <p className="text-secondary fw-semibold mb-3">₹{item.price}</p>
                     </div>
                     <button
@@ -80,7 +82,7 @@ const Wishlist = () => {
                       style={{ background: 'linear-gradient(90deg, #800c1e 0%, #aa1a31 100%)' }}
                       onClick={() => handleMoveToCart(item)}
                     >
-                      <i className="bi bi-cart-plus me-2"></i> Add to Cart
+                      <i className="bi bi-cart-plus me-2"></i> {t('home_add_to_cart')}
                     </button>
                   </div>
                 </div>

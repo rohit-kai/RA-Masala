@@ -13,7 +13,7 @@ const Welcome: React.FC = () => {
       <img 
         src={getAssetPath('img/welcome_bg.png')} 
         className="welcome-bg-image" 
-        alt="Rustic Wooden Kitchen Background" 
+        alt={t('wlcm_alt_wooden_bg')} 
       />
       <div className="welcome-bg-overlay"></div>
       <div className="welcome-center-glow"></div>
@@ -29,7 +29,7 @@ const Welcome: React.FC = () => {
           <img 
             src={getAssetPath('img/welcome_central.png')} 
             className="welcome-emblem-image" 
-            alt="Golden Swirling Spices Emblem" 
+            alt={t('wlcm_alt_emblem')} 
           />
           
           <div className="welcome-brand-content">
@@ -40,7 +40,7 @@ const Welcome: React.FC = () => {
             <img 
               src={getAssetPath('img/welcome_logo.png')} 
               className="welcome-brand-logo-img img-fluid" 
-              alt="RA Masale Pvt. Ltd. Logo" 
+              alt={t('wlcm_alt_logo')} 
               style={{ maxHeight: '250px', marginTop: '10px', filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.6))' }}
             />
           </div>
@@ -52,7 +52,7 @@ const Welcome: React.FC = () => {
         <img 
           src={getAssetPath('img/welcome_bags.png')} 
           className="welcome-bags-foreground animate__animated animate__fadeInUp" 
-          alt="Burlap bags filled with spices" 
+          alt={t('wlcm_alt_bags')} 
         />
         <div className="welcome-bottom-caption animate__animated animate__pulse animate__infinite">
           {t('welcome_caption')}
@@ -63,7 +63,7 @@ const Welcome: React.FC = () => {
       <img 
         src={getAssetPath('img/welcome_lamp.png')} 
         className="welcome-lamp-foreground" 
-        alt="Flickering Brass Lamp" 
+        alt={t('wlcm_alt_lamp')} 
       />
 
       {/* Layer 7: Interactive Actions Overlay (Enter Store Button Only) */}

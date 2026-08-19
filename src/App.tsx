@@ -31,6 +31,8 @@ import Shop from "./views/shop/Shop"
 // User & Auth Views
 import Login from "./views/auth/Login"
 import Signup from "./views/auth/Signup"
+import ForgotPassword from "./views/auth/ForgotPassword"
+import ResetPassword from "./views/auth/ResetPassword"
 import MyAccount from "./views/user/MyAccount"
 
 import { useState, useEffect } from 'react';
@@ -108,6 +110,8 @@ function AppContent() {
       {/* User Routes */}
       <Route path={RoutePaths.login} element={<Login />}></Route>
       <Route path={RoutePaths.signup} element={<Signup />}></Route>
+      <Route path={RoutePaths.passwordReset} element={<ResetPassword />}></Route>
+      <Route path="/forgot-password" element={<ForgotPassword />}></Route>
       <Route path={RoutePaths.userAccount} element={<MyAccount />}></Route>
 
       {/* Admin Routes */}

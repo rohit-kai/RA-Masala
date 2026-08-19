@@ -11,7 +11,7 @@ import Swal from 'sweetalert2';
 
 const Home = () => {
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, tp } = useLanguage();
   const [currentPanelIndex, setCurrentPanelIndex] = useState(0);
   const [showPromoModal, setShowPromoModal] = useState(false);
 
@@ -142,7 +142,7 @@ const Home = () => {
                 className="hero-cta-button"
                 onClick={() => navigate('/shop')}
               >
-                Explore Our Spices
+                {t('home_explore_btn')}
               </button>
             </div>
           </section>
@@ -206,13 +206,13 @@ const Home = () => {
 
                   <div className="product-card-body d-flex flex-column h-100">
                     <h3 className="product-card-title text-center mb-1">
-                      {product.name}
+                      {tp(product.name)}
                     </h3>
                     <div className="text-center fw-bold fs-5 mb-2" style={{ color: '#aa1a31' }}>
                       ₹{product.price} <span className="text-muted fw-normal" style={{ fontSize: '0.85rem' }}>/ {product.unit}</span>
                     </div>
                     <p className="product-card-desc text-center flex-grow-1 mb-3">
-                      {product.description}
+                      {tp(product.description)}
                     </p>
                     
                     <div className="product-card-footer d-flex flex-column gap-2 mt-auto">
@@ -221,14 +221,14 @@ const Home = () => {
                         style={{ backgroundColor: '#aa1a31', borderRadius: '8px' }}
                         onClick={() => {
                           if (product.stock <= 0) {
-                            Swal.fire('Out of Stock', 'Sorry, this product is temporarily unavailable.', 'warning');
+                            Swal.fire(t('home_out_of_stock'), t('home_out_of_stock_msg'), 'warning');
                             return;
                           }
                           addToCart(product);
                           Swal.fire({
                             icon: 'success',
-                            title: 'Added to Cart',
-                            text: `${product.name} has been added to your shopping cart.`,
+                            title: t('home_cart_success_title'),
+                            text: `${tp(product.name)} ${t('home_cart_success_msg')}`,
                             timer: 1200,
                             showConfirmButton: false
                           });

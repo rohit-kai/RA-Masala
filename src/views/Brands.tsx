@@ -15,7 +15,7 @@ const Brands: React.FC = () => {
       title: t('brands_masale_title'),
       desc: t('brands_masale_desc'),
       icon: 'bi-fire',
-      badge: 'Spices',
+      badge: t('brd_badge_spices'),
       color: '#4A1525',
       logo: getAssetPath('images/log1.jpg')
     },
@@ -24,7 +24,7 @@ const Brands: React.FC = () => {
       title: t('brands_namkeen_title'),
       desc: t('brands_namkeen_desc'),
       icon: 'bi-basket',
-      badge: 'Snacks',
+      badge: t('brd_badge_snacks'),
       color: '#0A4D68',
       logo: getAssetPath('images/logo2.jpg')
     },
@@ -33,7 +33,7 @@ const Brands: React.FC = () => {
       title: t('brands_spicehome_title'),
       desc: t('brands_spicehome_desc'),
       icon: 'bi-house-heart',
-      badge: 'Blends',
+      badge: t('brd_badge_blends'),
       color: '#05bfdb',
       logo: getAssetPath('images/logo3.jpg')
     },
@@ -42,7 +42,7 @@ const Brands: React.FC = () => {
       title: t('brands_chaha_title'),
       desc: t('brands_chaha_desc'),
       icon: 'bi-cup-hot',
-      badge: 'Tea',
+      badge: t('brd_badge_tea'),
       color: '#D2691E',
       logo: getAssetPath('images/logo4.jpg')
     },
@@ -51,7 +51,7 @@ const Brands: React.FC = () => {
       title: t('brands_agro_title'),
       desc: t('brands_agro_desc'),
       icon: 'bi-tree',
-      badge: 'Agro',
+      badge: t('brd_badge_agro'),
       color: '#1A5F7A',
       logo: getAssetPath('images/logo5.jpg')
     }
@@ -84,7 +84,7 @@ const Brands: React.FC = () => {
               }}>
                 <img
                   src={getAssetPath('images/since_1972_torch.jpg')}
-                  alt="RA Masala Torch Since 1972"
+                  alt={t('brd_torch_alt')}
                   className="img-fluid"
                   style={{ maxHeight: '380px', filter: 'drop-shadow(0 8px 20px rgba(0,0,0,0.25))' }}
                 />
@@ -208,20 +208,20 @@ const Brands: React.FC = () => {
                 boxShadow: '0 15px 35px rgba(0,0,0,0.25)'
               }}>
                 <h3 className="fw-bold mb-3" style={{ color: '#FFD700', fontFamily: 'serif' }}>
-                  Our Complete Brand Portfolio
+                  {t('brd_portfolio_title')}
                 </h3>
                 <p className="text-light opacity-75 mb-4 max-w-600 mx-auto">
-                  Representing excellence in every sector we enter. View our official brand family marks below.
+                  {t('brd_portfolio_desc')}
                 </p>
                 <div className="row g-5 justify-content-center">
                   <div className="col-12">
                     <div className="bg-white p-3 p-md-4 rounded-4 shadow-sm mb-4">
                       <h4 className="fw-bold mb-3 text-start" style={{ color: '#4A1525', fontFamily: 'serif' }}>
-                        Brand Range Showcase
+                        {t('brd_range_showcase')}
                       </h4>
                       <img
                         src={getAssetPath('images/brand_products_showcase.png')}
-                        alt="RA Brands Products Showcase"
+                        alt={t('brd_range_showcase_alt')}
                         className="img-fluid rounded w-100"
                         style={{ maxHeight: '850px', objectFit: 'contain' }}
                       />
@@ -230,11 +230,11 @@ const Brands: React.FC = () => {
                   <div className="col-12">
                     <div className="bg-white p-3 p-md-4 rounded-4 shadow-sm">
                       <h4 className="fw-bold mb-3 text-start" style={{ color: '#4A1525', fontFamily: 'serif' }}>
-                        Exhibition Showroom Showcase
+                        {t('brd_showroom_showcase')}
                       </h4>
                       <img
                         src={getAssetPath('images/brand_showroom_display.jpg')}
-                        alt="RA Brands Showroom Display"
+                        alt={t('brd_showroom_showcase_alt')}
                         className="img-fluid rounded w-100"
                         style={{ maxHeight: '850px', objectFit: 'contain' }}
                       />

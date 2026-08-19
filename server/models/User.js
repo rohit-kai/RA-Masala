@@ -12,7 +12,9 @@ const UserSchema = new mongoose.Schema({
   zip: { type: String, default: '' },
   isActive: { type: Boolean, default: true },
   failedLoginAttempts: { type: Number, default: 0 },
-  token: { type: String, default: null }
+  token: { type: String, default: null },
+  resetToken: { type: String, default: null },
+  resetTokenExpires: { type: Date, default: null }
 }, { timestamps: true });
 
 // Hash password automatically before saving whenever it changes

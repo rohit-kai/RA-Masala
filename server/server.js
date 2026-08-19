@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import Razorpay from 'razorpay';
+import nodemailer from 'nodemailer';
 
 // Import Models
 import User from './models/User.js';
@@ -23,6 +24,50 @@ import SystemConfig from './models/SystemConfig.js';
 import SecurityLog from './models/SecurityLog.js';
 
 dotenv.config();
+
+// SMTP mailer for password reset emails. Configure SMTP_HOST/SMTP_USER/SMTP_PASS in .env
+function getMailer() {
+  const host = process.env.SMTP_HOST;
+  if (!host) return null;
+  return nodemailer.createTransport({
+    host,
+    port: Number(process.env.SMTP_PORT) || 587,
+    secure: (process.env.SMTP_SECURE || 'false').toLowerCase() === 'true',
+    auth: process.env.SMTP_USER
+      ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS || '' }
+      : undefined,
+    // Some office/college networks intercept TLS with a self-signed cert.
+    // Set SMTP_REJECT_UNAUTHORIZED=false in .env only if your network does this.
+    tls: { rejectUnauthorized: (process.env.SMTP_REJECT_UNAUTHORIZED || 'true').toLowerCase() !== 'false' }
+  });
+}
+
+async function sendResetEmail(toEmail, resetLink) {
+  const mailer = getMailer();
+  if (!mailer) throw new Error('SMTP is not configured. Set SMTP_HOST in server/.env');
+  await mailer.sendMail({
+    from: process.env.SMTP_FROM || 'RA Masala <no-reply@ramasala.com>',
+    to: toEmail,
+    subject: 'RA Masala - Reset Your Password',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden;">
+        <div style="background: #aa1a31; color: #fff; padding: 20px; text-align: center;">
+          <h2 style="margin: 0;">RA Masala</h2>
+        </div>
+        <div style="padding: 24px;">
+          <p>Hello,</p>
+          <p>We received a request to reset your password. Click the button below to set a new password. This link is valid for <strong>1 hour</strong>.</p>
+          <p style="text-align: center; margin: 28px 0;">
+            <a href="${resetLink}" style="background: #aa1a31; color: #fff; padding: 12px 28px; border-radius: 6px; text-decoration: none; display: inline-block;">Reset Password</a>
+          </p>
+          <p>If you did not request this, you can safely ignore this email.</p>
+          <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
+          <p style="color: #888; font-size: 12px;">Customer Care: 7518166686 | ramasale@ymail.com</p>
+        </div>
+      </div>
+    `
+  });
+}
 
 // Helper to get active payment configurations (database config overrides .env config)
 async function getPaymentConfig() {
@@ -380,6 +425,74 @@ app.put('/api/users/change-password', requireAuth, async (req, res) => {
   } catch (error) {
     console.error('Change password error:', error);
     res.status(500).json({ message: error.message || 'Error updating password' });
+  }
+});
+
+// Forgot password: generate reset token + email reset link
+app.post('/api/users/forgot-password', async (req, res) => {
+  try {
+    const email = String(req.body.email || '').trim().toLowerCase();
+    if (!email) return res.status(400).json({ message: 'Please provide your email address' });
+
+    const user = await User.findOne({ email });
+    // Always return generic success to avoid revealing which emails are registered
+    if (!user) {
+      return res.json({ message: 'If an account exists for that email, a reset link has been sent.' });
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+    user.resetToken = crypto.createHash('sha256').update(token).digest('hex');
+    user.resetTokenExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    await user.save();
+
+    const appUrl = (process.env.APP_URL || 'http://localhost:5173').replace(/\/$/, '');
+    const resetLink = `${appUrl}/reset-password?token=${token}`;
+
+    try {
+      await sendResetEmail(email, resetLink);
+    } catch (mailErr) {
+      console.error('Error sending reset email:', mailErr);
+      return res.status(503).json({ message: 'Could not send the reset email right now. Please try again later.' });
+    }
+
+    console.log(`[Password Reset] Reset link generated for ${email}`);
+    res.json({ message: 'If an account exists for that email, a reset link has been sent.' });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ message: error.message || 'Error processing request' });
+  }
+});
+
+// Reset password with the emailed token
+app.post('/api/users/reset-password', async (req, res) => {
+  try {
+    const { token, password } = req.body;
+    if (!token) return res.status(400).json({ message: 'Reset token is missing or invalid' });
+    if (!password || password.length < 6) {
+      return res.status(400).json({ message: 'New password must be at least 6 characters' });
+    }
+
+    const tokenHash = crypto.createHash('sha256').update(String(token)).digest('hex');
+    const user = await User.findOne({
+      resetToken: tokenHash,
+      resetTokenExpires: { $gt: new Date() }
+    });
+    if (!user) {
+      return res.status(400).json({ message: 'This reset link is invalid or has expired. Please request a new one.' });
+    }
+
+    user.password = password;
+    user.resetToken = null;
+    user.resetTokenExpires = null;
+    user.token = null; // invalidate existing sessions
+    user.failedLoginAttempts = 0;
+    await user.save();
+
+    console.log(`[Password Reset] Password updated for ${user.email}`);
+    res.json({ message: 'Password reset successfully. You can now log in.' });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ message: error.message || 'Error resetting password' });
   }
 });
 

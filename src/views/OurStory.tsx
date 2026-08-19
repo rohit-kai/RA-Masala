@@ -39,7 +39,7 @@ const OurStory: React.FC = () => {
               }}>
                 <img
                   src={getAssetPath('images/story.png')}
-                  alt="RA Masala Story"
+                  alt={t('story_img_alt')}
                   className="img-fluid rounded w-100"
                   style={{ objectFit: 'cover', maxHeight: '550px', display: 'block', borderRadius: '10px' }}
                 />
@@ -131,7 +131,7 @@ const OurStory: React.FC = () => {
             <div className="col-12 col-md-5 order-1 order-md-2 text-center">
               <img
                 src={getAssetPath('img/welcome_bags.png')}
-                alt="Spice Assortment Bags"
+                alt={t('story_bags_alt')}
                 className="img-fluid"
                 style={{ maxHeight: '280px', filter: 'drop-shadow(0px 8px 16px rgba(0,0,0,0.15))' }}
               />

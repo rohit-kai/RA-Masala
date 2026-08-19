@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import Header from '../includes/Header';
 import Footer from '../includes/Footer';
 import RoutePaths from '../../config';
@@ -16,6 +17,7 @@ const AdminDashboard = () => {
   } = useAuth();
   
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'overview' | 'payments' | 'shipping' | 'discounts' | 'reviews' | 'logs' | 'tickets' | 'security' | 'settings'>('overview');
   const isSuperAdmin = user?.role === 'admin' && user?.email !== 'admin@ramasala.com';
 
@@ -48,14 +50,14 @@ const AdminDashboard = () => {
       setIsMaintenanceMode(res.data.isMaintenanceMode);
       Swal.fire({
         icon: 'success',
-        title: `Maintenance Mode ${res.data.isMaintenanceMode ? 'Activated' : 'Deactivated'}`,
-        text: `The site has been set to ${res.data.isMaintenanceMode ? 'maintenance status' : 'live status'}.`,
+        title: t(res.data.isMaintenanceMode ? 'adm_maintenance_activated' : 'adm_maintenance_deactivated'),
+        text: t(res.data.isMaintenanceMode ? 'adm_maintenance_status_set' : 'adm_live_status_set'),
         timer: 1500,
         showConfirmButton: false
       });
     } catch (err) {
       console.error(err);
-      Swal.fire('Error', 'Failed to toggle maintenance mode.', 'error');
+      Swal.fire(t('adm_error'), t('adm_maintenance_toggle_failed'), 'error');
     }
   };
 
@@ -89,10 +91,10 @@ const AdminDashboard = () => {
         gatewayKeyId: adminGatewayKeyId,
         gatewayKeySecret: adminGatewayKeySecret
       });
-      Swal.fire('Success', 'Payment gateway and VPA configurations updated successfully!', 'success');
+      Swal.fire(t('adm_success'), t('adm_payment_config_saved'), 'success');
     } catch (err) {
       console.error(err);
-      Swal.fire('Error', 'Failed to save configuration settings.', 'error');
+      Swal.fire(t('adm_error'), t('adm_config_save_failed'), 'error');
     }
   };
 
@@ -186,7 +188,7 @@ const AdminDashboard = () => {
     const file = fileInputEl?.files?.[0];
 
     if (!file) {
-      Swal.fire('Error', 'Please select a CSV file first.', 'error');
+      Swal.fire(t('adm_error'), t('adm_csv_select_file_first'), 'error');
       return;
     }
 
@@ -203,7 +205,7 @@ const AdminDashboard = () => {
         }).filter(row => row.length > 0);
 
         if (rows.length < 2) {
-          Swal.fire('Error', 'CSV file has no data rows.', 'error');
+          Swal.fire(t('adm_error'), t('adm_csv_no_data'), 'error');
           return;
         }
 
@@ -211,8 +213,8 @@ const AdminDashboard = () => {
         const dataRows = rows.slice(1);
 
         Swal.fire({
-          title: 'Importing Data',
-          text: 'Uploading records to database. Please wait...',
+          title: t('adm_importing_data'),
+          text: t('adm_uploading_records_wait'),
           allowOutsideClick: false,
           didOpen: () => {
             Swal.showLoading();
@@ -282,13 +284,13 @@ const AdminDashboard = () => {
         await loadData();
         Swal.fire({
           icon: 'success',
-          title: 'Import Completed',
-          text: `Success: ${successCount} records imported. Failed/Skipped: ${failCount} records.`,
+          title: t('adm_import_completed'),
+          text: `${t('adm_import_success_label')} ${successCount} ${t('adm_records_imported')}. ${t('adm_import_failed_label')} ${failCount} ${t('adm_records_failed')}.`,
         });
         if (fileInputEl) fileInputEl.value = '';
       } catch (err) {
         console.error(err);
-        Swal.fire('Error', 'An error occurred while reading the file.', 'error');
+        Swal.fire(t('adm_error'), t('adm_csv_read_error'), 'error');
       }
     };
     reader.readAsText(file);
@@ -311,8 +313,8 @@ const AdminDashboard = () => {
     if (!user || user.role !== 'admin') {
       Swal.fire({
         icon: 'error',
-        title: 'Access Denied',
-        text: 'You do not have administrative privileges.',
+        title: t('adm_access_denied'),
+        text: t('adm_no_admin_privileges'),
         confirmButtonColor: '#aa1a31'
       });
       navigate(RoutePaths.home);
@@ -344,8 +346,8 @@ const AdminDashboard = () => {
     resolveTicket(id);
     Swal.fire({
       icon: 'success',
-      title: 'Ticket Resolved',
-      text: 'Support ticket status set to Resolved.',
+      title: t('adm_ticket_resolved'),
+      text: t('adm_ticket_resolved_message'),
       timer: 1500,
       showConfirmButton: false
     });
@@ -354,7 +356,7 @@ const AdminDashboard = () => {
   const handleCreateCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!couponCode || couponValue <= 0) {
-      Swal.fire('Error', 'Please provide valid coupon details.', 'error');
+      Swal.fire(t('adm_error'), t('adm_coupon_invalid_details'), 'error');
       return;
     }
     await addDiscount({
@@ -367,13 +369,13 @@ const AdminDashboard = () => {
     setCouponCode('');
     setCouponValue(0);
     setMinPurchase(0);
-    Swal.fire('Success', 'Coupon created successfully!', 'success');
+    Swal.fire(t('adm_success'), t('adm_coupon_created'), 'success');
   };
 
   const handleSaveShipping = async (id: string) => {
     await updateShipping(id, shipCarrier, shipTracking, shipStatus);
     setEditingShipId(null);
-    Swal.fire('Success', 'Shipping information updated.', 'success');
+    Swal.fire(t('adm_success'), t('adm_shipping_updated'), 'success');
   };
 
   if (!user || user.role !== 'admin') return null;
@@ -387,14 +389,14 @@ const AdminDashboard = () => {
         <div className="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-3 border-bottom border-2" style={{ borderColor: '#FFB300' }}>
           <div>
             <h2 className="mb-1" style={{ fontFamily: 'serif', color: '#4A1525', fontWeight: 'bold' }}>
-              <i className="bi bi-shield-fill-check text-danger me-2"></i> Admin Panel
+              <i className="bi bi-shield-fill-check text-danger me-2"></i> {t('adm_panel_title')}
             </h2>
-            <p className="text-secondary mb-0">Management Portal for RA Masala Operations</p>
+            <p className="text-secondary mb-0">{t('adm_panel_subtitle')}</p>
           </div>
           <div className="d-flex gap-2 mt-3 mt-sm-0">
-            <Link to={RoutePaths.adminProducts} className="btn btn-sm text-white fw-bold" style={{ backgroundColor: '#4A1525', border: '1px solid #FFB300' }}>Manage Products</Link>
-            <Link to={RoutePaths.adminCustomers} className="btn btn-sm text-white fw-bold" style={{ backgroundColor: '#4A1525', border: '1px solid #FFB300' }}>Manage Customers</Link>
-            <Link to={RoutePaths.userAccount} className="btn btn-sm text-white fw-bold" style={{ backgroundColor: '#aa1a31', border: '1px solid #FFB300' }}>My Account</Link>
+            <Link to={RoutePaths.adminProducts} className="btn btn-sm text-white fw-bold" style={{ backgroundColor: '#4A1525', border: '1px solid #FFB300' }}>{t('adm_manage_products')}</Link>
+            <Link to={RoutePaths.adminCustomers} className="btn btn-sm text-white fw-bold" style={{ backgroundColor: '#4A1525', border: '1px solid #FFB300' }}>{t('adm_manage_customers')}</Link>
+            <Link to={RoutePaths.userAccount} className="btn btn-sm text-white fw-bold" style={{ backgroundColor: '#aa1a31', border: '1px solid #FFB300' }}>{t('adm_my_account')}</Link>
           </div>
         </div>
 
@@ -406,7 +408,7 @@ const AdminDashboard = () => {
               style={{ backgroundColor: activeTab === 'overview' ? '#aa1a31' : 'transparent', color: activeTab === 'overview' ? '#fff' : '#4A1525' }}
               onClick={() => setActiveTab('overview')}
             >
-              <i className="bi bi-speedometer2 me-1"></i> Overview
+              <i className="bi bi-speedometer2 me-1"></i> {t('adm_tab_overview')}
             </button>
           </li>
           <li className="nav-item">
@@ -415,7 +417,7 @@ const AdminDashboard = () => {
               style={{ backgroundColor: activeTab === 'payments' ? '#aa1a31' : 'transparent', color: activeTab === 'payments' ? '#fff' : '#4A1525' }}
               onClick={() => setActiveTab('payments')}
             >
-              <i className="bi bi-credit-card me-1"></i> Payments ({payments.length})
+              <i className="bi bi-credit-card me-1"></i> {t('adm_tab_payments')} ({payments.length})
             </button>
           </li>
           <li className="nav-item">
@@ -424,7 +426,7 @@ const AdminDashboard = () => {
               style={{ backgroundColor: activeTab === 'shipping' ? '#aa1a31' : 'transparent', color: activeTab === 'shipping' ? '#fff' : '#4A1525' }}
               onClick={() => setActiveTab('shipping')}
             >
-              <i className="bi bi-truck me-1"></i> Shipping ({shippingList.length})
+              <i className="bi bi-truck me-1"></i> {t('adm_tab_shipping')} ({shippingList.length})
             </button>
           </li>
           <li className="nav-item">
@@ -433,7 +435,7 @@ const AdminDashboard = () => {
               style={{ backgroundColor: activeTab === 'discounts' ? '#aa1a31' : 'transparent', color: activeTab === 'discounts' ? '#fff' : '#4A1525' }}
               onClick={() => setActiveTab('discounts')}
             >
-              <i className="bi bi-tag me-1"></i> Coupons ({discounts.length})
+              <i className="bi bi-tag me-1"></i> {t('adm_tab_coupons')} ({discounts.length})
             </button>
           </li>
           <li className="nav-item">
@@ -442,7 +444,7 @@ const AdminDashboard = () => {
               style={{ backgroundColor: activeTab === 'reviews' ? '#aa1a31' : 'transparent', color: activeTab === 'reviews' ? '#fff' : '#4A1525' }}
               onClick={() => setActiveTab('reviews')}
             >
-              <i className="bi bi-star me-1"></i> Reviews ({reviews.length})
+              <i className="bi bi-star me-1"></i> {t('adm_tab_reviews')} ({reviews.length})
             </button>
           </li>
           <li className="nav-item">
@@ -451,7 +453,7 @@ const AdminDashboard = () => {
               style={{ backgroundColor: activeTab === 'logs' ? '#aa1a31' : 'transparent', color: activeTab === 'logs' ? '#fff' : '#4A1525' }}
               onClick={() => setActiveTab('logs')}
             >
-              <i className="bi bi-journal-text me-1"></i> Inventory Logs ({inventoryLogs.length})
+              <i className="bi bi-journal-text me-1"></i> {t('adm_tab_inventory_logs')} ({inventoryLogs.length})
             </button>
           </li>
           <li className="nav-item">
@@ -460,7 +462,7 @@ const AdminDashboard = () => {
               style={{ backgroundColor: activeTab === 'tickets' ? '#aa1a31' : 'transparent', color: activeTab === 'tickets' ? '#fff' : '#4A1525' }}
               onClick={() => setActiveTab('tickets')}
             >
-              <i className="bi bi-headset me-1"></i> Support Tickets ({tickets.length})
+              <i className="bi bi-headset me-1"></i> {t('adm_tab_support_tickets')} ({tickets.length})
             </button>
           </li>
           {isSuperAdmin && (
@@ -470,7 +472,7 @@ const AdminDashboard = () => {
                 style={{ backgroundColor: activeTab === 'settings' ? '#aa1a31' : 'transparent', color: activeTab === 'settings' ? '#fff' : '#4A1525' }}
                 onClick={() => setActiveTab('settings')}
               >
-                <i className="bi bi-wallet2 me-1"></i> Payment Settings
+                <i className="bi bi-wallet2 me-1"></i> {t('adm_tab_payment_settings')}
               </button>
             </li>
           )}
@@ -481,7 +483,7 @@ const AdminDashboard = () => {
                 style={{ backgroundColor: activeTab === 'security' ? '#aa1a31' : 'transparent', color: activeTab === 'security' ? '#fff' : '#4A1525' }}
                 onClick={() => setActiveTab('security')}
               >
-                <i className="bi bi-shield-lock-fill me-1"></i> Security Logs ({securityLogs.length})
+                <i className="bi bi-shield-lock-fill me-1"></i> {t('adm_tab_security_logs')} ({securityLogs.length})
               </button>
             </li>
           )}
@@ -496,7 +498,7 @@ const AdminDashboard = () => {
                 <div className="card border-0 shadow-sm rounded-4 p-4 bg-white border-start border-danger border-4">
                   <div className="d-flex align-items-center justify-content-between">
                     <div>
-                      <h6 className="text-uppercase text-secondary fw-semibold mb-1" style={{ fontSize: '0.8rem' }}>Total Sales</h6>
+                      <h6 className="text-uppercase text-secondary fw-semibold mb-1" style={{ fontSize: '0.8rem' }}>{t('adm_stat_total_sales')}</h6>
                       <h3 className="mb-0 fw-bold text-dark">₹{totalSales.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</h3>
                     </div>
                     <div className="p-3 rounded-4 bg-danger bg-opacity-10 text-danger">
@@ -509,7 +511,7 @@ const AdminDashboard = () => {
                 <div className="card border-0 shadow-sm rounded-4 p-4 bg-white border-start border-warning border-4">
                   <div className="d-flex align-items-center justify-content-between">
                     <div>
-                      <h6 className="text-uppercase text-secondary fw-semibold mb-1" style={{ fontSize: '0.8rem' }}>Total Orders</h6>
+                      <h6 className="text-uppercase text-secondary fw-semibold mb-1" style={{ fontSize: '0.8rem' }}>{t('adm_stat_total_orders')}</h6>
                       <h3 className="mb-0 fw-bold text-dark">{totalOrders}</h3>
                     </div>
                     <div className="p-3 rounded-4 bg-warning bg-opacity-10 text-warning">
@@ -522,7 +524,7 @@ const AdminDashboard = () => {
                 <div className="card border-0 shadow-sm rounded-4 p-4 bg-white border-start border-success border-4">
                   <div className="d-flex align-items-center justify-content-between">
                     <div>
-                      <h6 className="text-uppercase text-secondary fw-semibold mb-1" style={{ fontSize: '0.8rem' }}>Registered Users</h6>
+                      <h6 className="text-uppercase text-secondary fw-semibold mb-1" style={{ fontSize: '0.8rem' }}>{t('adm_stat_registered_users')}</h6>
                       <h3 className="mb-0 fw-bold text-dark">{totalCustomers}</h3>
                     </div>
                     <div className="p-3 rounded-4 bg-success bg-opacity-10 text-success">
@@ -535,7 +537,7 @@ const AdminDashboard = () => {
                 <div className="card border-0 shadow-sm rounded-4 p-4 bg-white border-start border-info border-4">
                   <div className="d-flex align-items-center justify-content-between">
                     <div>
-                      <h6 className="text-uppercase text-secondary fw-semibold mb-1" style={{ fontSize: '0.8rem' }}>Open Tickets</h6>
+                      <h6 className="text-uppercase text-secondary fw-semibold mb-1" style={{ fontSize: '0.8rem' }}>{t('adm_stat_open_tickets')}</h6>
                       <h3 className="mb-0 fw-bold text-dark">{activeTickets}</h3>
                     </div>
                     <div className="p-3 rounded-4 bg-info bg-opacity-10 text-info">
@@ -550,15 +552,15 @@ const AdminDashboard = () => {
             {user?.email?.toLowerCase() === 'ujumakikai8975@gmail.com' && (
               <div className="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
                 <h5 className="mb-4 text-start fw-bold" style={{ fontFamily: 'serif', color: '#4A1525' }}>
-                  <i className="bi bi-gear-fill me-2 text-danger"></i> System Operations (Super Admin)
+                  <i className="bi bi-gear-fill me-2 text-danger"></i> {t('adm_super_admin_ops')}
                 </h5>
                 <div className="row g-4 align-items-start">
                   {/* Maintenance Mode Toggle */}
                   <div className="col-lg-4 border-end pb-3">
                     <div className="d-flex align-items-center justify-content-between pe-lg-3">
                       <div>
-                        <strong className="d-block text-dark">Site Maintenance Mode</strong>
-                        <span className="text-muted small">Redirect all non-admin visitors to placeholder page.</span>
+                        <strong className="d-block text-dark">{t('adm_site_maintenance_mode')}</strong>
+                        <span className="text-muted small">{t('adm_maintenance_desc')}</span>
                       </div>
                       <div className="form-check form-switch fs-4">
                         <input 
@@ -575,34 +577,34 @@ const AdminDashboard = () => {
 
                   {/* CSV Data Export */}
                   <div className="col-lg-4 border-end pb-3 px-lg-3">
-                    <strong className="d-block text-dark mb-2">Export System Databases</strong>
+                    <strong className="d-block text-dark mb-2">{t('adm_export_system_databases')}</strong>
                     <div className="d-flex flex-wrap gap-2">
                       <button className="btn btn-sm text-white fw-bold" style={{ backgroundColor: '#4A1525', border: '1px solid #FFB300' }} onClick={handleExportCustomers}>
-                        <i className="bi bi-people-fill me-1"></i> Customers List
+                        <i className="bi bi-people-fill me-1"></i> {t('adm_export_customers_list')}
                       </button>
                       <button className="btn btn-sm text-white fw-bold" style={{ backgroundColor: '#4A1525', border: '1px solid #FFB300' }} onClick={handleExportProducts}>
-                        <i className="bi bi-box-seam-fill me-1"></i> Products Catalog
+                        <i className="bi bi-box-seam-fill me-1"></i> {t('adm_export_products_catalog')}
                       </button>
                       <button className="btn btn-sm text-white fw-bold" style={{ backgroundColor: '#4A1525', border: '1px solid #FFB300' }} onClick={handleExportOrders}>
-                        <i className="bi bi-receipt me-1"></i> Orders History
+                        <i className="bi bi-receipt me-1"></i> {t('adm_export_orders_history')}
                       </button>
                       <button className="btn btn-sm text-white fw-bold" style={{ backgroundColor: '#4A1525', border: '1px solid #FFB300' }} onClick={handleExportPayments}>
-                        <i className="bi bi-credit-card me-1"></i> Payments List
+                        <i className="bi bi-credit-card me-1"></i> {t('adm_export_payments_list')}
                       </button>
                       <button className="btn btn-sm text-white fw-bold" style={{ backgroundColor: '#4A1525', border: '1px solid #FFB300' }} onClick={handleExportInventoryLogs}>
-                        <i className="bi bi-journal-text me-1"></i> Inventory Logs
+                        <i className="bi bi-journal-text me-1"></i> {t('adm_export_inventory_logs')}
                       </button>
                     </div>
                   </div>
 
                   {/* CSV Data Import */}
                   <div className="col-lg-4 pb-3 ps-lg-3">
-                    <strong className="d-block text-dark mb-2">Import System Databases</strong>
+                    <strong className="d-block text-dark mb-2">{t('adm_import_system_databases')}</strong>
                     <div className="d-flex flex-column gap-2">
                       <div className="d-flex gap-2">
                         <select className="form-select form-select-sm" id="importType" defaultValue="products" style={{ border: '1px solid #FFB300', backgroundColor: '#FFF', maxWidth: '120px' }}>
-                          <option value="products">Products</option>
-                          <option value="customers">Customers</option>
+                          <option value="products">{t('adm_option_products')}</option>
+                          <option value="customers">{t('adm_option_customers')}</option>
                         </select>
                         <input 
                           type="file" 
@@ -617,11 +619,11 @@ const AdminDashboard = () => {
                         style={{ backgroundColor: '#4A1525', border: '1.5px solid #FFB300' }}
                         onClick={handleImportCSV}
                       >
-                        <i className="bi bi-file-earmark-arrow-up-fill me-1"></i> Upload & Import CSV
+                        <i className="bi bi-file-earmark-arrow-up-fill me-1"></i> {t('adm_upload_import_csv')}
                       </button>
                       <small className="text-secondary" style={{ fontSize: '0.72rem', lineHeight: '1.3' }}>
-                        <strong>Products CSV:</strong> name, price, category, stock, unit, description<br />
-                        <strong>Customers CSV:</strong> name, email, password
+                        <strong>{t('adm_products_csv_label')}</strong> name, price, category, stock, unit, description<br />
+                        <strong>{t('adm_customers_csv_label')}</strong> name, email, password
                       </small>
                     </div>
                   </div>
@@ -635,11 +637,11 @@ const AdminDashboard = () => {
               <div className="col-lg-6">
                 <div className="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
                   <h5 className="mb-4 text-start fw-bold" style={{ fontFamily: 'serif', color: '#4A1525' }}>
-                    <i className="bi bi-bar-chart-fill me-2 text-danger"></i> Sales & Best Sellers Report
+                    <i className="bi bi-bar-chart-fill me-2 text-danger"></i> {t('adm_sales_best_sellers_report')}
                   </h5>
                   
                   {bestSellers.length === 0 ? (
-                    <div className="text-center py-5 text-muted">No sales reports available. Placed orders will show statistics here.</div>
+                    <div className="text-center py-5 text-muted">{t('adm_no_sales_reports')}</div>
                   ) : (
                     <div className="d-flex flex-column gap-3">
                       {bestSellers.map((item) => {
@@ -649,7 +651,7 @@ const AdminDashboard = () => {
                           <div key={item.name}>
                             <div className="d-flex justify-content-between mb-1 text-sm">
                               <span className="fw-semibold text-dark">{item.name}</span>
-                              <span className="fw-bold text-secondary">{item.qty} units sold</span>
+                              <span className="fw-bold text-secondary">{item.qty} {t('adm_units_sold')}</span>
                             </div>
                             <div className="progress rounded-pill" style={{ height: '10px' }}>
                               <div 
@@ -672,12 +674,12 @@ const AdminDashboard = () => {
               <div className="col-lg-6">
                 <div className="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
                   <h5 className="mb-4 text-start fw-bold" style={{ fontFamily: 'serif', color: '#4A1525' }}>
-                    <i className="bi bi-headset me-2 text-danger"></i> Customer Queries & Tickets
+                    <i className="bi bi-headset me-2 text-danger"></i> {t('adm_customer_queries_tickets')}
                   </h5>
                   
                   <div className="d-flex flex-column gap-3 overflow-y-auto" style={{ maxHeight: '350px' }}>
                     {tickets.length === 0 ? (
-                      <p className="text-muted text-center py-5">No customer queries currently.</p>
+                      <p className="text-muted text-center py-5">{t('adm_no_customer_queries')}</p>
                     ) : (
                       tickets.map(ticket => (
                         <div key={ticket.id} className="p-3 rounded-3 border bg-light position-relative">
@@ -691,12 +693,12 @@ const AdminDashboard = () => {
                             </span>
                           </div>
                           <p className="mb-2 text-dark" style={{ fontSize: '0.9rem', fontStyle: 'italic' }}>"{ticket.message}"</p>
-                          {ticket.status === 'Open' && (
+                              {ticket.status === 'Open' && (
                             <button 
                               className="btn btn-sm btn-success py-1 px-2.5 rounded-2 fw-semibold"
                               onClick={() => handleResolveTicket(ticket.id)}
                             >
-                              Mark Resolved
+                              {t('adm_mark_resolved')}
                             </button>
                           )}
                         </div>
@@ -710,19 +712,19 @@ const AdminDashboard = () => {
             {/* Live Orders Section */}
             <div className="card border-0 shadow-sm rounded-4 p-4 bg-white">
               <h5 className="mb-4 text-start fw-bold" style={{ fontFamily: 'serif', color: '#4A1525' }}>
-                <i className="bi bi-clock-history me-2 text-danger"></i> Order Status Control
+                <i className="bi bi-clock-history me-2 text-danger"></i> {t('adm_order_status_control')}
               </h5>
               <div className="table-responsive">
                 <table className="table align-middle">
                   <thead>
                     <tr className="table-light text-secondary" style={{ fontSize: '0.85rem' }}>
-                      <th>Order ID</th>
-                      <th>Customer</th>
-                      <th>Date</th>
-                      <th>Total</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                      <th className="text-end">Invoice</th>
+                      <th>{t('adm_th_order_id')}</th>
+                      <th>{t('adm_th_customer')}</th>
+                      <th>{t('adm_th_date')}</th>
+                      <th>{t('adm_th_total')}</th>
+                      <th>{t('adm_th_status')}</th>
+                      <th>{t('adm_th_actions')}</th>
+                      <th className="text-end">{t('adm_invoice')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -731,7 +733,7 @@ const AdminDashboard = () => {
                         <td className="fw-semibold text-dark">{ord.id}</td>
                         <td>
                           <strong className="text-dark d-block">{ord.shippingAddress?.name || ord.customerName}</strong>
-                          <small className="text-muted">{ord.shippingAddress?.phone || 'N/A'}</small>
+                          <small className="text-muted">{ord.shippingAddress?.phone || t('adm_na')}</small>
                         </td>
                         <td style={{ fontSize: '0.85rem' }}>{new Date(ord.date).toLocaleDateString()}</td>
                         <td className="fw-bold">₹{ord.total.toFixed(0)}</td>
@@ -751,8 +753,8 @@ const AdminDashboard = () => {
                               updateOrderStatus(ord.id, e.target.value as any);
                               Swal.fire({
                                 icon: 'success',
-                                title: 'Status Updated',
-                                text: `Order status set to ${e.target.value}`,
+                                title: t('adm_status_updated'),
+                                text: `${t('adm_order_status_set_to')} ${e.target.value}`,
                                 timer: 1000,
                                 showConfirmButton: false
                               });
@@ -767,7 +769,7 @@ const AdminDashboard = () => {
                         </td>
                         <td className="text-end">
                           <Link to={`/invoice/${ord.id}`} className="btn btn-sm text-white fw-bold" style={{ backgroundColor: '#4A1525', border: '1px solid #FFB300' }}>
-                            Invoice
+                            {t('adm_invoice')}
                           </Link>
                         </td>
                       </tr>
@@ -783,18 +785,18 @@ const AdminDashboard = () => {
         {activeTab === 'payments' && (
           <div className="card border-0 shadow-sm rounded-4 p-4 bg-white">
             <h5 className="mb-4 text-start fw-bold" style={{ fontFamily: 'serif', color: '#4A1525' }}>
-              <i className="bi bi-credit-card me-2 text-danger"></i> Transaction & Payment Logs
+              <i className="bi bi-credit-card me-2 text-danger"></i> {t('adm_transaction_payment_logs')}
             </h5>
             <div className="table-responsive">
               <table className="table align-middle">
                 <thead>
                   <tr className="table-light text-secondary">
-                    <th>Order ID</th>
-                    <th>Amount</th>
-                    <th>Method</th>
-                    <th>Transaction ID</th>
-                    <th>Status</th>
-                    <th>Action</th>
+                    <th>{t('adm_th_order_id')}</th>
+                    <th>{t('adm_th_amount')}</th>
+                    <th>{t('adm_th_method')}</th>
+                    <th>{t('adm_th_transaction_id')}</th>
+                    <th>{t('adm_th_status')}</th>
+                    <th>{t('adm_th_action')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -803,7 +805,7 @@ const AdminDashboard = () => {
                       <td className="fw-semibold">{pay.orderId}</td>
                       <td>₹{pay.amount}</td>
                       <td><span className="badge bg-light text-dark border">{pay.method}</span></td>
-                      <td><code>{pay.transactionId || 'COD (None)'}</code></td>
+                      <td><code>{pay.transactionId || t('adm_cod_none')}</code></td>
                       <td>
                         <span className={`badge ${
                           pay.status === 'Completed' ? 'bg-success' : pay.status === 'Pending' ? 'bg-warning text-dark' : 'bg-danger'
@@ -818,7 +820,7 @@ const AdminDashboard = () => {
                           onChange={(e) => {
                             if (pay._id) {
                               updatePaymentStatus(pay._id, e.target.value as any);
-                              Swal.fire('Success', 'Payment status updated.', 'success');
+                              Swal.fire(t('adm_success'), t('adm_payment_status_updated'), 'success');
                             }
                           }}
                           style={{ maxWidth: '130px' }}
@@ -841,17 +843,17 @@ const AdminDashboard = () => {
         {activeTab === 'shipping' && (
           <div className="card border-0 shadow-sm rounded-4 p-4 bg-white">
             <h5 className="mb-4 text-start fw-bold" style={{ fontFamily: 'serif', color: '#4A1525' }}>
-              <i className="bi bi-truck me-2 text-danger"></i> Shipping & Delivery Status
+              <i className="bi bi-truck me-2 text-danger"></i> {t('adm_shipping_delivery_status')}
             </h5>
             <div className="table-responsive">
               <table className="table align-middle">
                 <thead>
                   <tr className="table-light text-secondary">
-                    <th>Order ID</th>
-                    <th>Carrier</th>
-                    <th>Tracking Number</th>
-                    <th>Status</th>
-                    <th>Action</th>
+                    <th>{t('adm_th_order_id')}</th>
+                    <th>{t('adm_th_carrier')}</th>
+                    <th>{t('adm_th_tracking_number')}</th>
+                    <th>{t('adm_th_status')}</th>
+                    <th>{t('adm_th_action')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -879,7 +881,7 @@ const AdminDashboard = () => {
                             onChange={(e) => setShipTracking(e.target.value)} 
                           />
                         ) : (
-                          ship.trackingNumber || <em className="text-muted">Not Assigned</em>
+                          ship.trackingNumber || <em className="text-muted">{t('adm_not_assigned')}</em>
                         )}
                       </td>
                       <td>
@@ -904,10 +906,10 @@ const AdminDashboard = () => {
                         {editingShipId === ship._id ? (
                           <div className="d-flex gap-2">
                             <button className="btn btn-sm btn-success" onClick={() => ship._id && handleSaveShipping(ship._id)}>
-                              Save
+                              {t('adm_save')}
                             </button>
                             <button className="btn btn-sm btn-secondary" onClick={() => setEditingShipId(null)}>
-                              Cancel
+                              {t('adm_cancel')}
                             </button>
                           </div>
                         ) : (
@@ -921,7 +923,7 @@ const AdminDashboard = () => {
                               setShipStatus(ship.status);
                             }}
                           >
-                            Update
+                            {t('adm_update')}
                           </button>
                         )}
                       </td>
@@ -938,32 +940,32 @@ const AdminDashboard = () => {
           <div className="row g-4">
             <div className="col-lg-4">
               <div className="card border-0 shadow-sm rounded-4 p-4 bg-white">
-                <h5 className="mb-4 fw-bold" style={{ fontFamily: 'serif', color: '#4A1525' }}>Create Coupon</h5>
+                <h5 className="mb-4 fw-bold" style={{ fontFamily: 'serif', color: '#4A1525' }}>{t('adm_create_coupon')}</h5>
                 <form onSubmit={handleCreateCoupon}>
                   <div className="mb-3">
-                    <label className="form-label text-muted fw-semibold">Coupon Code</label>
+                    <label className="form-label text-muted fw-semibold">{t('adm_coupon_code')}</label>
                     <input 
                       type="text" 
                       className="form-control" 
-                      placeholder="e.g. MONSOON20" 
+                      placeholder={t('adm_coupon_code_placeholder')} 
                       value={couponCode} 
                       onChange={(e) => setCouponCode(e.target.value)} 
                       required 
                     />
                   </div>
                   <div className="mb-3">
-                    <label className="form-label text-muted fw-semibold">Discount Type</label>
+                    <label className="form-label text-muted fw-semibold">{t('adm_discount_type')}</label>
                     <select 
                       className="form-select" 
                       value={discountType} 
                       onChange={(e) => setDiscountType(e.target.value as any)}
                     >
-                      <option value="percentage">Percentage (%)</option>
-                      <option value="flat">Flat Rate (₹)</option>
+                      <option value="percentage">{t('adm_percentage')}</option>
+                      <option value="flat">{t('adm_flat_rate')}</option>
                     </select>
                   </div>
                   <div className="mb-3">
-                    <label className="form-label text-muted fw-semibold">Discount Value</label>
+                    <label className="form-label text-muted fw-semibold">{t('adm_discount_value')}</label>
                     <input 
                       type="number" 
                       className="form-control" 
@@ -973,7 +975,7 @@ const AdminDashboard = () => {
                     />
                   </div>
                   <div className="mb-3">
-                    <label className="form-label text-muted fw-semibold">Min Purchase Limit (₹)</label>
+                    <label className="form-label text-muted fw-semibold">{t('adm_min_purchase_limit')}</label>
                     <input 
                       type="number" 
                       className="form-control" 
@@ -982,7 +984,7 @@ const AdminDashboard = () => {
                     />
                   </div>
                   <button type="submit" className="btn text-white w-100 fw-bold" style={{ backgroundColor: '#aa1a31' }}>
-                    Generate Coupon
+                    {t('adm_generate_coupon')}
                   </button>
                 </form>
               </div>
@@ -990,17 +992,17 @@ const AdminDashboard = () => {
 
             <div className="col-lg-8">
               <div className="card border-0 shadow-sm rounded-4 p-4 bg-white">
-                <h5 className="mb-4 fw-bold" style={{ fontFamily: 'serif', color: '#4A1525' }}>Active Coupons</h5>
+                <h5 className="mb-4 fw-bold" style={{ fontFamily: 'serif', color: '#4A1525' }}>{t('adm_active_coupons')}</h5>
                 <div className="table-responsive">
                   <table className="table align-middle">
                     <thead>
                       <tr className="table-light text-secondary">
-                        <th>Code</th>
-                        <th>Type</th>
-                        <th>Value</th>
-                        <th>Min Purchase</th>
-                        <th>Status</th>
-                        <th className="text-end">Actions</th>
+                        <th>{t('adm_th_code')}</th>
+                        <th>{t('adm_th_type')}</th>
+                        <th>{t('adm_th_value')}</th>
+                        <th>{t('adm_th_min_purchase')}</th>
+                        <th>{t('adm_th_status')}</th>
+                        <th className="text-end">{t('adm_th_actions')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1012,7 +1014,7 @@ const AdminDashboard = () => {
                           <td>₹{disc.minPurchase}</td>
                           <td>
                             <span className={`badge ${disc.active ? 'bg-success' : 'bg-secondary'}`}>
-                              {disc.active ? 'Active' : 'Inactive'}
+                              {disc.active ? t('adm_status_active') : t('adm_status_inactive')}
                             </span>
                           </td>
                           <td className="text-end">
@@ -1037,11 +1039,11 @@ const AdminDashboard = () => {
         {activeTab === 'reviews' && (
           <div className="card border-0 shadow-sm rounded-4 p-4 bg-white">
             <h5 className="mb-4 text-start fw-bold" style={{ fontFamily: 'serif', color: '#4A1525' }}>
-              <i className="bi bi-star me-2 text-danger"></i> Product Reviews & Moderation
+              <i className="bi bi-star me-2 text-danger"></i> {t('adm_product_reviews_moderation')}
             </h5>
             <div className="row g-3">
               {reviews.length === 0 ? (
-                <div className="text-center text-muted py-5 col-12">No customer reviews yet.</div>
+                <div className="text-center text-muted py-5 col-12">{t('adm_no_customer_reviews')}</div>
               ) : (
                 reviews.map(rev => (
                   <div key={rev._id} className="col-md-6 col-lg-4">
@@ -1064,7 +1066,7 @@ const AdminDashboard = () => {
                       </div>
                       <p className="text-dark small mb-2">"{rev.comment}"</p>
                       <div className="text-muted" style={{ fontSize: '0.75rem' }}>
-                        By <strong>{rev.customerName}</strong> ({rev.customerEmail})
+                        {t('adm_review_by')} <strong>{rev.customerName}</strong> ({rev.customerEmail})
                       </div>
                     </div>
                   </div>
@@ -1078,17 +1080,17 @@ const AdminDashboard = () => {
         {activeTab === 'logs' && (
           <div className="card border-0 shadow-sm rounded-4 p-4 bg-white">
             <h5 className="mb-4 text-start fw-bold" style={{ fontFamily: 'serif', color: '#4A1525' }}>
-              <i className="bi bi-journal-text me-2 text-danger"></i> Inventory Transaction Logs
+              <i className="bi bi-journal-text me-2 text-danger"></i> {t('adm_inventory_transaction_logs')}
             </h5>
             <div className="table-responsive">
               <table className="table align-middle">
                 <thead>
                   <tr className="table-light text-secondary">
-                    <th>Product</th>
-                    <th>Change Type</th>
-                    <th>Quantity Changed</th>
-                    <th>New Stock Level</th>
-                    <th>Timestamp</th>
+                    <th>{t('adm_th_product')}</th>
+                    <th>{t('adm_th_change_type')}</th>
+                    <th>{t('adm_th_quantity_changed')}</th>
+                    <th>{t('adm_th_new_stock_level')}</th>
+                    <th>{t('adm_th_timestamp')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1105,7 +1107,7 @@ const AdminDashboard = () => {
                       <td className={log.quantityChanged < 0 ? 'text-danger fw-bold' : 'text-success fw-bold'}>
                         {log.quantityChanged > 0 ? `+${log.quantityChanged}` : log.quantityChanged}
                       </td>
-                      <td className="fw-semibold">{log.newStock} units</td>
+                      <td className="fw-semibold">{log.newStock} {t('adm_units')}</td>
                       <td style={{ fontSize: '0.85rem' }}>{new Date(log.createdAt || '').toLocaleString()}</td>
                     </tr>
                   ))}
@@ -1119,32 +1121,32 @@ const AdminDashboard = () => {
         {activeTab === 'tickets' && (
           <div className="card border-0 shadow-sm rounded-4 p-4 bg-white">
             <h5 className="mb-4 text-start fw-bold" style={{ fontFamily: 'serif', color: '#4A1525' }}>
-              <i className="bi bi-headset me-2 text-danger"></i> Customer Support Tickets & Reports
+              <i className="bi bi-headset me-2 text-danger"></i> {t('adm_support_tickets_reports')}
             </h5>
 
             {/* Ticket Report Stats */}
             <div className="row g-3 mb-4">
               <div className="col-md-3">
                 <div className="p-3 bg-light rounded-3 border text-center">
-                  <h6 className="text-muted small text-uppercase fw-semibold mb-1">Total Queries</h6>
+                  <h6 className="text-muted small text-uppercase fw-semibold mb-1">{t('adm_stat_total_queries')}</h6>
                   <h3 className="fw-bold mb-0 text-dark">{tickets.length}</h3>
                 </div>
               </div>
               <div className="col-md-3">
                 <div className="p-3 bg-light rounded-3 border text-center border-start border-danger border-3">
-                  <h6 className="text-muted small text-uppercase fw-semibold mb-1">Pending/Open</h6>
+                  <h6 className="text-muted small text-uppercase fw-semibold mb-1">{t('adm_stat_pending_open')}</h6>
                   <h3 className="fw-bold mb-0 text-danger">{tickets.filter(t => t.status === 'Open').length}</h3>
                 </div>
               </div>
               <div className="col-md-3">
                 <div className="p-3 bg-light rounded-3 border text-center border-start border-success border-3">
-                  <h6 className="text-muted small text-uppercase fw-semibold mb-1">Resolved</h6>
+                  <h6 className="text-muted small text-uppercase fw-semibold mb-1">{t('adm_stat_resolved')}</h6>
                   <h3 className="fw-bold mb-0 text-success">{tickets.filter(t => t.status === 'Resolved').length}</h3>
                 </div>
               </div>
               <div className="col-md-3">
                 <div className="p-3 bg-light rounded-3 border text-center">
-                  <h6 className="text-muted small text-uppercase fw-semibold mb-1">Resolution Rate</h6>
+                  <h6 className="text-muted small text-uppercase fw-semibold mb-1">{t('adm_stat_resolution_rate')}</h6>
                   <h3 className="fw-bold mb-0 text-primary">
                     {tickets.length > 0 
                       ? `${Math.round((tickets.filter(t => t.status === 'Resolved').length / tickets.length) * 100)}%`
@@ -1159,17 +1161,17 @@ const AdminDashboard = () => {
               <table className="table align-middle">
                 <thead>
                   <tr className="table-light text-secondary">
-                    <th>Customer Details</th>
-                    <th>Query Message</th>
-                    <th>Received Date</th>
-                    <th>Status</th>
-                    <th>Action</th>
+                    <th>{t('adm_th_customer_details')}</th>
+                    <th>{t('adm_th_query_message')}</th>
+                    <th>{t('adm_th_received_date')}</th>
+                    <th>{t('adm_th_status')}</th>
+                    <th>{t('adm_th_action')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {tickets.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="text-center text-muted py-4">No support tickets found.</td>
+                      <td colSpan={5} className="text-center text-muted py-4">{t('adm_no_support_tickets')}</td>
                     </tr>
                   ) : (
                     tickets.map(ticket => (
@@ -1195,10 +1197,10 @@ const AdminDashboard = () => {
                               className="btn btn-sm btn-success fw-bold py-1 px-2.5 rounded-2"
                               onClick={() => handleResolveTicket(ticket._id || ticket.id)}
                             >
-                              Mark Resolved
+                              {t('adm_mark_resolved')}
                             </button>
                           ) : (
-                            <span className="text-muted small"><i className="bi bi-check-circle-fill text-success me-1"></i> Completed</span>
+                            <span className="text-muted small"><i className="bi bi-check-circle-fill text-success me-1"></i> {t('adm_completed')}</span>
                           )}
                         </td>
                       </tr>
@@ -1214,63 +1216,63 @@ const AdminDashboard = () => {
         {isSuperAdmin && activeTab === 'settings' && (
           <div className="card border-0 shadow-sm rounded-4 p-4 bg-white" style={{ maxWidth: '650px' }}>
             <h5 className="mb-4 text-start fw-bold" style={{ fontFamily: 'serif', color: '#4A1525' }}>
-              <i className="bi bi-wallet2 me-2 text-danger"></i> Payment Gateway & Bank settings
+              <i className="bi bi-wallet2 me-2 text-danger"></i> {t('adm_payment_gateway_settings')}
             </h5>
             <form onSubmit={handleSavePaymentSettings}>
               <div className="mb-3">
-                <label className="form-label fw-semibold text-dark">Merchant UPI VPA / VPA ID</label>
+                <label className="form-label fw-semibold text-dark">{t('adm_merchant_upi_vpa')}</label>
                 <input 
                   type="text" 
                   className="form-control" 
                   value={adminMerchantUpi} 
                   onChange={(e) => setAdminMerchantUpi(e.target.value)} 
-                  placeholder="e.g. yourname@bank, paytm, or upi" 
+                  placeholder={t('adm_upi_placeholder')} 
                   required
                 />
-                <small className="text-muted">Customers will scan or open intent links pointing to this VPA address to pay you directly.</small>
+                <small className="text-muted">{t('adm_upi_help')}</small>
               </div>
 
               <div className="mb-3">
-                <label className="form-label fw-semibold text-dark">Merchant Name</label>
+                <label className="form-label fw-semibold text-dark">{t('adm_merchant_name')}</label>
                 <input 
                   type="text" 
                   className="form-control" 
                   value={adminMerchantName} 
                   onChange={(e) => setAdminMerchantName(e.target.value)} 
-                  placeholder="e.g. RA Masala Ltd" 
+                  placeholder={t('adm_merchant_name_placeholder')} 
                   required
                 />
-                <small className="text-muted">Display name configured with your merchant VPA.</small>
+                <small className="text-muted">{t('adm_merchant_name_help')}</small>
               </div>
 
               <hr className="my-4 text-muted" />
 
               <div className="mb-3">
-                <label className="form-label fw-semibold text-dark">Razorpay Key ID</label>
+                <label className="form-label fw-semibold text-dark">{t('adm_razorpay_key_id')}</label>
                 <input 
                   type="text" 
                   className="form-control" 
                   value={adminGatewayKeyId} 
                   onChange={(e) => setAdminGatewayKeyId(e.target.value)} 
-                  placeholder="rzp_live_xxxxxxxxxx" 
+                  placeholder={t('adm_razorpay_key_id_placeholder')} 
                 />
-                <small className="text-muted">Your public API key from Razorpay Merchant Dashboard.</small>
+                <small className="text-muted">{t('adm_razorpay_key_id_help')}</small>
               </div>
 
               <div className="mb-3">
-                <label className="form-label fw-semibold text-dark">Razorpay Key Secret</label>
+                <label className="form-label fw-semibold text-dark">{t('adm_razorpay_key_secret')}</label>
                 <input 
                   type="password" 
                   className="form-control" 
                   value={adminGatewayKeySecret} 
                   onChange={(e) => setAdminGatewayKeySecret(e.target.value)} 
-                  placeholder="Secret API Key" 
+                  placeholder={t('adm_razorpay_secret_placeholder')} 
                 />
-                <small className="text-muted">Your secret API key. Kept secure and hidden on the server.</small>
+                <small className="text-muted">{t('adm_razorpay_secret_help')}</small>
               </div>
 
               <button type="submit" className="btn text-white fw-bold px-4 py-2 mt-3" style={{ backgroundColor: '#4A1525' }}>
-                Save Settings
+                {t('adm_save_settings')}
               </button>
             </form>
           </div>
@@ -1279,31 +1281,31 @@ const AdminDashboard = () => {
         {isSuperAdmin && activeTab === 'security' && (
           <div className="card border-0 shadow-sm rounded-4 p-4 bg-white">
             <h5 className="mb-4 text-start fw-bold" style={{ fontFamily: 'serif', color: '#4A1525' }}>
-              <i className="bi bi-shield-lock-fill me-2 text-danger"></i> Super Admin System & Security Logs
+              <i className="bi bi-shield-lock-fill me-2 text-danger"></i> {t('adm_security_logs_title')}
             </h5>
             
             <div className="table-responsive">
               <table className="table align-middle">
                 <thead>
                   <tr className="table-light text-secondary">
-                    <th>Timestamp</th>
-                    <th>Action Taken By</th>
-                    <th>Action</th>
-                    <th>Target User</th>
-                    <th>Log Details</th>
-                    <th className="text-end">Actions</th>
+                    <th>{t('adm_th_timestamp')}</th>
+                    <th>{t('adm_th_action_taken_by')}</th>
+                    <th>{t('adm_th_action')}</th>
+                    <th>{t('adm_th_target_user')}</th>
+                    <th>{t('adm_th_log_details')}</th>
+                    <th className="text-end">{t('adm_th_actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {securityLogs.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="text-center text-muted py-4">No security logs recorded.</td>
+                      <td colSpan={5} className="text-center text-muted py-4">{t('adm_no_security_logs')}</td>
                     </tr>
                   ) : (
                     securityLogs.map(log => (
                       <tr key={log._id}>
                         <td style={{ fontSize: '0.85rem' }}>
-                          {log.createdAt ? new Date(log.createdAt).toLocaleString() : 'N/A'}
+                          {log.createdAt ? new Date(log.createdAt).toLocaleString() : t('adm_na')}
                         </td>
                         <td>
                           <strong className="text-dark d-block">{log.adminName}</strong>
@@ -1333,28 +1335,28 @@ const AdminDashboard = () => {
                                   className="btn btn-sm btn-success fw-bold py-1 px-2.5 rounded-2"
                                   onClick={() => {
                                     Swal.fire({
-                                      title: 'Reactivate Admin?',
-                                      text: `Are you sure you want to reactivate ${log.targetName}?`,
+                                      title: t('adm_reactivate_admin_q'),
+                                      text: `${t('adm_reactivate_confirm')} ${log.targetName}?`,
                                       icon: 'warning',
                                       showCancelButton: true,
                                       confirmButtonColor: '#198754',
                                       cancelButtonColor: '#secondary',
-                                      confirmButtonText: 'Yes, reactivate!'
+                                      confirmButtonText: t('adm_yes_reactivate')
                                     }).then((result) => {
                                       if (result.isConfirmed) {
                                         toggleUserStatus(targetUserObj.id || targetUserObj._id || '', true);
-                                        Swal.fire('Activated!', `User ${log.targetName} is now active.`, 'success');
+                                        Swal.fire(t('adm_activated'), `${t('adm_user')} ${log.targetName} ${t('adm_is_now_active')}`, 'success');
                                       }
                                     });
                                   }}
                                 >
-                                  Activate
+                                  {t('adm_activate')}
                                 </button>
                               );
                             } else if (targetUserObj) {
                               return (
                                 <span className="text-muted small">
-                                  <i className="bi bi-check-circle-fill text-success me-1"></i> Active
+                                  <i className="bi bi-check-circle-fill text-success me-1"></i> {t('adm_status_active')}
                                 </span>
                               );
                             } else {

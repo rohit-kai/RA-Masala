@@ -5,12 +5,14 @@ import Header from '../includes/Header';
 import Footer from '../includes/Footer';
 import RoutePaths from '../../config';
 import Swal from 'sweetalert2';
+import { useLanguage } from '../../context/LanguageContext';
 
 const Signup = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { signup } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -18,8 +20,8 @@ const Signup = () => {
     if (!name || !email || !password) {
       Swal.fire({
         icon: 'error',
-        title: 'Error',
-        text: 'Please fill in all fields.',
+        title: t('sgn_swal_error_title'),
+        text: t('sgn_swal_fill_fields'),
         confirmButtonColor: '#aa1a31'
       });
       return;
@@ -29,7 +31,7 @@ const Signup = () => {
     if (res.success) {
       Swal.fire({
         icon: 'success',
-        title: 'Account Created!',
+        title: t('sgn_swal_account_created'),
         text: res.message,
         timer: 1500,
         showConfirmButton: false
@@ -38,7 +40,7 @@ const Signup = () => {
     } else {
       Swal.fire({
         icon: 'error',
-        title: 'Signup Failed',
+        title: t('sgn_swal_signup_failed'),
         text: res.message,
         confirmButtonColor: '#aa1a31'
       });
@@ -52,35 +54,35 @@ const Signup = () => {
         <div className="card shadow-lg border-0 rounded-4" style={{ maxWidth: '450px', width: '100%', overflow: 'hidden' }}>
           <div className="py-4 text-center text-white position-relative" style={{ background: 'linear-gradient(135deg, #800c1e 0%, #aa1a31 100%)' }}>
             <h3 className="mb-1" style={{ fontFamily: 'serif', fontWeight: 'bold' }}>RA Masala</h3>
-            <p className="mb-0 text-white-50" style={{ fontSize: '0.9rem' }}>Join us in tasting authentic heritage spices</p>
+            <p className="mb-0 text-white-50" style={{ fontSize: '0.9rem' }}>{t('sgn_brand_tagline')}</p>
           </div>
           <div className="card-body p-4 p-md-5">
-            <h4 className="text-center mb-4" style={{ color: '#4A1525', fontFamily: 'serif', fontWeight: 'bold' }}>Create Account</h4>
+            <h4 className="text-center mb-4" style={{ color: '#4A1525', fontFamily: 'serif', fontWeight: 'bold' }}>{t('sgn_title')}</h4>
             <form onSubmit={handleSubmit}>
               <div className="mb-3">
-                <label className="form-label text-secondary fw-semibold">Full Name</label>
+                <label className="form-label text-secondary fw-semibold">{t('sgn_full_name_label')}</label>
                 <input 
                   type="text" 
                   className="form-control border-2 rounded-3" 
-                  placeholder="John Doe" 
+                  placeholder={t('sgn_name_placeholder')} 
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   style={{ borderColor: '#EAEAEA' }}
                 />
               </div>
               <div className="mb-3">
-                <label className="form-label text-secondary fw-semibold">Email Address</label>
+                <label className="form-label text-secondary fw-semibold">{t('sgn_email_label')}</label>
                 <input 
                   type="email" 
                   className="form-control border-2 rounded-3" 
-                  placeholder="name@example.com" 
+                  placeholder={t('sgn_email_placeholder')} 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   style={{ borderColor: '#EAEAEA' }}
                 />
               </div>
               <div className="mb-4">
-                <label className="form-label text-secondary fw-semibold">Password</label>
+                <label className="form-label text-secondary fw-semibold">{t('sgn_password_label')}</label>
                 <input 
                   type="password" 
                   className="form-control border-2 rounded-3" 
@@ -95,13 +97,13 @@ const Signup = () => {
                 className="btn w-100 py-2.5 text-white fw-bold border-0 rounded-3 shadow-sm"
                 style={{ background: '#aa1a31' }}
               >
-                Sign Up
+                {t('sgn_submit')}
               </button>
             </form>
 
             <div className="mt-4 text-center signup-card-links">
               <p className="mb-0 text-muted" style={{ fontSize: '0.9rem' }}>
-                Already have an account? <Link to={RoutePaths.login}>Sign In</Link>
+                {t('sgn_login_question')} <Link to={RoutePaths.login}>{t('sgn_login_link')}</Link>
               </p>
             </div>
           </div>

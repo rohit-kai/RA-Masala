@@ -23,7 +23,7 @@ const BrandDetail: React.FC = () => {
       title: t('brands_masale_title') || 'RA Masale Pvt. Ltd.',
       desc: t('brands_masale_desc') || 'Our signature range of pure ground spices and authentic custom blends.',
       icon: 'bi-fire',
-      badge: 'Spices',
+      badge: t('brd_badge_spices'),
       color: '#4A1525',
       logo: getAssetPath('images/log1.jpg')
     },
@@ -32,7 +32,7 @@ const BrandDetail: React.FC = () => {
       title: t('brands_namkeen_title') || 'RA Namkeen',
       desc: t('brands_namkeen_desc') || 'Traditional, crispy, and savory snacks crafted with high-quality ingredients.',
       icon: 'bi-basket',
-      badge: 'Snacks',
+      badge: t('brd_badge_snacks'),
       color: '#0A4D68',
       logo: getAssetPath('images/logo2.jpg')
     },
@@ -41,7 +41,7 @@ const BrandDetail: React.FC = () => {
       title: t('brands_spicehome_title') || 'RA Spice Home',
       desc: t('brands_spicehome_desc') || 'Everyday spice necessities processed under strict hygienic standards.',
       icon: 'bi-house-heart',
-      badge: 'Blends',
+      badge: t('brd_badge_blends'),
       color: '#05bfdb',
       logo: getAssetPath('images/logo3.jpg')
     },
@@ -50,7 +50,7 @@ const BrandDetail: React.FC = () => {
       title: t('brands_chaha_title') || 'RA Chaha',
       desc: t('brands_chaha_desc') || 'Premium tea leaves selected from rich gardens, blended for authentic flavor.',
       icon: 'bi-cup-hot',
-      badge: 'Tea',
+      badge: t('brd_badge_tea'),
       color: '#D2691E',
       logo: getAssetPath('images/logo4.jpg')
     },
@@ -59,7 +59,7 @@ const BrandDetail: React.FC = () => {
       title: t('brands_agro_title') || 'RA Agro',
       desc: t('brands_agro_desc') || 'Directly sourced agricultural essentials like grains, pulses, and organic oils.',
       icon: 'bi-tree',
-      badge: 'Agro',
+      badge: t('brd_badge_agro'),
       color: '#1A5F7A',
       logo: getAssetPath('images/logo5.jpg')
     }
@@ -73,9 +73,9 @@ const BrandDetail: React.FC = () => {
       <>
         <Header />
         <div className="container py-5 text-center my-5">
-          <h2 className="text-danger fw-bold">Brand Not Found</h2>
-          <p className="text-muted">The brand you are looking for does not exist or has been removed.</p>
-          <Link to="/brands" className="btn btn-danger mt-3 px-4">Back to Brands</Link>
+          <h2 className="text-danger fw-bold">{t('brd_not_found_title')}</h2>
+          <p className="text-muted">{t('brd_not_found_message')}</p>
+          <Link to="/brands" className="btn btn-danger mt-3 px-4">{t('brd_back_to_brands')}</Link>
         </div>
         <Footer />
       </>
@@ -109,14 +109,14 @@ const BrandDetail: React.FC = () => {
   const [selectedSubCategory, setSelectedSubCategory] = useState('All');
 
   const subCategoriesList = [
-    { name: 'Ground Spices', img: 'images/subcategories/ground_spices.png', bg: '#D12B43' },
-    { name: 'Pickles & Papad', img: 'images/subcategories/pickles_papad.png', bg: '#008b70' },
-    { name: 'Ready Mix Spices', img: 'images/subcategories/ready_mix.png', bg: '#E45B5B' },
-    { name: 'Seasonal Range', img: 'images/subcategories/seasonal.png', bg: '#C28E5D' },
-    { name: 'Chutneys', img: 'images/subcategories/chutneys.png', bg: '#708050' },
-    { name: 'Kitchen Favourites', img: 'images/subcategories/kitchen_favs.png', bg: '#60729B' },
-    { name: 'Premium Range', img: 'images/subcategories/premium.png', bg: '#D47525' },
-    { name: 'Dessert', img: 'images/subcategories/dessert.png', bg: '#D65A98' }
+    { name: 'Ground Spices', labelKey: 'brd_subcat_ground_spices', img: 'images/subcategories/ground_spices.png', bg: '#D12B43' },
+    { name: 'Pickles & Papad', labelKey: 'brd_subcat_pickles_papad', img: 'images/subcategories/pickles_papad.png', bg: '#008b70' },
+    { name: 'Ready Mix Spices', labelKey: 'brd_subcat_ready_mix', img: 'images/subcategories/ready_mix.png', bg: '#E45B5B' },
+    { name: 'Seasonal Range', labelKey: 'brd_subcat_seasonal', img: 'images/subcategories/seasonal.png', bg: '#C28E5D' },
+    { name: 'Chutneys', labelKey: 'brd_subcat_chutneys', img: 'images/subcategories/chutneys.png', bg: '#708050' },
+    { name: 'Kitchen Favourites', labelKey: 'brd_subcat_kitchen_favourites', img: 'images/subcategories/kitchen_favs.png', bg: '#60729B' },
+    { name: 'Premium Range', labelKey: 'brd_subcat_premium', img: 'images/subcategories/premium.png', bg: '#D47525' },
+    { name: 'Dessert', labelKey: 'brd_subcat_dessert', img: 'images/subcategories/dessert.png', bg: '#D65A98' }
   ];
 
   // Filter products by selected category and subcategory
@@ -147,7 +147,7 @@ const BrandDetail: React.FC = () => {
           {/* Back button */}
           <div className="mb-4">
             <Link to="/brands" className="btn text-decoration-none fw-bold d-inline-flex align-items-center gap-2" style={{ color: currentBrand.color }}>
-              <i className="bi bi-arrow-left fs-5"></i> Back to Brands Portfolio
+              <i className="bi bi-arrow-left fs-5"></i> {t('brd_back_to_portfolio')}
             </Link>
           </div>
 
@@ -176,7 +176,7 @@ const BrandDetail: React.FC = () => {
                     fontWeight: 'bold',
                     borderRadius: '30px'
                   }}>
-                    {currentBrand.badge} Brand Range
+                    {currentBrand.badge} {t('brd_brand_range')}
                   </span>
                   <h1 className="fw-bold mb-3 display-4 font-serif" style={{ fontFamily: 'serif', color: '#FFD700' }}>
                     {currentBrand.title}
@@ -206,7 +206,7 @@ const BrandDetail: React.FC = () => {
                     outline: 'none'
                   }}
                 >
-                  {cat === 'All' ? 'All Products' : cat}
+                  {cat === 'All' ? t('brd_all_products') : cat}
                 </button>
               ))}
             </div>
@@ -216,7 +216,7 @@ const BrandDetail: React.FC = () => {
           {brandId === 'spicehome' && (
             <div className="mb-5 animate__animated animate__fadeIn">
               <h5 className="text-center fw-bold mb-4" style={{ color: '#4A1525', fontFamily: 'serif' }}>
-                Browse by Spice Categories
+                {t('brd_browse_spice_categories')}
               </h5>
               <div className="d-flex flex-wrap gap-4 justify-content-center">
                 {/* 'All' button */}
@@ -237,7 +237,7 @@ const BrandDetail: React.FC = () => {
                   >
                     <i className={`bi bi-grid-fill fs-3 ${selectedSubCategory === 'All' ? 'text-dark' : 'text-secondary'}`}></i>
                   </div>
-                  <strong className="d-block small text-dark">ALL</strong>
+                  <strong className="d-block small text-dark">{t('brd_all')}</strong>
                 </div>
 
                 {subCategoriesList.map((sub) => {
@@ -264,7 +264,7 @@ const BrandDetail: React.FC = () => {
                         {sub.img ? (
                           <img
                             src={getAssetPath(sub.img)}
-                            alt={sub.name}
+                            alt={t(sub.labelKey)}
                             style={{
                               width: '100%',
                               height: '100%',
@@ -277,7 +277,7 @@ const BrandDetail: React.FC = () => {
                         )}
                       </div>
                       <strong className="d-block text-secondary" style={{ fontSize: '0.72rem', textTransform: 'uppercase', lineHeight: '1.2' }}>
-                        {sub.name}
+                        {t(sub.labelKey)}
                       </strong>
                     </div>
                   );
@@ -292,12 +292,12 @@ const BrandDetail: React.FC = () => {
               <div className="col-12 text-center py-5">
                 <div className="p-5 rounded-4 bg-white shadow-sm border border-dashed d-inline-block max-w-500">
                   <i className="bi bi-box-seam display-1 text-muted d-block mb-3"></i>
-                  <h4 className="fw-bold text-dark mb-2">No Products Available</h4>
+                  <h4 className="fw-bold text-dark mb-2">{t('brd_no_products_title')}</h4>
                   <p className="text-secondary mb-4">
-                    Products under this brand are temporarily unavailable or in the process of being imported. Please check back later.
+                    {t('brd_no_products_message')}
                   </p>
                   <Link to="/shop" className="btn text-white fw-bold px-4" style={{ backgroundColor: currentBrand.color }}>
-                    Explore General Shop
+                    {t('brd_explore_shop')}
                   </Link>
                 </div>
               </div>
@@ -392,27 +392,27 @@ const BrandDetail: React.FC = () => {
                             style={{ backgroundColor: '#aa1a31', borderRadius: '8px' }}
                             onClick={() => {
                               if (product.stock <= 0) {
-                                Swal.fire('Out of Stock', 'Sorry, this product is temporarily unavailable.', 'warning');
+                                Swal.fire(t('brd_out_of_stock'), t('brd_out_of_stock_message'), 'warning');
                                 return;
                               }
                               addToCart(product);
                               Swal.fire({
                                 icon: 'success',
-                                title: 'Added to Cart',
-                                text: `${product.name} has been added to your shopping cart.`,
+                                title: t('brd_added_to_cart'),
+                                text: `${product.name} ${t('brd_added_to_cart_message')}`,
                                 timer: 1200,
                                 showConfirmButton: false
                               });
                             }}
                           >
-                            <i className="bi bi-cart-plus me-2"></i> Add to Cart
+                            <i className="bi bi-cart-plus me-2"></i> {t('home_add_to_cart')}
                           </button>
                           <Link
                             to={`/product/${pId}`}
                             className="btn btn-outline-light w-100 fw-semibold py-2"
                             style={{ borderRadius: '8px', fontSize: '0.9rem' }}
                           >
-                            View Details
+                            {t('brd_view_details')}
                           </Link>
                         </div>
                       </div>

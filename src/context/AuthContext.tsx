@@ -138,6 +138,8 @@ interface AuthContextType {
   logout: () => void;
   updateProfile: (name: string, phone: string, address: string, city: string, zip: string) => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; message: string }>;
+  forgotPassword: (email: string) => Promise<{ success: boolean; message: string }>;
+  resetPassword: (token: string, password: string) => Promise<{ success: boolean; message: string }>;
   addProduct: (product: Omit<Product, 'id'>) => Promise<void>;
   updateProduct: (product: Product) => Promise<void>;
   deleteProduct: (id: string | number) => Promise<void>;
@@ -370,6 +372,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const forgotPassword = async (email: string) => {
+    try {
+      const res = await axios.post('/api/users/forgot-password', { email });
+      return { success: true, message: res.data.message };
+    } catch (error: any) {
+      return { success: false, message: error.response?.data?.message || 'Error sending reset link' };
+    }
+  };
+
+  const resetPassword = async (token: string, password: string) => {
+    try {
+      const res = await axios.post('/api/users/reset-password', { token, password });
+      return { success: true, message: res.data.message };
+    } catch (error: any) {
+      return { success: false, message: error.response?.data?.message || 'Error resetting password' };
+    }
+  };
+
   const addProduct = async (newProd: Omit<Product, 'id'>) => {
     try {
       await axios.post('/api/products', newProd);
@@ -520,7 +540,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     <AuthContext.Provider value={{
       user, users, orders, products, tickets,
       payments, shippingList, discounts, reviews, inventoryLogs,
-      login, signup, logout, updateProfile, changePassword,
+      login, signup, logout, updateProfile, changePassword, forgotPassword, resetPassword,
       addProduct, updateProduct, deleteProduct,
       updateOrderStatus, addTicket, resolveTicket, placeOrder,
       updatePaymentStatus, updateShipping, addDiscount, updateDiscount, deleteDiscount,

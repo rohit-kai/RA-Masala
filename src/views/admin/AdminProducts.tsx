@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import Header from '../includes/Header';
 import Footer from '../includes/Footer';
 import RoutePaths from '../../config';
@@ -11,14 +12,15 @@ import { getAssetPath } from '../../Utils/imageHelper';
 const AdminProducts = () => {
   const { user, products, addProduct, updateProduct, deleteProduct } = useAuth();
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   // Route security
   useEffect(() => {
     if (!user || user.role !== 'admin') {
       Swal.fire({
         icon: 'error',
-        title: 'Access Denied',
-        text: 'You do not have administrative privileges.',
+        title: t('adm_access_denied'),
+        text: t('adm_no_admin_privileges'),
         confirmButtonColor: '#aa1a31'
       });
       navigate(RoutePaths.home);
@@ -62,7 +64,7 @@ const AdminProducts = () => {
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !description || price <= 0 || stock < 0) {
-      Swal.fire('Error', 'Please fill in valid details', 'error');
+      Swal.fire(t('adm_error'), t('adm_fill_valid_details'), 'error');
       return;
     }
     addProduct({
@@ -76,7 +78,7 @@ const AdminProducts = () => {
       brand,
       subCategory
     });
-    Swal.fire('Success', 'Product added successfully!', 'success');
+    Swal.fire(t('adm_success'), t('adm_product_added'), 'success');
     resetForm();
   };
 
@@ -108,23 +110,23 @@ const AdminProducts = () => {
       brand,
       subCategory
     });
-    Swal.fire('Success', 'Product updated successfully!', 'success');
+    Swal.fire(t('adm_success'), t('adm_product_updated'), 'success');
     resetForm();
   };
 
   const handleDelete = (id: number) => {
     Swal.fire({
-      title: 'Are you sure?',
-      text: "You won't be able to revert this!",
+      title: t('adm_are_you_sure'),
+      text: t('adm_cannot_revert'),
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#aa1a31',
       cancelButtonColor: '#secondary',
-      confirmButtonText: 'Yes, delete it!'
+      confirmButtonText: t('adm_yes_delete')
     }).then((result) => {
       if (result.isConfirmed) {
         deleteProduct(id);
-        Swal.fire('Deleted!', 'Product has been deleted.', 'success');
+        Swal.fire(t('adm_deleted'), t('adm_product_deleted'), 'success');
       }
     });
   };
@@ -153,15 +155,15 @@ const AdminProducts = () => {
         <div className="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-3 border-bottom border-2" style={{ borderColor: '#FFB300' }}>
           <div>
             <h2 className="mb-1" style={{ fontFamily: 'serif', color: '#4A1525', fontWeight: 'bold' }}>
-              Inventory Management
+              {t('adm_inventory_management')}
             </h2>
-            <p className="text-secondary mb-0">Total Products: <strong>{products.length}</strong> items • Filtered: <strong>{filteredProducts.length}</strong></p>
+            <p className="text-secondary mb-0">{t('adm_total_products')} <strong>{products.length}</strong> {t('adm_items')} • {t('adm_filtered')} <strong>{filteredProducts.length}</strong></p>
           </div>
           <div className="d-flex gap-2 mt-3 mt-sm-0">
             <button className="btn btn-danger fw-bold" onClick={() => { resetForm(); setIsAdding(true); }}>
-              <i className="bi bi-plus-circle me-1"></i> Add Product
+              <i className="bi bi-plus-circle me-1"></i> {t('adm_add_product')}
             </button>
-            <Link to={RoutePaths.admin} className="btn btn-sm text-white fw-bold d-flex align-items-center" style={{ backgroundColor: '#4A1525', border: '1px solid #FFB300' }}>Back to Dashboard</Link>
+            <Link to={RoutePaths.admin} className="btn btn-sm text-white fw-bold d-flex align-items-center" style={{ backgroundColor: '#4A1525', border: '1px solid #FFB300' }}>{t('adm_back_to_dashboard')}</Link>
           </div>
         </div>
 
@@ -169,16 +171,16 @@ const AdminProducts = () => {
         {(isAdding || editingProduct) && (
           <div className="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4 border-top border-5 border-danger animate__animated animate__fadeIn">
             <h4 className="mb-4 fw-bold" style={{ fontFamily: 'serif', color: '#4A1525' }}>
-              {isAdding ? 'Add New Product' : `Edit Product: ${editingProduct?.name}`}
+              {isAdding ? t('adm_add_new_product') : `${t('adm_edit_product')} ${editingProduct?.name}`}
             </h4>
             <form onSubmit={isAdding ? handleAdd : handleUpdate}>
               <div className="row g-3">
                 <div className="col-md-6">
-                  <label className="form-label text-muted fw-semibold">Product Name</label>
+                  <label className="form-label text-muted fw-semibold">{t('adm_product_name')}</label>
                   <input type="text" className="form-control" required value={name} onChange={(e) => setName(e.target.value)} />
                 </div>
                 <div className="col-md-3">
-                  <label className="form-label text-muted fw-semibold">Category</label>
+                  <label className="form-label text-muted fw-semibold">{t('adm_category')}</label>
                   <select className="form-select" value={category} onChange={(e) => {
                     const cat = e.target.value;
                     setCategory(cat);
@@ -196,7 +198,7 @@ const AdminProducts = () => {
                   </select>
                 </div>
                 <div className="col-md-3">
-                  <label className="form-label text-muted fw-semibold">Associated Brand</label>
+                  <label className="form-label text-muted fw-semibold">{t('adm_associated_brand')}</label>
                   <select className="form-select" value={brand} onChange={(e) => setBrand(e.target.value)}>
                     <option value="masale">RA Masale</option>
                     <option value="namkeen">RA Namkeen</option>
@@ -207,7 +209,7 @@ const AdminProducts = () => {
                 </div>
                 {brand === 'spicehome' && (
                   <div className="col-md-3">
-                    <label className="form-label text-muted fw-semibold">Spice Subcategory</label>
+                    <label className="form-label text-muted fw-semibold">{t('adm_spice_subcategory')}</label>
                     <select className="form-select" value={subCategory} onChange={(e) => setSubCategory(e.target.value)}>
                       <option value="">None</option>
                       <option value="Ground Spices">Ground Spices</option>
@@ -222,19 +224,19 @@ const AdminProducts = () => {
                   </div>
                 )}
                 <div className="col-md-3">
-                  <label className="form-label text-muted fw-semibold">Unit Size</label>
-                  <input type="text" className="form-control" placeholder="250g, 100g, etc." required value={unit} onChange={(e) => setUnit(e.target.value)} />
+                  <label className="form-label text-muted fw-semibold">{t('adm_unit_size')}</label>
+                  <input type="text" className="form-control" placeholder={t('adm_unit_placeholder')} required value={unit} onChange={(e) => setUnit(e.target.value)} />
                 </div>
                 <div className="col-md-3">
-                  <label className="form-label text-muted fw-semibold">Price (INR)</label>
+                  <label className="form-label text-muted fw-semibold">{t('adm_price_inr')}</label>
                   <input type="number" className="form-control" required value={price} onChange={(e) => setPrice(Number(e.target.value))} />
                 </div>
                 <div className="col-md-3">
-                  <label className="form-label text-muted fw-semibold">Stock Quantity</label>
+                  <label className="form-label text-muted fw-semibold">{t('adm_stock_quantity')}</label>
                   <input type="number" className="form-control" required value={stock} onChange={(e) => setStock(Number(e.target.value))} />
                 </div>
                 <div className="col-md-6">
-                  <label className="form-label text-muted fw-semibold">Product Image</label>
+                  <label className="form-label text-muted fw-semibold">{t('adm_product_image')}</label>
                   <div className="input-group">
                     <input
                       type="file"
@@ -253,22 +255,22 @@ const AdminProducts = () => {
                     />
                     {image && (
                       <span className="input-group-text bg-light p-1" style={{ width: '45px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <img src={getAssetPath(image)} alt="Preview" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                        <img src={getAssetPath(image)} alt={t('adm_preview')} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
                       </span>
                     )}
                   </div>
                 </div>
                 <div className="col-md-12">
-                  <label className="form-label text-muted fw-semibold">Description</label>
+                  <label className="form-label text-muted fw-semibold">{t('adm_description')}</label>
                   <input type="text" className="form-control" required value={description} onChange={(e) => setDescription(e.target.value)} />
                 </div>
               </div>
               <div className="mt-4 d-flex gap-2">
                 <button type="submit" className="btn text-white fw-bold px-4" style={{ backgroundColor: '#aa1a31' }}>
-                  {isAdding ? 'Save Product' : 'Update Details'}
+                  {isAdding ? t('adm_save_product') : t('adm_update_details')}
                 </button>
                 <button type="button" className="btn text-white px-4" style={{ backgroundColor: '#6c757d', border: '1px solid #5a6268' }} onClick={resetForm}>
-                  Cancel
+                  {t('adm_cancel')}
                 </button>
               </div>
             </form>
@@ -284,7 +286,7 @@ const AdminProducts = () => {
                 <input 
                   type="text" 
                   className="form-control bg-light border-start-0" 
-                  placeholder="Search products by name or description..." 
+                  placeholder={t('adm_search_products_placeholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -292,7 +294,7 @@ const AdminProducts = () => {
             </div>
             <div className="col-md-3">
               <select className="form-select bg-light" value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)}>
-                <option value="All">All Categories</option>
+                <option value="All">{t('adm_all_categories')}</option>
                 <option value="Masale">Masale</option>
                 <option value="Namkeen">Namkeen</option>
                 <option value="Spice Home">Spice Home</option>
@@ -302,10 +304,10 @@ const AdminProducts = () => {
             </div>
             <div className="col-md-4">
               <select className="form-select bg-light" value={sortBy} onChange={(e) => setSortBy(e.target.value as any)}>
-                <option value="name">Sort by Name</option>
-                <option value="priceAsc">Price: Low to High</option>
-                <option value="priceDesc">Price: High to Low</option>
-                <option value="stockAsc">Stock: Low to High</option>
+                <option value="name">{t('adm_sort_by_name')}</option>
+                <option value="priceAsc">{t('adm_price_low_to_high')}</option>
+                <option value="priceDesc">{t('adm_price_high_to_low')}</option>
+                <option value="stockAsc">{t('adm_stock_low_to_high')}</option>
               </select>
             </div>
           </div>
@@ -314,18 +316,18 @@ const AdminProducts = () => {
         {/* Products Table */}
         <div className="card border-0 shadow-sm rounded-4 p-4 bg-white">
           {filteredProducts.length === 0 ? (
-            <div className="text-center py-5 text-muted">No products match your filters.</div>
+            <div className="text-center py-5 text-muted">{t('adm_no_products_match')}</div>
           ) : (
             <div className="table-responsive">
               <table className="table align-middle">
                 <thead>
                   <tr className="table-light text-secondary" style={{ fontSize: '0.85rem' }}>
-                    <th>ID</th>
-                    <th>Product Details</th>
-                    <th>Category</th>
-                    <th>Price</th>
-                    <th>Stock</th>
-                    <th className="text-end">Actions</th>
+                    <th>{t('adm_th_id')}</th>
+                    <th>{t('adm_th_product_details')}</th>
+                    <th>{t('adm_category')}</th>
+                    <th>{t('adm_th_price')}</th>
+                    <th>{t('adm_th_stock')}</th>
+                    <th className="text-end">{t('adm_th_actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -339,7 +341,7 @@ const AdminProducts = () => {
                           </div>
                           <div>
                             <strong className="text-dark d-block">{prod.name}</strong>
-                            <small className="text-muted">{prod.unit} • Brand: <strong className="text-capitalize">{prod.brand || 'masale'}</strong> • {prod.description.substring(0, 50)}...</small>
+                            <small className="text-muted">{prod.unit} • {t('adm_brand_label')} <strong className="text-capitalize">{prod.brand || 'masale'}</strong> • {prod.description.substring(0, 50)}...</small>
                           </div>
                         </div>
                       </td>
@@ -347,9 +349,9 @@ const AdminProducts = () => {
                       <td className="fw-semibold">₹{prod.price}</td>
                       <td>
                         <span className={`fw-bold ${prod.stock < 10 ? 'text-danger' : 'text-success'}`}>
-                          {prod.stock} units
+                          {prod.stock} {t('adm_units')}
                         </span>
-                        {prod.stock < 10 && <small className="text-danger d-block text-xs">Low Stock!</small>}
+                        {prod.stock < 10 && <small className="text-danger d-block text-xs">{t('adm_low_stock')}</small>}
                       </td>
                       <td className="text-end">
                         <div className="d-inline-flex gap-2">

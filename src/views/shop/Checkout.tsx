@@ -3,6 +3,7 @@ import { useLocation, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import Header from '../includes/Header';
 import Footer from '../includes/Footer';
 import RoutePaths from '../../config';
@@ -10,6 +11,7 @@ import Swal from 'sweetalert2';
 import { getAssetPath } from '../../Utils/imageHelper';
 
 const Checkout = () => {
+  const { t } = useLanguage();
   const { cartItems, cartTotal, clearCart } = useCart();
   const { user, placeOrder, updateProfile } = useAuth();
   const location = useLocation();
@@ -141,8 +143,8 @@ const Checkout = () => {
     clearCart();
     Swal.fire({
       icon: 'success',
-      title: 'Payment Successful!',
-      text: 'Your payment was completed. Generating your E-Invoice now...',
+      title: t('chk_payment_success_title'),
+      text: t('chk_payment_success_text'),
       timer: 2000,
       showConfirmButton: false
     });
@@ -166,8 +168,8 @@ const Checkout = () => {
       Swal.close();
       Swal.fire({
         icon: 'error',
-        title: 'Payment Not Verified',
-        text: 'We could not verify the payment signature. If you were charged, please contact support.',
+        title: t('chk_payment_not_verified_title'),
+        text: t('chk_payment_not_verified_text'),
         confirmButtonColor: '#aa1a31'
       });
     }
@@ -176,7 +178,7 @@ const Checkout = () => {
   const openRazorpayCheckout = (order: any) => {
     const RazorpayCtor = (window as any).Razorpay;
     if (!RazorpayCtor) {
-      Swal.fire('Payment Unavailable', 'Razorpay checkout failed to load. Please try again.', 'error');
+      Swal.fire(t('chk_payment_unavailable_title'), t('chk_razorpay_load_failed_text'), 'error');
       return;
     }
     const options = {
@@ -184,7 +186,7 @@ const Checkout = () => {
       amount: Math.round(order.total * 100), // server-authoritative amount
       currency: 'INR',
       name: 'RA Masala',
-      description: 'Premium Spices & Blends',
+      description: t('chk_rzp_description'),
       image: getAssetPath('images/ra_waa.png'),
       order_id: order.transactionId, // Razorpay Order ID created server-side
       handler: async (response: any) => {
@@ -202,8 +204,8 @@ const Checkout = () => {
         ondismiss: () => {
           Swal.fire({
             icon: 'warning',
-            title: 'Payment Cancelled',
-            text: 'Your order was saved as Pending. You can retry the payment or contact support.',
+            title: t('chk_payment_cancelled_title'),
+            text: t('chk_payment_cancelled_text'),
             confirmButtonColor: '#aa1a31'
           });
         }
@@ -220,8 +222,8 @@ const Checkout = () => {
     if (!name || !phone || !address || !city || !zip) {
       Swal.fire({
         icon: 'error',
-        title: 'Missing Details',
-        text: 'Please complete your shipping address details.',
+        title: t('chk_missing_details_title'),
+        text: t('chk_missing_details_text'),
         confirmButtonColor: '#aa1a31'
       });
       return;
@@ -230,8 +232,8 @@ const Checkout = () => {
     if (cartItems.length === 0) {
       Swal.fire({
         icon: 'error',
-        title: 'Empty Cart',
-        text: 'Your cart contains no items to order.',
+        title: t('chk_empty_cart_title'),
+        text: t('chk_empty_cart_text'),
         confirmButtonColor: '#aa1a31'
       });
       return;
@@ -244,8 +246,8 @@ const Checkout = () => {
         const order = await executeOrderPlacement();
         Swal.fire({
           icon: 'success',
-          title: 'Order Placed!',
-          text: `Thank you! Your order ID is ${order.id}. Generating your E-Invoice now...`,
+          title: t('chk_order_placed_title'),
+          text: t('chk_order_placed_text').replace('{orderId}', order.id),
           timer: 2500,
           showConfirmButton: false
         });
@@ -258,8 +260,8 @@ const Checkout = () => {
         if (!isLiveGateway) {
           Swal.fire({
             icon: 'error',
-            title: 'Online Payment Unavailable',
-            text: 'Online payments are temporarily unavailable. Please use Cash on Delivery.',
+            title: t('chk_online_payment_unavailable_title'),
+            text: t('chk_online_payment_unavailable_text'),
             confirmButtonColor: '#aa1a31'
           });
           return;
@@ -268,12 +270,12 @@ const Checkout = () => {
         const order = await executeOrderPlacement();
 
         if (!order.transactionId || !order.transactionId.startsWith('ord_')) {
-          Swal.fire('Payment Unavailable', 'Could not initialize the payment gateway. Please try again or use COD.', 'error');
+          Swal.fire(t('chk_payment_unavailable_title'), t('chk_gateway_init_failed_text'), 'error');
           return;
         }
 
         if (!scriptLoaded) {
-          Swal.fire('Payment Unavailable', 'Razorpay checkout is still loading. Please try again.', 'error');
+          Swal.fire(t('chk_payment_unavailable_title'), t('chk_razorpay_still_loading_text'), 'error');
           return;
         }
 
@@ -284,10 +286,10 @@ const Checkout = () => {
       Swal.close();
       const msg =
         (err as any)?.response?.data?.message ||
-        'Failed to place order in database backend.';
+        t('chk_order_failed_db_text');
       Swal.fire({
         icon: 'error',
-        title: 'Order Error',
+        title: t('chk_order_error_title'),
         text: msg,
         confirmButtonColor: '#aa1a31'
       });
@@ -301,16 +303,16 @@ const Checkout = () => {
       <Header />
       <div className="container py-5 flex-grow-1">
         <h2 className="mb-4 text-start" style={{ fontFamily: 'serif', color: '#4A1525', fontWeight: 'bold', borderBottom: '3px solid #FFB300', paddingBottom: '10px' }}>
-          Checkout Details
+          {t('chk_details_title')}
         </h2>
 
         {!user && (
           <div className="alert alert-warning mb-4 rounded-3 d-flex justify-content-between align-items-center" role="alert">
             <span>
               <i className="bi bi-info-circle-fill me-2"></i>
-              You are ordering as a <strong>Guest</strong>. Log in to save orders to your profile!
+              {t('chk_guest_note_a')}<strong>{t('chk_guest_word')}</strong>{t('chk_guest_note_b')}
             </span>
-            <Link to={RoutePaths.login} className="btn btn-sm btn-outline-dark fw-bold">Login</Link>
+            <Link to={RoutePaths.login} className="btn btn-sm btn-outline-dark fw-bold">{t('chk_login_btn')}</Link>
           </div>
         )}
 
@@ -320,12 +322,12 @@ const Checkout = () => {
             <div className="col-lg-7">
               <div className="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
                 <h5 className="mb-4 text-start" style={{ fontFamily: 'serif', color: '#4A1525', fontWeight: 'bold' }}>
-                  <i className="bi bi-truck me-2" style={{ color: '#aa1a31' }}></i> Shipping & Contact Information
+                  <i className="bi bi-truck me-2" style={{ color: '#aa1a31' }}></i> {t('chk_shipping_contact_title')}
                 </h5>
 
                 <div className="row g-3">
                   <div className="col-md-6">
-                    <label className="form-label text-muted fw-semibold">Contact Name</label>
+                    <label className="form-label text-muted fw-semibold">{t('chk_contact_name_label')}</label>
                     <input 
                       type="text" 
                       className="form-control" 
@@ -335,29 +337,29 @@ const Checkout = () => {
                     />
                   </div>
                   <div className="col-md-6">
-                    <label className="form-label text-muted fw-semibold">Phone Number</label>
+                    <label className="form-label text-muted fw-semibold">{t('chk_phone_label')}</label>
                     <input 
                       type="text" 
                       className="form-control" 
-                      placeholder="e.g. +91 98765 43210" 
+                      placeholder={t('chk_phone_placeholder')} 
                       required 
                       value={phone} 
                       onChange={(e) => setPhone(e.target.value)} 
                     />
                   </div>
                   <div className="col-12">
-                    <label className="form-label text-muted fw-semibold">Address Line</label>
+                    <label className="form-label text-muted fw-semibold">{t('chk_address_line_label')}</label>
                     <input 
                       type="text" 
                       className="form-control" 
-                      placeholder="Street address, Apartment, Suite" 
+                      placeholder={t('chk_address_placeholder')} 
                       required 
                       value={address} 
                       onChange={(e) => setAddress(e.target.value)} 
                     />
                   </div>
                   <div className="col-md-6">
-                    <label className="form-label text-muted fw-semibold">City</label>
+                    <label className="form-label text-muted fw-semibold">{t('chk_city_label')}</label>
                     <input 
                       type="text" 
                       className="form-control" 
@@ -367,7 +369,7 @@ const Checkout = () => {
                     />
                   </div>
                   <div className="col-md-6">
-                    <label className="form-label text-muted fw-semibold">ZIP / Pincode</label>
+                    <label className="form-label text-muted fw-semibold">{t('chk_zip_label')}</label>
                     <input 
                       type="text" 
                       className="form-control" 
@@ -382,7 +384,7 @@ const Checkout = () => {
               {/* Payment Methods */}
               <div className="card border-0 shadow-sm rounded-4 p-4 bg-white">
                 <h5 className="mb-4 text-start" style={{ fontFamily: 'serif', color: '#4A1525', fontWeight: 'bold' }}>
-                  <i className="bi bi-credit-card me-2" style={{ color: '#aa1a31' }}></i> Choose Payment Method
+                  <i className="bi bi-credit-card me-2" style={{ color: '#aa1a31' }}></i> {t('chk_choose_payment_title')}
                 </h5>
 
                 <div className="d-flex flex-column gap-3">
@@ -395,8 +397,8 @@ const Checkout = () => {
                       onChange={() => setPaymentMethod('COD')} 
                     />
                     <div>
-                      <strong className="d-block" style={{ color: '#4A1525' }}>Cash on Delivery (COD)</strong>
-                      <span className="text-secondary text-xs">Pay with cash when your spices arrive at your door.</span>
+                      <strong className="d-block" style={{ color: '#4A1525' }}>{t('chk_pay_cod')}</strong>
+                      <span className="text-secondary text-xs">{t('chk_pay_cod_desc')}</span>
                     </div>
                   </label>
 
@@ -409,8 +411,8 @@ const Checkout = () => {
                       onChange={() => setPaymentMethod('UPI')} 
                     />
                     <div>
-                      <strong className="d-block" style={{ color: '#4A1525' }}>BHIM UPI</strong>
-                      <span className="text-secondary text-xs">Instant payment via GooglePay, PhonePe, or PayTM.</span>
+                      <strong className="d-block" style={{ color: '#4A1525' }}>{t('chk_pay_upi')}</strong>
+                      <span className="text-secondary text-xs">{t('chk_pay_upi_desc')}</span>
                     </div>
                   </label>
 
@@ -423,8 +425,8 @@ const Checkout = () => {
                       onChange={() => setPaymentMethod('CARD')} 
                     />
                     <div>
-                      <strong className="d-block" style={{ color: '#4A1525' }}>Credit / Debit Card</strong>
-                      <span className="text-secondary text-xs">Visa, Mastercard, RuPay, Amex & more.</span>
+                      <strong className="d-block" style={{ color: '#4A1525' }}>{t('chk_pay_card')}</strong>
+                      <span className="text-secondary text-xs">{t('chk_pay_card_desc')}</span>
                     </div>
                   </label>
 
@@ -437,8 +439,8 @@ const Checkout = () => {
                       onChange={() => setPaymentMethod('NETBANKING')} 
                     />
                     <div>
-                      <strong className="d-block" style={{ color: '#4A1525' }}>Net Banking</strong>
-                      <span className="text-secondary text-xs">All major Indian banks supported.</span>
+                      <strong className="d-block" style={{ color: '#4A1525' }}>{t('chk_pay_netbanking')}</strong>
+                      <span className="text-secondary text-xs">{t('chk_pay_netbanking_desc')}</span>
                     </div>
                   </label>
                 </div>
@@ -446,10 +448,10 @@ const Checkout = () => {
                 <div className="d-flex align-items-center justify-content-between mt-3 pt-3 border-top">
                   <span className="text-muted small">
                     <i className="bi bi-shield-lock-fill me-1" style={{ color: '#4A1525' }}></i>
-                    Payments secured by Razorpay
+                    {t('chk_secure_razorpay')}
                   </span>
                   {!isLiveGateway && (
-                    <span className="badge bg-warning text-dark">Online payments unavailable</span>
+                    <span className="badge bg-warning text-dark">{t('chk_online_unavailable_badge')}</span>
                   )}
                 </div>
               </div>
@@ -459,7 +461,7 @@ const Checkout = () => {
             <div className="col-lg-5">
               <div className="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
                 <h5 className="mb-4 text-start" style={{ fontFamily: 'serif', color: '#4A1525', fontWeight: 'bold' }}>
-                  Checkout List
+                  {t('chk_list_title')}
                 </h5>
 
                 <div className="checkout-items max-vh-50 overflow-y-auto mb-4">
@@ -471,7 +473,7 @@ const Checkout = () => {
                         </div>
                         <div>
                           <strong className="d-block text-dark" style={{ fontSize: '0.9rem' }}>{item.name}</strong>
-                          <span className="text-muted" style={{ fontSize: '0.8rem' }}>Qty: {item.quantity} x ₹{item.price}</span>
+                          <span className="text-muted" style={{ fontSize: '0.8rem' }}>{t('chk_qty')}: {item.quantity} x ₹{item.price}</span>
                         </div>
                       </div>
                       <span className="fw-semibold text-dark">₹{item.price * item.quantity}</span>
@@ -480,28 +482,28 @@ const Checkout = () => {
                 </div>
 
                 <div className="d-flex justify-content-between mb-2">
-                  <span className="text-secondary">Subtotal</span>
+                  <span className="text-secondary">{t('chk_subtotal')}</span>
                   <span className="fw-semibold text-dark">₹{cartTotal}</span>
                 </div>
                 {discount > 0 && (
                   <div className="d-flex justify-content-between mb-2 text-success">
-                    <span>Discount</span>
+                    <span>{t('chk_discount')}</span>
                     <span>-₹{discount.toFixed(1)}</span>
                   </div>
                 )}
                 <div className="d-flex justify-content-between mb-2">
-                  <span className="text-secondary">GST Spice Tax (5%)</span>
+                  <span className="text-secondary">{t('chk_gst_tax')}</span>
                   <span className="fw-semibold text-dark">₹{tax.toFixed(1)}</span>
                 </div>
                 <div className="d-flex justify-content-between mb-3">
-                  <span className="text-secondary">Shipping charges</span>
+                  <span className="text-secondary">{t('chk_shipping')}</span>
                   <span className="fw-semibold text-dark">
-                    {shipping === 0 ? <span className="text-success">FREE</span> : `₹${shipping}`}
+                    {shipping === 0 ? <span className="text-success">{t('chk_free')}</span> : `₹${shipping}`}
                   </span>
                 </div>
                 <hr />
                 <div className="d-flex justify-content-between align-items-center mb-4">
-                  <strong className="text-dark fs-5">Total Amount</strong>
+                  <strong className="text-dark fs-5">{t('chk_total_amount')}</strong>
                   <strong className="fs-4" style={{ color: '#aa1a31' }}>₹{total.toFixed(1)}</strong>
                 </div>
 
@@ -512,11 +514,11 @@ const Checkout = () => {
                   disabled={placingOrder}
                 >
                   {placingOrder ? (
-                    <span><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Processing...</span>
+                    <span><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>{t('chk_processing')}</span>
                   ) : paymentMethod === 'COD' ? (
-                    'Place Order & Get Invoice'
+                    t('chk_place_order_cod')
                   ) : (
-                    `Pay ₹${total.toFixed(2)} Securely & Place Order`
+                    t('chk_pay_place_order').replace('{amount}', total.toFixed(2))
                   )}
                 </button>
               </div>

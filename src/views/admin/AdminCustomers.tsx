@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import Header from '../includes/Header';
 import Footer from '../includes/Footer';
 import RoutePaths from '../../config';
@@ -9,6 +10,7 @@ import Swal from 'sweetalert2';
 const AdminCustomers = () => {
   const { user, users, orders, toggleUserStatus } = useAuth();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const isSuperAdmin = user?.role === 'admin' && user?.email !== 'admin@ramasala.com';
 
   // Route security
@@ -16,8 +18,8 @@ const AdminCustomers = () => {
     if (!user || user.role !== 'admin') {
       Swal.fire({
         icon: 'error',
-        title: 'Access Denied',
-        text: 'You do not have administrative privileges.',
+        title: t('adm_access_denied'),
+        text: t('adm_no_admin_privileges'),
         confirmButtonColor: '#aa1a31'
       });
       navigate(RoutePaths.home);
@@ -64,11 +66,11 @@ const AdminCustomers = () => {
         <div className="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-3 border-bottom border-2" style={{ borderColor: '#FFB300' }}>
           <div>
             <h2 className="mb-1" style={{ fontFamily: 'serif', color: '#4A1525', fontWeight: 'bold' }}>
-              Customer Directory
+              {t('adm_customer_directory')}
             </h2>
-            <p className="text-secondary mb-0">Total Registered Customers: <strong>{customers.length}</strong> profiles • Filtered: <strong>{filteredCustomers.length}</strong></p>
+            <p className="text-secondary mb-0">{t('adm_total_registered_customers')} <strong>{customers.length}</strong> {t('adm_profiles')} • {t('adm_filtered')} <strong>{filteredCustomers.length}</strong></p>
           </div>
-          <Link to={RoutePaths.admin} className="btn btn-sm text-white fw-bold" style={{ backgroundColor: '#4A1525', border: '1px solid #FFB300' }}>Back to Dashboard</Link>
+          <Link to={RoutePaths.admin} className="btn btn-sm text-white fw-bold" style={{ backgroundColor: '#4A1525', border: '1px solid #FFB300' }}>{t('adm_back_to_dashboard')}</Link>
         </div>
         
         {/* Statistics Cards */}
@@ -80,7 +82,7 @@ const AdminCustomers = () => {
                   <i className="bi bi-people-fill fs-3" style={{ color: '#4A1525' }}></i>
                 </div>
                 <div>
-                  <h6 className="text-muted mb-1 small fw-bold">TOTAL CUSTOMERS</h6>
+                  <h6 className="text-muted mb-1 small fw-bold">{t('adm_total_customers_stat')}</h6>
                   <h3 className="mb-0 fw-bold" style={{ color: '#4A1525' }}>{customers.length}</h3>
                 </div>
               </div>
@@ -93,7 +95,7 @@ const AdminCustomers = () => {
                   <i className="bi bi-person-check-fill fs-3"></i>
                 </div>
                 <div>
-                  <h6 className="text-muted mb-1 small fw-bold">ACTIVE ACCOUNTS</h6>
+                  <h6 className="text-muted mb-1 small fw-bold">{t('adm_active_accounts')}</h6>
                   <h3 className="mb-0 fw-bold text-success">{customers.filter(c => c.isActive !== false).length}</h3>
                 </div>
               </div>
@@ -106,7 +108,7 @@ const AdminCustomers = () => {
                   <i className="bi bi-currency-rupee fs-3" style={{ color: '#FFB300' }}></i>
                 </div>
                 <div>
-                  <h6 className="text-muted mb-1 small fw-bold">TOTAL LIFETIME VALUE</h6>
+                  <h6 className="text-muted mb-1 small fw-bold">{t('adm_total_lifetime_value')}</h6>
                   <h3 className="mb-0 fw-bold" style={{ color: '#D2691E' }}>₹{customers.reduce((sum, c) => sum + getCustomerMetrics(c.id).totalSpent, 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</h3>
                 </div>
               </div>
@@ -123,7 +125,7 @@ const AdminCustomers = () => {
                 <input 
                   type="text" 
                   className="form-control bg-light border-start-0" 
-                  placeholder="Search customers by name, email, or phone number..." 
+                  placeholder={t('adm_search_customers_placeholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -131,7 +133,7 @@ const AdminCustomers = () => {
             </div>
             <div className="col-md-4">
               <select className="form-select bg-light" value={selectedCity} onChange={(e) => setSelectedCity(e.target.value)}>
-                <option value="All">All Cities / Regions</option>
+                <option value="All">{t('adm_all_cities_regions')}</option>
                 {cities.map(city => (
                   <option key={city} value={city}>{city}</option>
                 ))}
@@ -143,21 +145,21 @@ const AdminCustomers = () => {
         {/* Customers Table */}
         <div className="card border-0 shadow-sm rounded-4 p-4 bg-white">
           {filteredCustomers.length === 0 ? (
-            <p className="text-muted text-center py-5">No customer accounts match your search/filter.</p>
+            <p className="text-muted text-center py-5">{t('adm_no_customers_match')}</p>
           ) : (
             <div className="table-responsive">
               <table className="table align-middle">
                 <thead>
                   <tr className="table-light text-secondary" style={{ fontSize: '0.85rem' }}>
-                    <th>ID</th>
-                    <th>Customer Name</th>
-                    <th>Email Address</th>
-                    <th>Phone</th>
-                    <th>Delivery Location</th>
-                    <th className="text-center">Orders Placed</th>
-                    <th className="text-end">Total Lifetime Value</th>
-                    <th className="text-center">Status</th>
-                    {isSuperAdmin && <th className="text-end">Actions</th>}
+                    <th>{t('adm_th_id')}</th>
+                    <th>{t('adm_th_customer_name')}</th>
+                    <th>{t('adm_th_email_address')}</th>
+                    <th>{t('adm_th_phone')}</th>
+                    <th>{t('adm_th_delivery_location')}</th>
+                    <th className="text-center">{t('adm_th_orders_placed')}</th>
+                    <th className="text-end">{t('adm_th_total_lifetime_value')}</th>
+                    <th className="text-center">{t('adm_th_status')}</th>
+                    {isSuperAdmin && <th className="text-end">{t('adm_th_actions')}</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -177,7 +179,7 @@ const AdminCustomers = () => {
                         <td className="text-end fw-bold text-success">₹{metrics.totalSpent.toFixed(0)}</td>
                         <td className="text-center">
                           <span className={`badge ${isCustActive ? 'bg-success' : 'bg-danger'}`}>
-                            {isCustActive ? 'Active' : 'Deactivated'}
+                            {isCustActive ? t('adm_status_active') : t('adm_status_deactivated')}
                           </span>
                         </td>
                         {isSuperAdmin && (
@@ -186,26 +188,26 @@ const AdminCustomers = () => {
                               className={`btn btn-sm text-white fw-bold ${isCustActive ? 'btn-danger' : 'btn-success'}`}
                               onClick={() => {
                                 Swal.fire({
-                                  title: `${isCustActive ? 'Deactivate' : 'Activate'} Customer?`,
-                                  text: `Are you sure you want to ${isCustActive ? 'deactivate' : 'activate'} ${cust.name}?`,
+                                  title: `${t(isCustActive ? 'adm_deactivate' : 'adm_activate')} ${t('adm_customer_label')}?`,
+                                  text: `${t('adm_are_you_sure_you_want_to')} ${t(isCustActive ? 'adm_deactivate_verb' : 'adm_activate_verb')} ${cust.name}?`,
                                   icon: 'warning',
                                   showCancelButton: true,
                                   confirmButtonColor: isCustActive ? '#aa1a31' : '#198754',
                                   cancelButtonColor: '#secondary',
-                                  confirmButtonText: `Yes, ${isCustActive ? 'deactivate' : 'activate'}!`
+                                  confirmButtonText: `${t('adm_yes')} ${t(isCustActive ? 'adm_deactivate_verb' : 'adm_activate_verb')}!`
                                 }).then((result) => {
                                   if (result.isConfirmed) {
                                     toggleUserStatus(cust.id || cust._id || '', !isCustActive);
                                     Swal.fire(
-                                      isCustActive ? 'Deactivated!' : 'Activated!',
-                                      `Customer ${cust.name} has been ${isCustActive ? 'deactivated' : 'activated'}.`,
+                                      t(isCustActive ? 'adm_deactivated' : 'adm_activated'),
+                                      `${t('adm_customer_label')} ${cust.name} ${t(isCustActive ? 'adm_has_been_deactivated' : 'adm_has_been_activated')}.`,
                                       'success'
                                     );
                                   }
                                 });
                               }}
                             >
-                              {isCustActive ? 'Deactivate' : 'Activate'}
+                              {t(isCustActive ? 'adm_deactivate' : 'adm_activate')}
                             </button>
                           </td>
                         )}

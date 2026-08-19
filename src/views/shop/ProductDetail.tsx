@@ -12,7 +12,7 @@ import { getAssetPath } from '../../Utils/imageHelper';
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, tp } = useLanguage();
   const { addToCart } = useCart();
   const { products, user, reviews, addReview } = useAuth();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
@@ -35,10 +35,10 @@ const ProductDetail = () => {
       <>
         <Header />
         <div className="d-flex flex-column align-items-center justify-content-center text-white" style={{ minHeight: '60vh', background: 'radial-gradient(circle, #5b1a2c 0%, #2c0b14 100%)' }}>
-          <h2 className="mb-4" style={{ fontFamily: 'serif', color: '#FFD700' }}>Product Not Found</h2>
-          <p className="text-light opacity-75 mb-4">The product you are looking for does not exist or has been removed.</p>
+          <h2 className="mb-4" style={{ fontFamily: 'serif', color: '#FFD700' }}>{t('prd_not_found')}</h2>
+          <p className="text-light opacity-75 mb-4">{t('prd_not_found_msg')}</p>
           <Link to="/home" className="btn px-4 py-2 text-white fw-bold" style={{ backgroundColor: '#aa1a31', borderRadius: '8px' }}>
-            <i className="bi bi-arrow-left me-2"></i> Back to Home
+            <i className="bi bi-arrow-left me-2"></i> {t('prd_back_to_home')}
           </Link>
         </div>
         <Footer />
@@ -59,11 +59,11 @@ const ProductDetail = () => {
     if (!user) {
       Swal.fire({
         icon: 'warning',
-        title: 'Login Required',
-        text: 'Please login to write a review for this product.',
+        title: t('prd_login_required'),
+        text: t('prd_login_required_msg'),
         confirmButtonColor: '#4A1525',
         showCancelButton: true,
-        confirmButtonText: 'Login Now'
+        confirmButtonText: t('prd_login_now')
       }).then((result) => {
         if (result.isConfirmed) {
           navigate('/login');
@@ -73,7 +73,7 @@ const ProductDetail = () => {
     }
 
     if (!comment.trim()) {
-      Swal.fire('Error', 'Please enter a comment.', 'error');
+      Swal.fire(t('prd_error'), t('prd_comment_required'), 'error');
       return;
     }
 
@@ -88,8 +88,8 @@ const ProductDetail = () => {
       });
       Swal.fire({
         icon: 'success',
-        title: 'Review Submitted',
-        text: 'Thank you for your valuable feedback!',
+        title: t('prd_review_submitted'),
+        text: t('prd_review_thanks'),
         timer: 1500,
         showConfirmButton: false
       });
@@ -97,13 +97,13 @@ const ProductDetail = () => {
       setRating(5);
     } catch (error) {
       console.error(error);
-      Swal.fire('Error', 'Failed to submit review.', 'error');
+      Swal.fire(t('prd_error'), t('prd_review_failed'), 'error');
     }
   };
 
   const handleAddToCart = () => {
     if (product.stock <= 0) {
-      Swal.fire('Out of Stock', 'Sorry, this product is temporarily unavailable.', 'warning');
+      Swal.fire(t('prd_out_of_stock'), t('prd_out_of_stock_msg'), 'warning');
       return;
     }
     // Add multiple quantities if needed
@@ -112,8 +112,8 @@ const ProductDetail = () => {
     }
     Swal.fire({
       icon: 'success',
-      title: 'Added to Cart',
-      text: `${quantity} x ${product.name} added to your cart.`,
+      title: t('prd_added_to_cart'),
+      text: `${quantity} x ${tp(product.name)} ${t('prd_added_to_cart_msg')}`,
       timer: 1200,
       showConfirmButton: false
     });
@@ -145,9 +145,9 @@ const ProductDetail = () => {
           {/* Breadcrumb navigation */}
           <nav className="mb-4" aria-label="breadcrumb">
             <ol className="breadcrumb">
-              <li className="breadcrumb-item"><Link to="/home" className="text-warning text-decoration-none">Home</Link></li>
+              <li className="breadcrumb-item"><Link to="/home" className="text-warning text-decoration-none">{t('prd_home')}</Link></li>
               <li className="breadcrumb-item text-light opacity-50" aria-current="page">{product.category}</li>
-              <li className="breadcrumb-item active text-white" aria-current="page">{product.name}</li>
+              <li className="breadcrumb-item active text-white" aria-current="page">{tp(product.name)}</li>
             </ol>
           </nav>
 
@@ -166,7 +166,7 @@ const ProductDetail = () => {
               >
                 <img 
                   src={getAssetPath(product.image)} 
-                  alt={product.name}
+                  alt={tp(product.name)}
                   style={{
                     maxHeight: '100%',
                     maxWidth: '100%',
@@ -194,10 +194,10 @@ const ProductDetail = () => {
                     const pId = product._id || product.id;
                     if (isInWishlist(pId)) {
                       removeFromWishlist(pId);
-                      Swal.fire('Wishlist Removed', 'Product removed from wishlist', 'info');
+                      Swal.fire(t('prd_wishlist_removed'), t('prd_wishlist_removed_msg'), 'info');
                     } else {
                       addToWishlist(product);
-                      Swal.fire('Wishlist Added', 'Product added to wishlist', 'success');
+                      Swal.fire(t('prd_wishlist_added'), t('prd_wishlist_added_msg'), 'success');
                     }
                   }}
                 >
@@ -209,7 +209,7 @@ const ProductDetail = () => {
             {/* Product Details Section */}
             <div className="col-lg-6 text-white">
               <h1 className="display-5 fw-bold mb-2" style={{ fontFamily: 'serif', color: '#FFD700' }}>
-                {product.name}
+                {tp(product.name)}
               </h1>
 
               {/* Average Rating info */}
@@ -225,7 +225,7 @@ const ProductDetail = () => {
                   })}
                 </div>
                 <span className="text-light opacity-75">
-                  ({productReviews.length} Customer Reviews)
+                  ({productReviews.length} {t('prd_customer_reviews')})
                 </span>
               </div>
 
@@ -237,19 +237,19 @@ const ProductDetail = () => {
 
               {/* Description */}
               <p className="lead text-light opacity-90 mb-4 lh-lg">
-                {product.description}
+                {tp(product.description)}
               </p>
 
               {/* Stock status indicator */}
               <div className="mb-4">
-                <span className="fw-semibold">Availability: </span>
+                <span className="fw-semibold">{t('prd_availability')}</span>
                 {product.stock > 0 ? (
                   <span className="text-success badge bg-success bg-opacity-25 border border-success px-3 py-1.5 rounded-pill ms-2">
-                    {product.stock} Units In Stock
+                    {product.stock} {t('prd_units_in_stock')}
                   </span>
                 ) : (
                   <span className="text-danger badge bg-danger bg-opacity-25 border border-danger px-3 py-1.5 rounded-pill ms-2">
-                    Out of Stock
+                    {t('prd_out_of_stock')}
                   </span>
                 )}
               </div>
@@ -278,7 +278,7 @@ const ProductDetail = () => {
                     style={{ backgroundColor: '#aa1a31', borderRadius: '8px', boxShadow: '0 4px 15px rgba(170, 26, 49, 0.4)' }}
                     onClick={handleAddToCart}
                   >
-                    <i className="bi bi-cart-plus me-2"></i> Add to Cart
+                    <i className="bi bi-cart-plus me-2"></i> {t('home_add_to_cart')}
                   </button>
                 </div>
               )}
@@ -292,13 +292,13 @@ const ProductDetail = () => {
             {/* Reviews List */}
             <div className="col-lg-7">
               <h3 className="mb-4 fw-bold" style={{ fontFamily: 'serif', color: '#FFD700' }}>
-                <i className="bi bi-chat-left-text me-2 text-warning"></i> Customer Reviews
+                <i className="bi bi-chat-left-text me-2 text-warning"></i> {t('prd_customer_reviews')}
               </h3>
 
               {productReviews.length === 0 ? (
                 <div className="p-5 text-center rounded-3 bg-dark bg-opacity-20 border border-secondary">
                   <i className="bi bi-chat-square-quote display-4 text-muted mb-3 d-block"></i>
-                  <p className="text-light opacity-50">No reviews yet for this product. Be the first to share your experience!</p>
+                  <p className="text-light opacity-50">{t('prd_no_reviews')}</p>
                 </div>
               ) : (
                 <div className="d-flex flex-column gap-3">
@@ -339,13 +339,13 @@ const ProductDetail = () => {
                 }}
               >
                 <h4 className="mb-4 fw-bold text-center" style={{ fontFamily: 'serif', color: '#FFD700' }}>
-                  Write a Review
+                  {t('prd_write_review')}
                 </h4>
 
                 <form onSubmit={handleAddReview}>
                   {/* Star Rating Select */}
                   <div className="mb-3">
-                    <label className="form-label d-block text-light opacity-75">Your Rating</label>
+                    <label className="form-label d-block text-light opacity-75">{t('prd_your_rating')}</label>
                     <div className="fs-3 text-warning">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <i 
@@ -360,11 +360,11 @@ const ProductDetail = () => {
 
                   {/* Comment */}
                   <div className="mb-4">
-                    <label className="form-label text-light opacity-75">Review Comments</label>
+                    <label className="form-label text-light opacity-75">{t('prd_review_comments')}</label>
                     <textarea 
                       className="form-control bg-dark bg-opacity-50 text-white border-secondary"
                       rows={4}
-                      placeholder="Share your culinary experience with this authentic blend..."
+                      placeholder={t('prd_review_placeholder')}
                       value={comment}
                       onChange={(e) => setComment(e.target.value)}
                       required
@@ -376,7 +376,7 @@ const ProductDetail = () => {
                     className="btn w-100 fw-bold text-white border-0 py-2.5 text-uppercase"
                     style={{ backgroundColor: '#FFD700', color: '#4A1525', borderRadius: '8px' }}
                   >
-                    Submit Review
+                    {t('prd_submit_review')}
                   </button>
                 </form>
               </div>
@@ -387,7 +387,7 @@ const ProductDetail = () => {
           {relatedProducts.length > 0 && (
             <div className="related-products-section text-white mt-5">
               <h3 className="mb-4 text-center fw-bold" style={{ fontFamily: 'serif', color: '#FFD700' }}>
-                Explore Related Spices
+                {t('prd_related_title')}
               </h3>
               <div className="row g-4">
                 {relatedProducts.map((related) => (
@@ -403,18 +403,18 @@ const ProductDetail = () => {
                       <div className="mb-3 overflow-hidden rounded" style={{ height: '180px' }}>
                         <img 
                           src={getAssetPath(related.image)} 
-                          alt={related.name}
+                          alt={tp(related.name)}
                           style={{ height: '100%', width: '100%', objectFit: 'contain' }}
                         />
                       </div>
-                      <h5 className="fw-bold mb-1 text-truncate">{related.name}</h5>
+                      <h5 className="fw-bold mb-1 text-truncate">{tp(related.name)}</h5>
                       <p className="text-warning fw-semibold mb-3">₹{related.price} / {related.unit}</p>
                       <Link 
                         to={`/product/${related._id || related.id}`}
                         className="btn btn-outline-warning w-100 mt-auto btn-sm fw-bold"
                         style={{ borderRadius: '6px' }}
                       >
-                        View Spice
+                        {t('prd_view_spice')}
                       </Link>
                     </div>
                   </div>

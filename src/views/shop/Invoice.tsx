@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import axios from 'axios';
 import Header from '../includes/Header';
 import Footer from '../includes/Footer';
@@ -8,6 +9,7 @@ import RoutePaths from '../../config';
 import { getAssetPath } from '../../Utils/imageHelper';
 
 const Invoice = () => {
+  const { t } = useLanguage();
   const { orderId } = useParams<{ orderId: string }>();
   const { orders } = useAuth();
   const invoiceRef = useRef<HTMLDivElement>(null);
@@ -37,10 +39,10 @@ const Invoice = () => {
       <div style={{ backgroundColor: '#FDF6ED', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         <Header />
         <div className="container py-5 text-center flex-grow-1">
-          <h3 className="text-danger">Invoice Not Found</h3>
-          <p>We couldn't locate the order details for ID: {orderId}</p>
+          <h3 className="text-danger">{t('inv_not_found_title')}</h3>
+          <p>{t('inv_not_found_text').replace('{orderId}', orderId || '')}</p>
           <Link to={RoutePaths.home} className="btn text-white" style={{ backgroundColor: '#aa1a31' }}>
-            Go Home
+            {t('inv_go_home')}
           </Link>
         </div>
         <Footer />
@@ -64,10 +66,10 @@ const Invoice = () => {
         {/* Print controls bar */}
         <div className="d-flex justify-content-between align-items-center w-100 max-width-invoice mb-4 print-hide" style={{ maxWidth: '800px' }}>
           <Link to={RoutePaths.home} className="btn btn-sm text-white fw-bold d-flex align-items-center" style={{ backgroundColor: '#4A1525', border: '1px solid #FFB300' }}>
-            <i className="bi bi-arrow-left me-2"></i> Return to Shopping
+            <i className="bi bi-arrow-left me-2"></i> {t('inv_return_shopping')}
           </Link>
           <button className="btn text-white fw-bold d-flex align-items-center gap-2" style={{ backgroundColor: '#aa1a31' }} onClick={handlePrint}>
-            <i className="bi bi-printer-fill"></i> Print E-Invoice
+            <i className="bi bi-printer-fill"></i> {t('inv_print')}
           </button>
         </div>
 
@@ -81,10 +83,10 @@ const Invoice = () => {
           <div className="row mb-4 align-items-center">
             <div className="col-sm-6 mb-3 mb-sm-0">
               <div className="d-flex align-items-center gap-3 mb-2">
-                <img src={getAssetPath('images/ra_waa.png')} alt="RA Masala Logo" style={{ maxHeight: '60px', objectFit: 'contain' }} />
+                <img src={getAssetPath('images/ra_waa.png')} alt={t('inv_logo_alt')} style={{ maxHeight: '60px', objectFit: 'contain' }} />
                 <div>
                   <h3 className="fw-bold mb-0" style={{ color: '#4A1525', fontFamily: 'serif' }}>RA MASALA</h3>
-                  <span className="text-muted d-block" style={{ fontSize: '0.75rem', fontWeight: 'bold' }}>PURE & AUTHENTIC INDIAN SPICES</span>
+                  <span className="text-muted d-block" style={{ fontSize: '0.75rem', fontWeight: 'bold' }}>{t('inv_tagline')}</span>
                 </div>
               </div>
               <small className="text-secondary d-block" style={{ fontSize: '0.8rem', lineHeight: '1.3' }}>
@@ -95,12 +97,12 @@ const Invoice = () => {
               </small>
             </div>
             <div className="col-sm-6 text-sm-end">
-              <h3 className="fw-bold text-uppercase text-secondary tracking-widest mb-2" style={{ letterSpacing: '2px' }}>TAX INVOICE</h3>
+              <h3 className="fw-bold text-uppercase text-secondary tracking-widest mb-2" style={{ letterSpacing: '2px' }}>{t('inv_tax_invoice')}</h3>
               <div className="text-sm-end">
-                <span className="d-block text-secondary"><strong>Invoice No:</strong> INV-{order.id.split('-')[1]}</span>
-                <span className="d-block text-secondary"><strong>Date:</strong> {new Date(order.date).toLocaleDateString('en-IN', { dateStyle: 'long' })}</span>
-                <span className="d-block text-secondary"><strong>Order ID:</strong> {order.id}</span>
-                <span className="d-block text-secondary"><strong>Payment Method:</strong> {order.paymentMethod}</span>
+                <span className="d-block text-secondary"><strong>{t('inv_invoice_no')}</strong> INV-{order.id.split('-')[1]}</span>
+                <span className="d-block text-secondary"><strong>{t('inv_date')}</strong> {new Date(order.date).toLocaleDateString('en-IN', { dateStyle: 'long' })}</span>
+                <span className="d-block text-secondary"><strong>{t('inv_order_id')}</strong> {order.id}</span>
+                <span className="d-block text-secondary"><strong>{t('inv_payment_method')}</strong> {order.paymentMethod}</span>
               </div>
             </div>
           </div>
@@ -110,13 +112,13 @@ const Invoice = () => {
           {/* Billing / Shipping */}
           <div className="row my-4">
             <div className="col-md-6 mb-3 mb-md-0">
-              <h6 className="text-secondary text-uppercase fw-bold mb-3" style={{ fontSize: '0.8rem', letterSpacing: '1px' }}>Billed & Shipped To:</h6>
+              <h6 className="text-secondary text-uppercase fw-bold mb-3" style={{ fontSize: '0.8rem', letterSpacing: '1px' }}>{t('inv_billed_to')}</h6>
               <h5 className="fw-bold mb-1 text-dark">{order.shippingAddress.name}</h5>
               <p className="text-secondary mb-0" style={{ fontSize: '0.9rem' }}>
                 {order.shippingAddress.address}<br />
                 {order.shippingAddress.city} - {order.shippingAddress.zip}<br />
-                <strong>Phone:</strong> {order.shippingAddress.phone}<br />
-                <strong>Email:</strong> {order.customerEmail}
+                <strong>{t('inv_phone')}</strong> {order.shippingAddress.phone}<br />
+                <strong>{t('inv_email')}</strong> {order.customerEmail}
               </p>
             </div>
             <div className="col-md-6 text-md-end">
@@ -125,7 +127,7 @@ const Invoice = () => {
                 color: order.status === 'Shipped' ? '#2E7D32' : order.status === 'Processing' ? '#E65100' : '#1565C0',
                 border: '1px solid'
               }}>
-                Order Status: {order.status}
+                {t('inv_order_status')} {order.status}
               </span>
             </div>
           </div>
@@ -135,11 +137,11 @@ const Invoice = () => {
             <table className="table align-middle">
               <thead>
                 <tr className="table-light text-secondary" style={{ fontSize: '0.85rem' }}>
-                  <th>Sr.</th>
-                  <th>Product Description</th>
-                  <th className="text-center">Rate</th>
-                  <th className="text-center">Qty</th>
-                  <th className="text-end">Taxable Value</th>
+                  <th>{t('inv_sr')}</th>
+                  <th>{t('inv_product_desc')}</th>
+                  <th className="text-center">{t('inv_rate')}</th>
+                  <th className="text-center">{t('inv_qty')}</th>
+                  <th className="text-end">{t('inv_taxable_value')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -148,7 +150,7 @@ const Invoice = () => {
                     <td>{idx + 1}</td>
                     <td>
                       <strong className="text-dark">{item.name}</strong>
-                      <span className="d-block text-muted" style={{ fontSize: '0.75rem' }}>HSN Code: 0910 (Spices)</span>
+                      <span className="d-block text-muted" style={{ fontSize: '0.75rem' }}>{t('inv_hsn_spices')}</span>
                     </td>
                     <td className="text-center">₹{item.price}</td>
                     <td className="text-center">{item.quantity}</td>
@@ -163,36 +165,36 @@ const Invoice = () => {
           <div className="row g-4 justify-content-between mt-2">
             <div className="col-md-6">
               <div className="p-3 bg-light rounded-3 text-secondary" style={{ fontSize: '0.82rem' }}>
-                <strong className="text-dark d-block mb-1">Declaration:</strong>
-                We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct. Spices are charged under 5% GST (CGST 2.5% & SGST 2.5%).
+                <strong className="text-dark d-block mb-1">{t('inv_declaration')}</strong>
+                {t('inv_declaration_text')}
               </div>
             </div>
             <div className="col-md-5">
               <div className="d-flex justify-content-between mb-2">
-                <span className="text-secondary">Subtotal:</span>
+                <span className="text-secondary">{t('inv_subtotal')}</span>
                 <span className="text-dark fw-semibold">₹{order.subtotal}</span>
               </div>
               {order.subtotal > (order.total - order.tax - order.shipping) && (
                 <div className="d-flex justify-content-between mb-2 text-success">
-                  <span>Discount:</span>
+                  <span>{t('inv_discount')}</span>
                   <span>-₹{(order.subtotal - (order.total - order.tax - order.shipping)).toFixed(1)}</span>
                 </div>
               )}
               <div className="d-flex justify-content-between mb-1 text-xs text-muted">
-                <span>CGST (2.5%):</span>
+                <span>{t('inv_cgst')}</span>
                 <span>₹{cgst.toFixed(1)}</span>
               </div>
               <div className="d-flex justify-content-between mb-2 text-xs text-muted">
-                <span>SGST (2.5%):</span>
+                <span>{t('inv_sgst')}</span>
                 <span>₹{sgst.toFixed(1)}</span>
               </div>
               <div className="d-flex justify-content-between mb-2">
-                <span className="text-secondary">Shipping Fee:</span>
-                <span>{order.shipping === 0 ? 'FREE' : `₹${order.shipping}`}</span>
+                <span className="text-secondary">{t('inv_shipping_fee')}</span>
+                <span>{order.shipping === 0 ? t('inv_free') : `₹${order.shipping}`}</span>
               </div>
               <hr />
               <div className="d-flex justify-content-between align-items-center mb-3">
-                <strong className="text-dark fs-5">Grand Total:</strong>
+                <strong className="text-dark fs-5">{t('inv_grand_total')}</strong>
                 <strong className="fs-4" style={{ color: '#aa1a31' }}>₹{order.total.toFixed(1)}</strong>
               </div>
             </div>
@@ -202,13 +204,13 @@ const Invoice = () => {
           <div className="row mt-5 pt-4 text-center">
             <div className="col-6">
               <div className="border-bottom mx-auto" style={{ width: '150px', height: '40px' }}></div>
-              <small className="text-secondary d-block mt-2">Customer Signature</small>
+              <small className="text-secondary d-block mt-2">{t('inv_customer_signature')}</small>
             </div>
             <div className="col-6">
               <div className="mx-auto text-center" style={{ width: '150px', height: '40px', fontFamily: 'cursive', color: '#800c1e', fontWeight: 'bold' }}>
                 RA Masala Ltd.
               </div>
-              <small className="text-secondary d-block mt-2">Authorized Signatory</small>
+              <small className="text-secondary d-block mt-2">{t('inv_authorized_signatory')}</small>
             </div>
           </div>
         </div>

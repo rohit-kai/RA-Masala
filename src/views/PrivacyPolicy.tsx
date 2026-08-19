@@ -10,81 +10,81 @@ const PrivacyPolicy: React.FC = () => {
 
   const sections = [
     {
-      title: '1. Information We Collect',
+      title: t('pol_s1_title'),
       items: [
-        'Personal details you provide at registration or checkout, such as your name, email address, phone number, shipping address, and payment details.',
-        'Order history, wishlist, and browsing behaviour used to improve our services and recommend relevant products.',
-        'Device and usage data (such as browser type, IP address, pages visited) collected automatically for analytics and security.'
+        t('pol_s1_item1'),
+        t('pol_s1_item2'),
+        t('pol_s1_item3')
       ]
     },
     {
-      title: '2. How We Use Your Information',
+      title: t('pol_s2_title'),
       items: [
-        'To process and deliver your orders, including order confirmations, invoices, and shipping updates.',
-        'To provide customer support and respond to your queries and feedback.',
-        'To personalise your shopping experience, send offers, and keep you informed about our products.',
-        'To maintain security, prevent fraud, and comply with legal obligations.'
+        t('pol_s2_item1'),
+        t('pol_s2_item2'),
+        t('pol_s2_item3'),
+        t('pol_s2_item4')
       ]
     },
     {
-      title: '3. Sharing of Information',
+      title: t('pol_s3_title'),
       items: [
-        'We never sell your personal information to third parties.',
-        'Your information is shared only with trusted partners who help us operate our store (such as payment gateways, logistics partners, and hosting providers) under strict confidentiality.',
-        'We may disclose information where required by law or to protect the rights and safety of RA Masala and its customers.'
+        t('pol_s3_item1'),
+        t('pol_s3_item2'),
+        t('pol_s3_item3')
       ]
     },
     {
-      title: '4. Data Security',
+      title: t('pol_s4_title'),
       items: [
-        'We use industry-standard security measures, including encryption, to protect your personal data during transmission and storage.',
-        'Payment transactions are processed through secure, PCI-compliant payment gateways. We do not store your full card or payment credentials on our servers.'
+        t('pol_s4_item1'),
+        t('pol_s4_item2')
       ]
     },
     {
-      title: '5. Cookies',
+      title: t('pol_s5_title'),
       items: [
-        'Our website uses cookies to remember your preferences, keep items in your cart, and improve performance.',
-        'You can disable cookies in your browser settings; however, some features of the site may not work correctly without them.'
+        t('pol_s5_item1'),
+        t('pol_s5_item2')
       ]
     },
     {
-      title: '6. Your Rights',
+      title: t('pol_s6_title'),
       items: [
-        'You may access, correct, or update your personal information anytime from your account.',
-        'You may request deletion of your account and personal data by contacting us.',
-        'You can opt out of promotional communications at any time.'
+        t('pol_s6_item1'),
+        t('pol_s6_item2'),
+        t('pol_s6_item3')
       ]
     },
     {
-      title: '7. Terms & Conditions',
+      title: t('pol_s7_title'),
       items: [
-        'All orders are subject to product availability. We reserve the right to cancel any order due to unavailability of stock or payment issues.',
-        'Prices, taxes, and shipping charges are calculated at checkout and may change without prior notice.',
-        'Product images are indicative; actual product colour, size, and packaging may vary slightly.',
-        'Delivery timelines are estimates and may be affected by location, weather, or unforeseen circumstances.',
-        'Returns and refunds are governed by our return policy. If you receive a damaged or incorrect product, contact us within 48 hours of delivery.',
-        'Cash on Delivery (COD) orders are confirmed only after a successful verification call. We may cancel orders with repeated non-acceptance.'
+        t('pol_s7_item1'),
+        t('pol_s7_item2'),
+        t('pol_s7_item3'),
+        t('pol_s7_item4'),
+        t('pol_s7_item5'),
+        t('pol_s7_item6')
       ]
     },
     {
-      title: '8. Intellectual Property',
+      title: t('pol_s8_title'),
       items: [
-        'All content on this website, including text, logos, images, and branding, is the property of RA Masala and may not be reproduced without permission.'
+        t('pol_s8_item1')
       ]
     },
     {
-      title: '9. Changes to This Policy',
+      title: t('pol_s9_title'),
       items: [
-        'We may update this Privacy Policy from time to time. Any changes will be posted on this page with the revised date.'
+        t('pol_s9_item1')
       ]
     },
     {
-      title: '10. Contact Us',
+      title: t('pol_s10_title'),
       items: [
-        'For any questions regarding this policy, your personal data, or our terms, please contact us at:',
-        'Customer Care No: 7518166686',
-        'Email: ramasale@ymail.com / RAMASALE.6686@GMAIL.COM'
+        t('pol_s10_item1'),
+        t('pol_s10_item2'),
+        t('pol_s10_item3')
       ]
     }
   ];
@@ -101,20 +101,20 @@ const PrivacyPolicy: React.FC = () => {
     }}>
       <Header />
 
-      <Banner page={t('nav_contact')} path={[t('nav_home'), 'Privacy Policy']} />
+      <Banner page={t('nav_contact')} path={[t('nav_home'), t('pol_banner_title')]} />
 
       <div className="container py-5 flex-grow-1 position-relative" style={{ zIndex: 2 }}>
         <div className="traditional-pattern-overlay"></div>
 
         <div className="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
           <span className="text-uppercase fw-bold tracking-wider" style={{ color: '#D2691E', fontSize: '0.9rem', letterSpacing: '2px' }}>
-            LEGAL
+            {t('pol_legal_tag')}
           </span>
           <h2 className="fw-bold mb-3 mt-2 display-6" style={{ color: '#4A1525', fontFamily: 'serif' }}>
-            Privacy Policy & Terms & Conditions
+            {t('pol_title')}
           </h2>
           <p className="text-muted mb-4" style={{ lineHeight: '1.7' }}>
-            This Privacy Policy and Terms & Conditions govern your use of the RA Masala website and the purchase of our products. By accessing our website or placing an order, you agree to the practices described below.
+            {t('pol_intro')}
           </p>
 
           {sections.map((section) => (
@@ -129,7 +129,7 @@ const PrivacyPolicy: React.FC = () => {
           ))}
 
           <p className="text-muted small border-top pt-3 mb-0" style={{ fontStyle: 'italic' }}>
-            Last updated: August 2026. RA Masala reserves the right to amend this policy at any time.
+            {t('pol_last_updated')}
           </p>
         </div>
       </div>

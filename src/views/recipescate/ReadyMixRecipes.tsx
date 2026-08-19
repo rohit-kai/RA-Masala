@@ -5,8 +5,10 @@ import Banner from '../../components/Banner';
 import Footer from '../includes/Footer';
 import { getAssetPath } from '../../Utils/imageHelper';
 import RoutePaths from '../../config';
+import { useLanguage } from '../../context/LanguageContext';
 
 const ReadyMixRecipes: React.FC = () => {
+  const { t } = useLanguage();
   const recipes = [
     {
       id: "r1",
@@ -20,12 +22,12 @@ const ReadyMixRecipes: React.FC = () => {
   return (
     <div style={{ backgroundColor: '#FDF6ED', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Header />
-      <Banner page="Ready Mix Recipes" path={["Home", "Recipes", "Ready Mix"]} />
+      <Banner page={t('rcp_ready_mix_recipes')} path={[t('nav_home'), t('rcp_title'), t('rcp_cat_ready_mix')]} />
 
       <div className="container py-5 flex-grow-1">
         <div className="mb-4">
           <Link to={RoutePaths.recipes} className="btn text-white fw-bold btn-sm shadow-sm" style={{ backgroundColor: '#4A1525' }}>
-            <i className="bi bi-arrow-left-short me-1 fs-5"></i> Back to Recipes
+            <i className="bi bi-arrow-left-short me-1 fs-5"></i> {t('rcp_back_to_recipes')}
           </Link>
         </div>
 
@@ -56,7 +58,7 @@ const ReadyMixRecipes: React.FC = () => {
                     className="btn text-white fw-bold w-100 py-2 rounded-3 mt-auto d-flex align-items-center justify-content-center gap-2"
                     style={{ backgroundColor: '#aa1a31' }}
                   >
-                    <i className="bi bi-youtube"></i> Watch Video Tutorial
+                    <i className="bi bi-youtube"></i> {t('rcp_watch_video')}
                   </a>
                 </div>
               </div>

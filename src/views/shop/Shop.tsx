@@ -11,7 +11,7 @@ import { getAssetPath } from '../../Utils/imageHelper';
 
 const Shop = () => {
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, tp } = useLanguage();
   const { addToCart } = useCart();
   const { products } = useAuth();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
@@ -74,10 +74,10 @@ const Shop = () => {
               filter: 'drop-shadow(0 0 8px #FFD700)'
             }}></div>
             <h1 className="display-4 fw-bold" style={{ fontFamily: 'serif', color: '#FFD700' }}>
-              Explore Our Spices Collection
+              {t('shop_title')}
             </h1>
             <p className="lead text-light opacity-75">
-              Discover authentic, rich, and aromatic Indian spices handpicked for your kitchen.
+              {t('shop_subtitle')}
             </p>
           </div>
 
@@ -89,7 +89,7 @@ const Shop = () => {
           }}>
             {/* Search Input */}
             <div className="col-md-4">
-              <label className="form-label text-warning fw-semibold">Search Spices</label>
+              <label className="form-label text-warning fw-semibold">{t('shop_search_label')}</label>
               <div className="input-group">
                 <span className="input-group-text bg-dark border-secondary text-light">
                   <i className="bi bi-search"></i>
@@ -97,7 +97,7 @@ const Shop = () => {
                 <input 
                   type="text" 
                   className="form-control bg-dark bg-opacity-50 text-white border-secondary"
-                  placeholder="e.g. Garam Masala..."
+                  placeholder={t('shop_search_placeholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -106,7 +106,7 @@ const Shop = () => {
 
             {/* Category Select tabs */}
             <div className="col-md-5">
-              <label className="form-label text-warning fw-semibold">Category</label>
+              <label className="form-label text-warning fw-semibold">{t('shop_category_label')}</label>
               <div className="d-flex flex-wrap gap-2">
                 {categories.map((cat) => (
                   <button
@@ -127,15 +127,15 @@ const Shop = () => {
 
             {/* Sorting */}
             <div className="col-md-3">
-              <label className="form-label text-warning fw-semibold">Sort By</label>
+              <label className="form-label text-warning fw-semibold">{t('shop_sort_by_label')}</label>
               <select 
                 className="form-select bg-dark bg-opacity-50 text-white border-secondary"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as any)}
               >
-                <option value="name">Alphabetical (A-Z)</option>
-                <option value="priceAsc">Price (Low to High)</option>
-                <option value="priceDesc">Price (High to Low)</option>
+                <option value="name">{t('shop_sort_alphabetical')}</option>
+                <option value="priceAsc">{t('shop_sort_price_low_high')}</option>
+                <option value="priceDesc">{t('shop_sort_price_high_low')}</option>
               </select>
             </div>
           </div>
@@ -144,8 +144,8 @@ const Shop = () => {
           {filteredProducts.length === 0 ? (
             <div className="text-center text-white p-5 rounded-4 bg-dark bg-opacity-20 border border-secondary">
               <i className="bi bi-emoji-frown display-3 text-warning mb-3 d-block"></i>
-              <h3>No Spices Found</h3>
-              <p className="text-light opacity-50">Try broadening your search or choosing another category.</p>
+              <h3>{t('shop_empty_title')}</h3>
+              <p className="text-light opacity-50">{t('shop_empty_msg')}</p>
             </div>
           ) : (
             <div className="row g-4">
@@ -162,7 +162,7 @@ const Shop = () => {
                     <div className="position-relative overflow-hidden" style={{ height: '220px', background: 'rgba(255, 255, 255, 0.02)' }}>
                       <img 
                         src={getAssetPath(product.image)} 
-                        alt={product.name} 
+                        alt={tp(product.name)} 
                         style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '15px' }}
                       />
                       <span 
@@ -190,12 +190,12 @@ const Shop = () => {
 
                     {/* Card Body */}
                     <div className="p-4 d-flex flex-column flex-grow-1 text-white">
-                      <h3 className="fs-5 fw-bold text-center mb-1">{product.name}</h3>
+                      <h3 className="fs-5 fw-bold text-center mb-1">{tp(product.name)}</h3>
                       <div className="text-center fw-bold fs-5 mb-2" style={{ color: '#FFD700' }}>
                         ₹{product.price} <span className="text-light opacity-50 fw-normal" style={{ fontSize: '0.85rem' }}>/ {product.unit}</span>
                       </div>
                       <p className="text-light opacity-75 text-center flex-grow-1 mb-4" style={{ fontSize: '0.9rem' }}>
-                        {product.description}
+                        {tp(product.description)}
                       </p>
 
                       {/* Card Footer */}
@@ -205,20 +205,20 @@ const Shop = () => {
                           style={{ backgroundColor: '#aa1a31', borderRadius: '8px' }}
                           onClick={() => {
                             if (product.stock <= 0) {
-                              Swal.fire('Out of Stock', 'Sorry, this product is temporarily unavailable.', 'warning');
+                              Swal.fire(t('shop_out_of_stock'), t('shop_out_of_stock_msg'), 'warning');
                               return;
                             }
                             addToCart(product);
                             Swal.fire({
                               icon: 'success',
-                              title: 'Added to Cart',
-                              text: `${product.name} has been added to your shopping cart.`,
+                              title: t('shop_added_to_cart'),
+                              text: `${tp(product.name)} ${t('shop_added_to_cart_msg')}`,
                               timer: 1200,
                               showConfirmButton: false
                             });
                           }}
                         >
-                          <i className="bi bi-cart-plus me-2"></i> Add to Cart
+                          <i className="bi bi-cart-plus me-2"></i> {t('home_add_to_cart')}
                         </button>
                         <button 
                           className="btn w-100 py-1.5 fw-semibold"
@@ -227,7 +227,7 @@ const Shop = () => {
                             navigate(`/product/${product._id || product.id}`);
                           }}
                         >
-                          <i className="bi bi-info-circle me-1"></i> More Info
+                          <i className="bi bi-info-circle me-1"></i> {t('home_more_info')}
                         </button>
                       </div>
                     </div>

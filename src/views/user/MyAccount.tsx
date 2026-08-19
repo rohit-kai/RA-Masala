@@ -6,10 +6,26 @@ import Footer from '../includes/Footer';
 import RoutePaths from '../../config';
 import Swal from 'sweetalert2';
 import { getAssetPath } from '../../Utils/imageHelper';
+import { useLanguage } from '../../context/LanguageContext';
 
 const MyAccount = () => {
   const { user, orders, updateProfile, logout, tickets, addTicket, reviews, addReview, products, changePassword } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
+
+  const translateStatus = (status: string) => {
+    const statusMap: Record<string, string> = {
+      'Shipped': t('my_status_shipped'),
+      'Processing': t('my_status_processing'),
+      'Delivered': t('my_status_delivered'),
+      'Pending': t('my_status_pending'),
+      'Completed': t('my_status_completed'),
+      'Cancelled': t('my_status_cancelled'),
+      'Resolved': t('my_status_resolved'),
+      'Open': t('my_status_open'),
+    };
+    return statusMap[status] || status;
+  };
 
   // Redirect if not logged in
   useEffect(() => {
@@ -53,8 +69,8 @@ const MyAccount = () => {
     updateProfile(name, phone, address, city, zip);
     Swal.fire({
       icon: 'success',
-      title: 'Profile Updated',
-      text: 'Your details have been successfully saved.',
+      title: t('my_swal_profile_updated_title'),
+      text: t('my_swal_profile_updated_text'),
       timer: 1500,
       showConfirmButton: false
     });
@@ -65,8 +81,8 @@ const MyAccount = () => {
     if (newPassword !== confirmPassword) {
       Swal.fire({
         icon: 'error',
-        title: 'Error',
-        text: 'New passwords do not match.',
+        title: t('my_swal_error_title'),
+        text: t('my_swal_password_mismatch'),
         confirmButtonColor: '#aa1a31'
       });
       return;
@@ -77,8 +93,8 @@ const MyAccount = () => {
       if (res.success) {
         Swal.fire({
           icon: 'success',
-          title: 'Success',
-          text: 'Password updated successfully.',
+          title: t('my_swal_success_title'),
+          text: t('my_swal_password_updated'),
           timer: 2000,
           showConfirmButton: false
         });
@@ -88,7 +104,7 @@ const MyAccount = () => {
       } else {
         Swal.fire({
           icon: 'error',
-          title: 'Failed',
+          title: t('my_swal_failed_title'),
           text: res.message,
           confirmButtonColor: '#aa1a31'
         });
@@ -97,8 +113,8 @@ const MyAccount = () => {
       console.error(err);
       Swal.fire({
         icon: 'error',
-        title: 'Error',
-        text: 'Something went wrong.',
+        title: t('my_swal_error_title'),
+        text: t('my_swal_generic_error'),
         confirmButtonColor: '#aa1a31'
       });
     }
@@ -108,8 +124,8 @@ const MyAccount = () => {
     logout();
     Swal.fire({
       icon: 'success',
-      title: 'Logged Out',
-      text: 'You have been safely signed out.',
+      title: t('my_swal_logged_out_title'),
+      text: t('my_swal_logged_out_text'),
       timer: 1500,
       showConfirmButton: false
     });
@@ -125,8 +141,8 @@ const MyAccount = () => {
       setTicketMessage('');
       Swal.fire({
         icon: 'success',
-        title: 'Ticket Submitted',
-        text: 'Our support team will get back to you shortly.',
+        title: t('my_swal_ticket_submitted_title'),
+        text: t('my_swal_ticket_submitted_text'),
         timer: 2000,
         showConfirmButton: false
       });
@@ -140,8 +156,8 @@ const MyAccount = () => {
     if (!selectedProductId || !reviewComment.trim()) {
       Swal.fire({
         icon: 'warning',
-        title: 'Incomplete Fields',
-        text: 'Please select a product and write a comment.',
+        title: t('my_swal_incomplete_fields_title'),
+        text: t('my_swal_incomplete_fields_text'),
         confirmButtonColor: '#aa1a31'
       });
       return;
@@ -164,8 +180,8 @@ const MyAccount = () => {
       setReviewRating(5);
       Swal.fire({
         icon: 'success',
-        title: 'Review Posted',
-        text: 'Thank you for your valuable feedback!',
+        title: t('my_swal_review_posted_title'),
+        text: t('my_swal_review_posted_text'),
         timer: 2000,
         showConfirmButton: false
       });
@@ -192,11 +208,11 @@ const MyAccount = () => {
         {/* Welcome Section */}
         <div className="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-3 border-bottom border-2" style={{ borderColor: '#FFB300' }}>
           <div>
-            <h2 className="mb-1" style={{ fontFamily: 'serif', color: '#4A1525', fontWeight: 'bold' }}>My Account</h2>
-            <p className="text-secondary mb-0">Welcome back, <strong>{user.name}</strong> ({user.email})</p>
+            <h2 className="mb-1" style={{ fontFamily: 'serif', color: '#4A1525', fontWeight: 'bold' }}>{t('my_title')}</h2>
+            <p className="text-secondary mb-0">{t('my_welcome_back')} <strong>{user.name}</strong> ({user.email})</p>
           </div>
           <button className="btn btn-outline-danger fw-bold btn-sm mt-3 mt-sm-0" onClick={handleLogout}>
-            <i className="bi bi-box-arrow-right me-2"></i> Logout
+            <i className="bi bi-box-arrow-right me-2"></i> {t('my_logout')}
           </button>
         </div>
 
@@ -210,14 +226,14 @@ const MyAccount = () => {
                   style={{ backgroundColor: activeTab === 'profile' ? '#aa1a31' : 'transparent' }}
                   onClick={() => setActiveTab('profile')}
                 >
-                  <i className="bi bi-person-fill me-2"></i> Profile Details
+                  <i className="bi bi-person-fill me-2"></i> {t('my_tab_profile')}
                 </button>
                 <button 
                   className={`btn text-start py-2.5 px-3 fw-semibold border-0 rounded-3 ${activeTab === 'orders' ? 'text-white' : 'text-dark bg-transparent'}`}
                   style={{ backgroundColor: activeTab === 'orders' ? '#aa1a31' : 'transparent' }}
                   onClick={() => setActiveTab('orders')}
                 >
-                  <i className="bi bi-bag-check-fill me-2"></i> My Orders
+                  <i className="bi bi-bag-check-fill me-2"></i> {t('my_tab_orders')}
                   {userOrders.length > 0 && (
                     <span className="badge bg-light text-dark ms-2">{userOrders.length}</span>
                   )}
@@ -227,7 +243,7 @@ const MyAccount = () => {
                   style={{ backgroundColor: activeTab === 'tickets' ? '#aa1a31' : 'transparent' }}
                   onClick={() => setActiveTab('tickets')}
                 >
-                  <i className="bi bi-headset me-2"></i> Support Tickets
+                  <i className="bi bi-headset me-2"></i> {t('my_tab_tickets')}
                   {userTickets.length > 0 && (
                     <span className="badge bg-light text-dark ms-2">{userTickets.length}</span>
                   )}
@@ -237,7 +253,7 @@ const MyAccount = () => {
                   style={{ backgroundColor: activeTab === 'reviews' ? '#aa1a31' : 'transparent' }}
                   onClick={() => setActiveTab('reviews')}
                 >
-                  <i className="bi bi-star-fill me-2"></i> My Reviews
+                  <i className="bi bi-star-fill me-2"></i> {t('my_tab_reviews')}
                   {userReviews.length > 0 && (
                     <span className="badge bg-light text-dark ms-2">{userReviews.length}</span>
                   )}
@@ -247,14 +263,14 @@ const MyAccount = () => {
                   style={{ backgroundColor: activeTab === 'settings' ? '#aa1a31' : 'transparent' }}
                   onClick={() => setActiveTab('settings')}
                 >
-                  <i className="bi bi-gear-fill me-2"></i> Settings
+                  <i className="bi bi-gear-fill me-2"></i> {t('my_tab_settings')}
                 </button>
                 {user.role === 'admin' && (
                   <Link 
                     to={RoutePaths.admin} 
                     className="btn btn-outline-warning text-dark text-start py-2.5 px-3 fw-bold border-1 rounded-3 mt-3"
                   >
-                    <i className="bi bi-shield-lock-fill me-2 text-danger"></i> Admin Control
+                    <i className="bi bi-shield-lock-fill me-2 text-danger"></i> {t('my_admin_control')}
                   </Link>
                 )}
               </div>
@@ -265,11 +281,11 @@ const MyAccount = () => {
           <div className="col-md-9">
             {activeTab === 'profile' && (
               <div className="card border-0 shadow-sm rounded-4 p-4 bg-white">
-                <h4 className="mb-4" style={{ fontFamily: 'serif', color: '#4A1525', fontWeight: 'bold' }}>Shipping & Billing Address</h4>
+                <h4 className="mb-4" style={{ fontFamily: 'serif', color: '#4A1525', fontWeight: 'bold' }}>{t('my_profile_heading')}</h4>
                 <form onSubmit={handleUpdate}>
                   <div className="row g-3">
                     <div className="col-md-6">
-                      <label className="form-label text-muted fw-semibold">Full Name</label>
+                      <label className="form-label text-muted fw-semibold">{t('my_full_name_label')}</label>
                       <input 
                         type="text" 
                         className="form-control" 
@@ -279,27 +295,27 @@ const MyAccount = () => {
                       />
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label text-muted fw-semibold">Phone Number</label>
+                      <label className="form-label text-muted fw-semibold">{t('my_phone_label')}</label>
                       <input 
                         type="text" 
                         className="form-control" 
-                        placeholder="e.g. +91 98765 43210" 
+                        placeholder={t('my_phone_placeholder')} 
                         value={phone} 
                         onChange={(e) => setPhone(e.target.value)} 
                       />
                     </div>
                     <div className="col-12">
-                      <label className="form-label text-muted fw-semibold">Delivery Address</label>
+                      <label className="form-label text-muted fw-semibold">{t('my_address_label')}</label>
                       <textarea 
                         className="form-control" 
                         rows={3} 
-                        placeholder="Full Shipping Address" 
+                        placeholder={t('my_address_placeholder')} 
                         value={address} 
                         onChange={(e) => setAddress(e.target.value)} 
                       />
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label text-muted fw-semibold">City</label>
+                      <label className="form-label text-muted fw-semibold">{t('my_city_label')}</label>
                       <input 
                         type="text" 
                         className="form-control" 
@@ -308,7 +324,7 @@ const MyAccount = () => {
                       />
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label text-muted fw-semibold">ZIP / Pincode</label>
+                      <label className="form-label text-muted fw-semibold">{t('my_zip_label')}</label>
                       <input 
                         type="text" 
                         className="form-control" 
@@ -322,7 +338,7 @@ const MyAccount = () => {
                     className="btn text-white fw-bold px-4 py-2.5 rounded-3 border-0 mt-4 shadow-sm"
                     style={{ backgroundColor: '#aa1a31' }}
                   >
-                    Save Changes
+                    {t('my_save_changes')}
                   </button>
                 </form>
               </div>
@@ -330,13 +346,13 @@ const MyAccount = () => {
 
             {activeTab === 'orders' && (
               <div className="card border-0 shadow-sm rounded-4 p-4 bg-white">
-                <h4 className="mb-4" style={{ fontFamily: 'serif', color: '#4A1525', fontWeight: 'bold' }}>My Order History</h4>
+                <h4 className="mb-4" style={{ fontFamily: 'serif', color: '#4A1525', fontWeight: 'bold' }}>{t('my_orders_heading')}</h4>
                 {userOrders.length === 0 ? (
                   <div className="text-center py-4">
                     <i className="bi bi-bag-x fs-2 text-muted"></i>
-                    <p className="mt-2 text-secondary">You haven't placed any orders yet.</p>
+                    <p className="mt-2 text-secondary">{t('my_no_orders')}</p>
                     <Link to={RoutePaths.home} className="btn text-white mt-1 px-4 btn-sm" style={{ backgroundColor: '#aa1a31' }}>
-                      Shop Now
+                      {t('my_shop_now')}
                     </Link>
                   </div>
                 ) : (
@@ -344,12 +360,12 @@ const MyAccount = () => {
                     <table className="table align-middle">
                       <thead>
                         <tr className="table-light text-secondary" style={{ fontSize: '0.85rem' }}>
-                          <th>Order ID</th>
-                          <th>Date</th>
-                          <th>Items</th>
-                          <th>Amount</th>
-                          <th>Status</th>
-                          <th className="text-end">Invoice</th>
+                          <th>{t('my_col_order_id')}</th>
+                          <th>{t('my_col_date')}</th>
+                          <th>{t('my_col_items')}</th>
+                          <th>{t('my_col_amount')}</th>
+                          <th>{t('my_col_status')}</th>
+                          <th className="text-end">{t('my_col_invoice')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -366,12 +382,12 @@ const MyAccount = () => {
                                 backgroundColor: ord.status === 'Shipped' ? '#E8F5E9' : ord.status === 'Processing' ? '#FFF3E0' : '#E3F2FD',
                                 color: ord.status === 'Shipped' ? '#2E7D32' : ord.status === 'Processing' ? '#E65100' : '#1565C0',
                               }}>
-                                {ord.status}
+                                {translateStatus(ord.status)}
                               </span>
                             </td>
                              <td className="text-end">
                                <Link to={`/invoice/${ord.id}`} className="btn btn-sm text-white fw-bold d-flex align-items-center justify-content-center" style={{ backgroundColor: '#4A1525', border: '1px solid #FFB300' }}>
-                                 <i className="bi bi-receipt me-1"></i> View
+                                 <i className="bi bi-receipt me-1"></i> {t('my_view')}
                                </Link>
                              </td>
                           </tr>
@@ -385,51 +401,51 @@ const MyAccount = () => {
 
             {activeTab === 'tickets' && (
               <div className="card border-0 shadow-sm rounded-4 p-4 bg-white">
-                <h4 className="mb-4" style={{ fontFamily: 'serif', color: '#4A1525', fontWeight: 'bold' }}>Support Tickets</h4>
+                <h4 className="mb-4" style={{ fontFamily: 'serif', color: '#4A1525', fontWeight: 'bold' }}>{t('my_tickets_heading')}</h4>
                 
                 {/* Submit New Ticket Form */}
                 <form onSubmit={handleTicketSubmit} className="mb-5 p-3 bg-light rounded-3 border">
-                  <h6 className="fw-bold mb-3" style={{ color: '#4A1525' }}>Raise a New Support Query</h6>
+                  <h6 className="fw-bold mb-3" style={{ color: '#4A1525' }}>{t('my_ticket_new_query_heading')}</h6>
                   <div className="mb-3">
-                    <label className="form-label text-muted small">Describe your issue or query below:</label>
+                    <label className="form-label text-muted small">{t('my_ticket_describe_label')}</label>
                     <textarea 
                       className="form-control" 
                       rows={3} 
-                      placeholder="Enter details here..." 
+                      placeholder={t('my_ticket_placeholder')} 
                       value={ticketMessage}
                       onChange={(e) => setTicketMessage(e.target.value)}
                       required
                     />
                   </div>
                   <button type="submit" className="btn btn-sm text-white fw-bold px-3 py-2" style={{ backgroundColor: '#4A1525' }}>
-                    Submit Ticket
+                    {t('my_ticket_submit')}
                   </button>
                 </form>
 
                 {/* Tickets History List */}
-                <h6 className="fw-bold mb-3" style={{ color: '#4A1525' }}>Ticket History</h6>
+                <h6 className="fw-bold mb-3" style={{ color: '#4A1525' }}>{t('my_ticket_history_heading')}</h6>
                 {userTickets.length === 0 ? (
                   <div className="text-center py-4">
-                    <p className="text-secondary mb-0">No support tickets raised yet.</p>
+                    <p className="text-secondary mb-0">{t('my_no_tickets')}</p>
                   </div>
                 ) : (
                   <div className="table-responsive">
                     <table className="table align-middle">
                       <thead>
                         <tr className="table-light text-secondary" style={{ fontSize: '0.85rem' }}>
-                          <th>Date</th>
-                          <th>Message</th>
-                          <th>Status</th>
+                          <th>{t('my_col_date')}</th>
+                          <th>{t('my_col_message')}</th>
+                          <th>{t('my_col_status')}</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {userTickets.map((t: any) => (
-                          <tr key={t.id || t._id}>
-                            <td style={{ fontSize: '0.85rem' }}>{t.createdAt ? new Date(t.createdAt).toLocaleDateString() : 'Just now'}</td>
-                            <td className="text-dark" style={{ fontSize: '0.85rem' }}>{t.message}</td>
+                        {userTickets.map((ticket: any) => (
+                          <tr key={ticket.id || ticket._id}>
+                            <td style={{ fontSize: '0.85rem' }}>{ticket.createdAt ? new Date(ticket.createdAt).toLocaleDateString() : t('my_ticket_just_now')}</td>
+                            <td className="text-dark" style={{ fontSize: '0.85rem' }}>{ticket.message}</td>
                             <td>
-                              <span className={`badge px-2.5 py-1.5 ${t.status === 'Resolved' ? 'bg-success' : 'bg-warning text-dark'}`}>
-                                {t.status}
+                              <span className={`badge px-2.5 py-1.5 ${ticket.status === 'Resolved' ? 'bg-success' : 'bg-warning text-dark'}`}>
+                                {translateStatus(ticket.status)}
                               </span>
                             </td>
                           </tr>
@@ -443,28 +459,28 @@ const MyAccount = () => {
 
             {activeTab === 'reviews' && (
               <div className="card border-0 shadow-sm rounded-4 p-4 bg-white">
-                <h4 className="mb-4" style={{ fontFamily: 'serif', color: '#4A1525', fontWeight: 'bold' }}>Product Reviews</h4>
+                <h4 className="mb-4" style={{ fontFamily: 'serif', color: '#4A1525', fontWeight: 'bold' }}>{t('my_reviews_heading')}</h4>
                 
                 {/* Submit New Review Form */}
                 <form onSubmit={handleReviewSubmit} className="mb-5 p-3 bg-light rounded-3 border">
-                  <h6 className="fw-bold mb-3" style={{ color: '#4A1525' }}>Write a Product Review</h6>
+                  <h6 className="fw-bold mb-3" style={{ color: '#4A1525' }}>{t('my_review_new_heading')}</h6>
                   <div className="row g-3 mb-3">
                     <div className="col-md-6">
-                      <label className="form-label text-muted small">Select Product</label>
+                      <label className="form-label text-muted small">{t('my_review_select_product')}</label>
                       <select 
                         className="form-select" 
                         value={selectedProductId}
                         onChange={(e) => setSelectedProductId(e.target.value)}
                         required
                       >
-                        <option value="">Choose a product...</option>
+                        <option value="">{t('my_review_choose_product')}</option>
                         {products.map(p => (
                           <option key={p._id || p.id} value={p._id || p.id}>{p.name} ({p.unit})</option>
                         ))}
                       </select>
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label text-muted small">Rating</label>
+                      <label className="form-label text-muted small">{t('my_review_rating')}</label>
                       <div className="d-flex align-items-center gap-1 mt-1">
                         {[1, 2, 3, 4, 5].map((star) => (
                           <i 
@@ -478,35 +494,35 @@ const MyAccount = () => {
                     </div>
                   </div>
                   <div className="mb-3">
-                    <label className="form-label text-muted small">Comment</label>
+                    <label className="form-label text-muted small">{t('my_review_comment')}</label>
                     <textarea 
                       className="form-control" 
                       rows={3} 
-                      placeholder="Describe your experience with this product..." 
+                      placeholder={t('my_review_comment_placeholder')} 
                       value={reviewComment}
                       onChange={(e) => setReviewComment(e.target.value)}
                       required
                     />
                   </div>
                   <button type="submit" className="btn btn-sm text-white fw-bold px-3 py-2" style={{ backgroundColor: '#aa1a31' }}>
-                    Post Review
+                    {t('my_review_post')}
                   </button>
                 </form>
 
                 {/* Reviews History List */}
-                <h6 className="fw-bold mb-3" style={{ color: '#4A1525' }}>My Previous Reviews</h6>
+                <h6 className="fw-bold mb-3" style={{ color: '#4A1525' }}>{t('my_review_previous_heading')}</h6>
                 {userReviews.length === 0 ? (
                   <div className="text-center py-4">
-                    <p className="text-secondary mb-0">You haven't written any product reviews yet.</p>
+                    <p className="text-secondary mb-0">{t('my_no_reviews')}</p>
                   </div>
                 ) : (
                   <div className="table-responsive">
                     <table className="table align-middle">
                       <thead>
                         <tr className="table-light text-secondary" style={{ fontSize: '0.85rem' }}>
-                          <th>Product</th>
-                          <th>Rating</th>
-                          <th>Comment</th>
+                          <th>{t('my_col_product')}</th>
+                          <th>{t('my_col_rating')}</th>
+                          <th>{t('my_col_comment')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -543,15 +559,15 @@ const MyAccount = () => {
 
             {activeTab === 'settings' && (
               <div className="card border-0 shadow-sm rounded-4 p-4 bg-white">
-                <h4 className="mb-4" style={{ fontFamily: 'serif', color: '#4A1525', fontWeight: 'bold' }}>Account Settings</h4>
+                <h4 className="mb-4" style={{ fontFamily: 'serif', color: '#4A1525', fontWeight: 'bold' }}>{t('my_settings_heading')}</h4>
                 
                 {/* Change Password Form */}
                 <div className="mb-5">
-                  <h6 className="fw-bold mb-3 border-bottom pb-2" style={{ color: '#4A1525' }}>Update Password</h6>
+                  <h6 className="fw-bold mb-3 border-bottom pb-2" style={{ color: '#4A1525' }}>{t('my_change_password_heading')}</h6>
                   <form onSubmit={handleChangePassword}>
                     <div className="row g-3">
                       <div className="col-md-4">
-                        <label className="form-label text-muted small fw-semibold">Current Password</label>
+                        <label className="form-label text-muted small fw-semibold">{t('my_current_password_label')}</label>
                         <input 
                           type="password" 
                           className="form-control" 
@@ -561,7 +577,7 @@ const MyAccount = () => {
                         />
                       </div>
                       <div className="col-md-4">
-                        <label className="form-label text-muted small fw-semibold">New Password</label>
+                        <label className="form-label text-muted small fw-semibold">{t('my_new_password_label')}</label>
                         <input 
                           type="password" 
                           className="form-control" 
@@ -571,7 +587,7 @@ const MyAccount = () => {
                         />
                       </div>
                       <div className="col-md-4">
-                        <label className="form-label text-muted small fw-semibold">Confirm New Password</label>
+                        <label className="form-label text-muted small fw-semibold">{t('my_confirm_password_label')}</label>
                         <input 
                           type="password" 
                           className="form-control" 
@@ -586,19 +602,19 @@ const MyAccount = () => {
                       className="btn text-white fw-bold px-4 py-2 rounded-3 border-0 mt-3 shadow-sm"
                       style={{ backgroundColor: '#aa1a31', fontSize: '0.9rem' }}
                     >
-                      Change Password
+                      {t('my_change_password_button')}
                     </button>
                   </form>
                 </div>
 
                 {/* Notifications & Preferences */}
                 <div>
-                  <h6 className="fw-bold mb-3 border-bottom pb-2" style={{ color: '#4A1525' }}>Notification Preferences</h6>
+                  <h6 className="fw-bold mb-3 border-bottom pb-2" style={{ color: '#4A1525' }}>{t('my_notification_prefs_heading')}</h6>
                   <div className="d-flex flex-column gap-3 mt-3">
                     <div className="form-check form-switch d-flex justify-content-between align-items-center ps-0">
                       <div>
-                        <label className="form-check-label fw-semibold text-dark mb-0 animate__animated" htmlFor="emailNotif" style={{ cursor: 'pointer' }}>Email Notifications</label>
-                        <div className="text-muted small">Receive monthly newsletter and offers</div>
+                        <label className="form-check-label fw-semibold text-dark mb-0 animate__animated" htmlFor="emailNotif" style={{ cursor: 'pointer' }}>{t('my_email_notif_label')}</label>
+                        <div className="text-muted small">{t('my_email_notif_desc')}</div>
                       </div>
                       <input 
                         className="form-check-input ms-0" 
@@ -612,7 +628,7 @@ const MyAccount = () => {
                             toast: true,
                             position: 'top-end',
                             icon: 'success',
-                            title: 'Preferences updated',
+                            title: t('my_swal_prefs_updated'),
                             showConfirmButton: false,
                             timer: 1500
                           });
@@ -621,8 +637,8 @@ const MyAccount = () => {
                     </div>
                     <div className="form-check form-switch d-flex justify-content-between align-items-center ps-0">
                       <div>
-                        <label className="form-check-label fw-semibold text-dark mb-0 animate__animated" htmlFor="orderNotif" style={{ cursor: 'pointer' }}>Order Status Alerts</label>
-                        <div className="text-muted small">Get notified on email about shipping updates</div>
+                        <label className="form-check-label fw-semibold text-dark mb-0 animate__animated" htmlFor="orderNotif" style={{ cursor: 'pointer' }}>{t('my_order_notif_label')}</label>
+                        <div className="text-muted small">{t('my_order_notif_desc')}</div>
                       </div>
                       <input 
                         className="form-check-input ms-0" 
@@ -636,7 +652,7 @@ const MyAccount = () => {
                             toast: true,
                             position: 'top-end',
                             icon: 'success',
-                            title: 'Preferences updated',
+                            title: t('my_swal_prefs_updated'),
                             showConfirmButton: false,
                             timer: 1500
                           });
@@ -645,8 +661,8 @@ const MyAccount = () => {
                     </div>
                     <div className="form-check form-switch d-flex justify-content-between align-items-center ps-0">
                       <div>
-                        <label className="form-check-label fw-semibold text-dark mb-0 animate__animated" htmlFor="smsNotif" style={{ cursor: 'pointer' }}>SMS Updates</label>
-                        <div className="text-muted small">Get instant text alerts on your phone</div>
+                        <label className="form-check-label fw-semibold text-dark mb-0 animate__animated" htmlFor="smsNotif" style={{ cursor: 'pointer' }}>{t('my_sms_notif_label')}</label>
+                        <div className="text-muted small">{t('my_sms_notif_desc')}</div>
                       </div>
                       <input 
                         className="form-check-input ms-0" 
@@ -660,7 +676,7 @@ const MyAccount = () => {
                             toast: true,
                             position: 'top-end',
                             icon: 'success',
-                            title: 'Preferences updated',
+                            title: t('my_swal_prefs_updated'),
                             showConfirmButton: false,
                             timer: 1500
                           });

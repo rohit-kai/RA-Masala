@@ -4,7 +4,8 @@ import { translations, Language } from '../config/translation';
 interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
-  t: (key: keyof typeof translations['en']) => string;
+  t: (key: keyof typeof translations['en'] | string) => string;
+  tp: (productName: string) => string;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -23,13 +24,25 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
     window.dispatchEvent(new Event('languageChange'));
   };
 
-  const t = (key: keyof typeof translations['en']): string => {
-    const langData = translations[language] || translations['en'];
-    return langData[key] || translations['en'][key] || String(key);
+  const t = (key: keyof typeof translations['en'] | string): string => {
+    const langData = (translations[language] || translations['en']) as Record<string, string>;
+    const enData = translations['en'] as Record<string, string>;
+    return langData[key] || enData[key] || String(key);
+  };
+
+  // Translate a DB product/DB value by matching its English name to a known product key.
+  // Falls back to the original value when there is no known translation.
+  const tp = (value: string): string => {
+    if (!value) return value;
+    const en = translations['en'] as Record<string, string>;
+    const lang = (translations[language] || translations['en']) as Record<string, string>;
+    const match = Object.keys(en).find((k) => en[k] === value && /^p\d+_(name|desc)$/.test(k));
+    if (match && lang[match]) return lang[match];
+    return value;
   };
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+    <LanguageContext.Provider value={{ language, setLanguage, t, tp }}>
       {children}
     </LanguageContext.Provider>
   );

@@ -6,8 +6,10 @@ import Footer from '../includes/Footer';
 import { getAssetPath } from '../../Utils/imageHelper';
 import RoutePaths from '../../config';
 import Swal from 'sweetalert2';
+import { useLanguage } from '../../context/LanguageContext';
 
 const DinnerRecipes: React.FC = () => {
+  const { t } = useLanguage();
   const recipes = [
     {
       id: "di1",
@@ -27,7 +29,7 @@ const DinnerRecipes: React.FC = () => {
           ${details}
         </div>
       `,
-      confirmButtonText: 'Close',
+      confirmButtonText: t('rcp_close'),
       confirmButtonColor: '#4A1525',
       customClass: {
         popup: 'rounded-4 border-3',
@@ -38,12 +40,12 @@ const DinnerRecipes: React.FC = () => {
   return (
     <div style={{ backgroundColor: '#FDF6ED', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Header />
-      <Banner page="Dinner Recipes" path={["Home", "Recipes", "Dinner"]} />
+      <Banner page={t('rcp_dinner_recipes')} path={[t('nav_home'), t('rcp_title'), t('rcp_cat_dinner')]} />
 
       <div className="container py-5 flex-grow-1">
         <div className="mb-4">
           <Link to={RoutePaths.recipes} className="btn text-white fw-bold btn-sm shadow-sm" style={{ backgroundColor: '#4A1525' }}>
-            <i className="bi bi-arrow-left-short me-1 fs-5"></i> Back to Recipes
+            <i className="bi bi-arrow-left-short me-1 fs-5"></i> {t('rcp_back_to_recipes')}
           </Link>
         </div>
 
@@ -72,7 +74,7 @@ const DinnerRecipes: React.FC = () => {
                     className="btn btn-outline-danger fw-bold w-100 py-2 rounded-3 mb-2 d-flex align-items-center justify-content-center gap-2"
                     style={{ borderColor: '#aa1a31', color: '#aa1a31' }}
                   >
-                    <i className="bi bi-receipt"></i> View Recipe Details
+                    <i className="bi bi-receipt"></i> {t('rcp_view_details')}
                   </button>
                   <a 
                     href={recipe.youtubeUrl} 
@@ -81,7 +83,7 @@ const DinnerRecipes: React.FC = () => {
                     className="btn text-white fw-bold w-100 py-2 rounded-3 mt-auto d-flex align-items-center justify-content-center gap-2"
                     style={{ backgroundColor: '#aa1a31' }}
                   >
-                    <i className="bi bi-youtube"></i> Watch Video Tutorial
+                    <i className="bi bi-youtube"></i> {t('rcp_watch_video')}
                   </a>
                 </div>
               </div>

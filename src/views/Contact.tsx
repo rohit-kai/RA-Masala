@@ -21,7 +21,7 @@ const Contact: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email || !message) {
-      Swal.fire('Error', 'Please fill in all fields', 'error');
+      Swal.fire(t('cnt_error_title'), t('cnt_fill_fields_text'), 'error');
       return;
     }
 
@@ -32,11 +32,11 @@ const Contact: React.FC = () => {
         customerEmail: email,
         message: message
       });
-      Swal.fire('Message Sent!', 'Thank you for reaching out. We will get back to you shortly.', 'success');
+      Swal.fire(t('cnt_message_sent_title'), t('cnt_message_sent_text'), 'success');
       setMessage('');
     } catch (error) {
       console.error('Error sending message:', error);
-      Swal.fire('Submission Failed', 'Something went wrong. Please try again later.', 'error');
+      Swal.fire(t('cnt_submission_failed_title'), t('cnt_submission_failed_text'), 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -63,13 +63,13 @@ const Contact: React.FC = () => {
           {/* Contact Details & Info Card */}
           <div className="col-12 col-lg-5 animate__animated animate__fadeInLeft">
             <span className="text-uppercase fw-bold tracking-wider" style={{ color: '#D2691E', fontSize: '0.9rem', letterSpacing: '2px' }}>
-              GET IN TOUCH
+              {t('cnt_get_in_touch')}
             </span>
             <h2 className="fw-bold mb-4 mt-2 display-6" style={{ color: '#4A1525', fontFamily: 'serif' }}>
-              We'd Love to Hear From You
+              {t('cnt_headline')}
             </h2>
             <p className="text-muted mb-5" style={{ fontSize: '1.05rem', lineHeight: '1.7' }}>
-              Have questions about our premium spice blends, bulk orders, or want to share feedback? Reach out to us, and our team will get in touch with you.
+              {t('cnt_subtext')}
             </p>
 
             <div className="d-flex flex-column gap-4">
@@ -79,17 +79,17 @@ const Contact: React.FC = () => {
                   <i className="bi bi-geo-alt-fill fs-4" style={{ color: '#aa1a31' }}></i>
                 </div>
                 <div>
-                  <h5 className="fw-bold mb-1" style={{ color: '#4A1525' }}>Our Locations</h5>
+                  <h5 className="fw-bold mb-1" style={{ color: '#4A1525' }}>{t('cnt_locations_title')}</h5>
                   <div className="text-muted mb-0 small">
-                    <p className="mb-1"><strong>K-At: Unit No. 1</strong><br />
+                    <p className="mb-1"><strong>{t('cnt_unit1_label')}</strong><br />
                       Gat No: 1814/A, Sangli-Tasgaon Road,<br />
                       A/P Kavathe Ekand - 416307,<br />
                       Tal. Tasgaon, Dist. Sangli (Mah), India</p>
-                    <p className="mb-1"><strong>S-At: Unit No. 2</strong><br />
+                    <p className="mb-1"><strong>{t('cnt_unit2_label')}</strong><br />
                       C.S. No: 2030/2031, Navjeevan Nagar,<br />
                       Near Sanjay Industrial Estate,<br />
                       Sangli - 416406, Dist. Sangli (Mah), India</p>
-                    <p className="mb-0"><strong>M-At: Unit No. 3</strong><br />
+                    <p className="mb-0"><strong>{t('cnt_unit3_label')}</strong><br />
                       Gat No: 24/25, Madhavnagar,<br />
                       Near Sanjay Industrial Estate,<br />
                       Sangli - 416406, Dist. Sangli (Mah), India</p>
@@ -103,11 +103,11 @@ const Contact: React.FC = () => {
                   <i className="bi bi-telephone-fill fs-4" style={{ color: '#aa1a31' }}></i>
                 </div>
                 <div>
-                  <h5 className="fw-bold mb-1" style={{ color: '#4A1525' }}>Call / WhatsApp</h5>
+                  <h5 className="fw-bold mb-1" style={{ color: '#4A1525' }}>{t('cnt_phone_title')}</h5>
                   <p className="text-muted mb-0 small">
-                    Customer Care No: 7518166686<br />
-                    +91 9503993999 (Customer Support)<br />
-                    Mon – Sat, 9:00 AM – 6:00 PM IST
+                    {t('cnt_customer_care_no')}: 7518166686<br />
+                    +91 9503993999 ({t('cnt_customer_support')})<br />
+                    {t('cnt_hours')}
                   </p>
                 </div>
               </div>
@@ -118,7 +118,7 @@ const Contact: React.FC = () => {
                   <i className="bi bi-envelope-fill fs-4" style={{ color: '#aa1a31' }}></i>
                 </div>
                 <div>
-                  <h5 className="fw-bold mb-1" style={{ color: '#4A1525' }}>Email Address</h5>
+                  <h5 className="fw-bold mb-1" style={{ color: '#4A1525' }}>{t('cnt_email_title')}</h5>
                   <p className="text-muted mb-0 small">
                     ramasale@ymail.com<br />
                     RAMASALE.6686@GMAIL.COM
@@ -133,9 +133,9 @@ const Contact: React.FC = () => {
                     <i className="bi bi-code-slash fs-4" style={{ color: '#aa1a31' }}></i>
                   </div>
                   <div>
-                    <h5 className="fw-bold mb-1" style={{ color: '#4A1525' }}>Technical Developers</h5>
+                    <h5 className="fw-bold mb-1" style={{ color: '#4A1525' }}>{t('cnt_developers_title')}</h5>
                     <p className="text-muted mb-0 small" style={{ fontSize: '0.82rem' }}>
-                      RA Masala Dev Team •{' '}
+                      {t('cnt_dev_team')} •{' '}
                       <a href="mailto:rohitdongale3@gmail.com" className="text-decoration-none fw-semibold dev-email-link">
                         rohitdongale3@gmail.com
                       </a>
@@ -151,18 +151,18 @@ const Contact: React.FC = () => {
                   <div className="col-6">
                     <div className="p-2 rounded bg-light border text-center">
                       <strong className="d-block small text-dark">Rohit Dongale</strong>
-                      <span className="text-secondary d-block mb-2" style={{ fontSize: '0.75rem' }}>UI/UX Engineer</span>
+                      <span className="text-secondary d-block mb-2" style={{ fontSize: '0.75rem' }}>{t('cnt_role_uiux')}</span>
                       <a href="https://rohit-kai.github.io/cyber-portfolio/" target="_blank" rel="noopener noreferrer" className="btn btn-sm text-white w-100 py-1 fw-semibold" style={{ backgroundColor: '#aa1a31', fontSize: '0.75rem' }}>
-                        <i className="bi bi-briefcase me-1"></i> Visit Portfolio
+                        <i className="bi bi-briefcase me-1"></i> {t('cnt_visit_portfolio')}
                       </a>
                     </div>
                   </div>
                   <div className="col-6">
                     <div className="p-2 rounded bg-light border text-center">
                       <strong className="d-block small text-dark">Akash Mahadik</strong>
-                      <span className="text-secondary d-block mb-2" style={{ fontSize: '0.75rem' }}>Backend Architect</span>
+                      <span className="text-secondary d-block mb-2" style={{ fontSize: '0.75rem' }}>{t('cnt_role_backend')}</span>
                       <a href="https://akash-mahadik.github.io/portfolio1/" target="_blank" rel="noopener noreferrer" className="btn btn-sm text-white w-100 py-1 fw-semibold" style={{ backgroundColor: '#aa1a31', fontSize: '0.75rem' }}>
-                        <i className="bi bi-briefcase me-1"></i> Visit Portfolio
+                        <i className="bi bi-briefcase me-1"></i> {t('cnt_visit_portfolio')}
                       </a>
                     </div>
                   </div>
@@ -176,7 +176,7 @@ const Contact: React.FC = () => {
                 <div className="p-2 bg-light rounded-circle text-danger me-3" style={{ height: 'fit-content' }}>
                   <i className="bi bi-map-fill fs-5" style={{ color: '#aa1a31' }}></i>
                 </div>
-                <h5 className="fw-bold mb-0" style={{ color: '#4A1525' }}>Find Us on Google Maps</h5>
+                <h5 className="fw-bold mb-0" style={{ color: '#4A1525' }}>{t('cnt_maps_title')}</h5>
               </div>
               <div className="mt-2 rounded-3 overflow-hidden border" style={{ height: 260 }}>
                 <iframe
@@ -195,11 +195,11 @@ const Contact: React.FC = () => {
           <div className="col-12 col-lg-7 animate__animated animate__fadeInRight">
             <div className="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
               <h4 className="fw-bold mb-4" style={{ fontFamily: 'serif', color: '#4A1525' }}>
-                Send Us a Message
+                {t('cnt_form_title')}
               </h4>
               <form onSubmit={handleSubmit}>
                 <div className="mb-4">
-                  <label className="form-label text-muted fw-semibold">Your Name</label>
+                  <label className="form-label text-muted fw-semibold">{t('cnt_name_label')}</label>
                   <div className="input-group">
                     <span className="input-group-text bg-light text-secondary border-end-0">
                       <i className="bi bi-person"></i>
@@ -208,7 +208,7 @@ const Contact: React.FC = () => {
                       type="text"
                       className="form-control bg-light border-start-0"
                       required
-                      placeholder="Enter your name"
+                      placeholder={t('cnt_name_placeholder')}
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                     />
@@ -216,7 +216,7 @@ const Contact: React.FC = () => {
                 </div>
 
                 <div className="mb-4">
-                  <label className="form-label text-muted fw-semibold">Email Address</label>
+                  <label className="form-label text-muted fw-semibold">{t('cnt_email_title')}</label>
                   <div className="input-group">
                     <span className="input-group-text bg-light text-secondary border-end-0">
                       <i className="bi bi-envelope"></i>
@@ -225,7 +225,7 @@ const Contact: React.FC = () => {
                       type="email"
                       className="form-control bg-light border-start-0"
                       required
-                      placeholder="Enter your email address"
+                      placeholder={t('cnt_email_placeholder')}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                     />
@@ -233,12 +233,12 @@ const Contact: React.FC = () => {
                 </div>
 
                 <div className="mb-4">
-                  <label className="form-label text-muted fw-semibold">Your Message</label>
+                  <label className="form-label text-muted fw-semibold">{t('cnt_message_label')}</label>
                   <textarea
                     className="form-control bg-light"
                     rows={5}
                     required
-                    placeholder="Write your message or inquiry details here..."
+                    placeholder={t('cnt_message_placeholder')}
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                   ></textarea>
@@ -255,7 +255,7 @@ const Contact: React.FC = () => {
                   ) : (
                     <i className="bi bi-send-fill me-2"></i>
                   )}
-                  Send Message
+                  {t('cnt_send_btn')}
                 </button>
               </form>
             </div>

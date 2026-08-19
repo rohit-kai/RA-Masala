@@ -27,15 +27,15 @@ const Header: FC = () => {
     ];
 
     if (isSuperAdmin) {
-        navsBar.push({ path: RoutePaths.recipes, name: 'RECIPES' });
+        navsBar.push({ path: RoutePaths.recipes, name: t('hdr_recipes') });
     }
 
     navsBar.push(
-        { path: RoutePaths.wishlist, name: `WISHLIST (${wishlistItems.length})` },
-        { path: RoutePaths.cart, name: `CART (${cartCount})` },
+        { path: RoutePaths.wishlist, name: `${t('hdr_wishlist')} (${wishlistItems.length})` },
+        { path: RoutePaths.cart, name: `${t('hdr_cart')} (${cartCount})` },
         {
             path: user ? RoutePaths.userAccount : RoutePaths.login,
-            name: user ? `${user.name.split(' ')[0]}` : '👤 LOGIN'
+            name: user ? `${user.name.split(' ')[0]}` : `👤 ${t('hdr_login')}`
         }
     );
 
@@ -81,7 +81,7 @@ const Header: FC = () => {
                         <div className="d-flex justify-content-between align-items-center w-100">
                             {/* Brand Logo */}
                             <Link to={RoutePaths.home} className='navbar-brand d-flex align-items-center traditional-logo-wrapper me-4'>
-                                <img src={getAssetPath('images/ra_waa.png')} alt="RA Masala Logo" style={{ maxHeight: '75px', objectFit: 'contain', filter: 'drop-shadow(0px 6px 12px rgba(0,0,0,0.3))' }} />
+                                <img src={getAssetPath('images/ra_waa.png')} alt={t('hdr_logo_alt')} style={{ maxHeight: '75px', objectFit: 'contain', filter: 'drop-shadow(0px 6px 12px rgba(0,0,0,0.3))' }} />
                             </Link>
 
                             {/* Toggler Button - Hidden on desktop */}

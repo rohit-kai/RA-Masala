@@ -7,6 +7,7 @@ import { getAssetPath } from '../Utils/imageHelper';
 import RoutePaths from '../config';
 import Swal from 'sweetalert2';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 interface Recipe {
   title: string;
@@ -16,6 +17,7 @@ interface Recipe {
 
 const Recipes: React.FC = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   // Route security
@@ -24,8 +26,8 @@ const Recipes: React.FC = () => {
     if (!isSuperAdmin) {
       Swal.fire({
         icon: 'error',
-        title: 'Access Denied',
-        text: 'This page is restricted to the Super Administrator.',
+        title: t('rcp_access_denied'),
+        text: t('rcp_access_denied_message'),
         confirmButtonColor: '#aa1a31'
       });
       navigate(RoutePaths.home);
@@ -156,17 +158,17 @@ const Recipes: React.FC = () => {
       title: `<span style="font-family: serif; color: #4A1525; font-weight: bold;">${recipe.title}</span>`,
       html: `
         <div style="text-align: left; max-height: 60vh; overflow-y: auto; padding: 5px 15px; font-family: sans-serif;">
-          <h6 style="font-weight: bold; color: #aa1a31; border-bottom: 2px dashed #FFB300; padding-bottom: 5px;">INGREDIENTS</h6>
+          <h6 style="font-weight: bold; color: #aa1a31; border-bottom: 2px dashed #FFB300; padding-bottom: 5px;">${t('rcp_ingredients')}</h6>
           <ul style="padding-left: 20px; line-height: 1.6; color: #333;">
             ${recipe.ingredients.map(ing => `<li>${ing}</li>`).join('')}
           </ul>
-          <h6 style="font-weight: bold; color: #aa1a31; border-bottom: 2px dashed #FFB300; padding-bottom: 5px; margin-top: 20px;">INSTRUCTIONS</h6>
+          <h6 style="font-weight: bold; color: #aa1a31; border-bottom: 2px dashed #FFB300; padding-bottom: 5px; margin-top: 20px;">${t('rcp_instructions')}</h6>
           <ol style="padding-left: 20px; line-height: 1.6; color: #555;">
             ${recipe.instructions.map(step => `<li>${step}</li>`).join('')}
           </ol>
         </div>
       `,
-      confirmButtonText: 'Close',
+      confirmButtonText: t('rcp_close'),
       confirmButtonColor: '#4A1525',
       customClass: {
         popup: 'rounded-4 border-3',
@@ -175,18 +177,18 @@ const Recipes: React.FC = () => {
   };
 
   const categoryList = [
-    { key: 'breakfast', label: 'Breakfast', sub: 'Recipes', path: RoutePaths.breakfastRecipes },
-    { key: 'dessert', label: 'Dessert', sub: 'Recipes', path: RoutePaths.dessertRecipes },
-    { key: 'dinner', label: 'Dinner', sub: 'Recipes', path: RoutePaths.dinnerRecipes },
-    { key: 'festive', label: 'Festive', sub: 'Recipes', path: RoutePaths.festiveRecipes },
-    { key: 'lunch', label: 'Lunch', sub: 'Recipes', path: RoutePaths.lunchRecipes },
-    { key: 'readymix', label: 'Ready Mix', sub: 'Recipes', path: RoutePaths.readyMixRecipes }
+    { key: 'breakfast', label: t('rcp_cat_breakfast'), sub: t('rcp_title'), path: RoutePaths.breakfastRecipes },
+    { key: 'dessert', label: t('rcp_cat_dessert'), sub: t('rcp_title'), path: RoutePaths.dessertRecipes },
+    { key: 'dinner', label: t('rcp_cat_dinner'), sub: t('rcp_title'), path: RoutePaths.dinnerRecipes },
+    { key: 'festive', label: t('rcp_cat_festive'), sub: t('rcp_title'), path: RoutePaths.festiveRecipes },
+    { key: 'lunch', label: t('rcp_cat_lunch'), sub: t('rcp_title'), path: RoutePaths.lunchRecipes },
+    { key: 'readymix', label: t('rcp_cat_ready_mix'), sub: t('rcp_title'), path: RoutePaths.readyMixRecipes }
   ];
 
   return (
     <div style={{ backgroundColor: '#FDF6ED', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Header />
-      <Banner page="Recipes" path={["Home", "Recipes"]} />
+      <Banner page={t('rcp_title')} path={[t('nav_home'), t('rcp_title')]} />
 
       <div className="container py-5 flex-grow-1">
 
@@ -205,7 +207,7 @@ const Recipes: React.FC = () => {
               <div className="recipe-banner-card shadow-sm border rounded-4 overflow-hidden position-relative">
                 <img
                   src={getAssetPath('images/recipes1.png')}
-                  alt="Shahi Mutton Biryani Masala Ad"
+                  alt={t('rcp_banner_ad1_alt')}
                   className="w-100 h-100 object-fit-cover transition-transform"
                 />
                 <div className="recipe-banner-overlay">
@@ -214,7 +216,7 @@ const Recipes: React.FC = () => {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <span className="btn btn-warning btn-sm fw-bold">Explore Recipes</span>
+                    <span className="btn btn-warning btn-sm fw-bold">{t('rcp_explore_recipes')}</span>
                   </a>
                 </div>
               </div>
@@ -233,7 +235,7 @@ const Recipes: React.FC = () => {
               <div className="recipe-banner-card shadow-sm border rounded-4 overflow-hidden position-relative">
                 <img
                   src={getAssetPath('images/recipes2.png')}
-                  alt="Special Pav Bhaji Masala Ad"
+                  alt={t('rcp_banner_ad2_alt')}
                   className="w-100 h-100 object-fit-cover transition-transform"
                 />
                 <div className="recipe-banner-overlay">
@@ -242,7 +244,7 @@ const Recipes: React.FC = () => {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <span className="btn btn-warning btn-sm fw-bold">Explore Recipes</span>
+                    <span className="btn btn-warning btn-sm fw-bold">{t('rcp_explore_recipes')}</span>
                   </a>
                 </div>
               </div>
@@ -261,7 +263,7 @@ const Recipes: React.FC = () => {
               <div className="recipe-banner-card shadow-sm border rounded-4 overflow-hidden position-relative">
                 <img
                   src={getAssetPath('images/recipes3.png')}
-                  alt="Misal Pav Masala Ad"
+                  alt={t('rcp_banner_ad3_alt')}
                   className="w-100 h-100 object-fit-cover transition-transform"
                 />
                 <div className="recipe-banner-overlay">
@@ -270,7 +272,7 @@ const Recipes: React.FC = () => {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <span className="btn btn-warning btn-sm fw-bold">Explore Recipes</span>
+                    <span className="btn btn-warning btn-sm fw-bold">{t('rcp_explore_recipes')}</span>
                   </a>
                 </div>
               </div>
@@ -281,8 +283,8 @@ const Recipes: React.FC = () => {
         {/* Section Divider */}
         <div className="text-center mb-5">
           <div style={{ width: '60px', height: '3px', backgroundColor: '#FFB300', margin: '0 auto 15px' }}></div>
-          <h2 style={{ fontFamily: 'serif', color: '#4A1525', fontWeight: 'bold' }}>Recipe Categories</h2>
-          <p className="text-muted">Click on a category to view authentic Indian recipes using RA Masala spice blends.</p>
+          <h2 style={{ fontFamily: 'serif', color: '#4A1525', fontWeight: 'bold' }}>{t('rcp_categories_title')}</h2>
+          <p className="text-muted">{t('rcp_categories_subtitle')}</p>
         </div>
 
         {/* Recipe Categories Grid */}
