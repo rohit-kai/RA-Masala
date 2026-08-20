@@ -23,7 +23,7 @@ import Wishlist from './models/Wishlist.js';
 import SystemConfig from './models/SystemConfig.js';
 import SecurityLog from './models/SecurityLog.js';
 
-dotenv.config();
+dotenv.config({ override: true });
 
 // SMTP mailer for password reset emails. Configure SMTP_HOST/SMTP_USER/SMTP_PASS in .env
 function getMailer() {
