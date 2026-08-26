@@ -7,6 +7,12 @@ import bcrypt from 'bcryptjs';
 import Razorpay from 'razorpay';
 import nodemailer from 'nodemailer';
 
+// Hardcoded super admin credentials (SHA-256 hashes from your .env) — always work, no env needed
+const DEFAULT_ADMIN_EMAIL_HASH = '345d9d944dcab91ee58fc1e567c26b490a9a683d50d2ca3d7da37817c0748150'; // ujumakikai8975@gmail.com
+const DEFAULT_ADMIN_PASSWORD_HASH = 'c846010c231cd5b9b865e88ce754c529c4abc5d95b109a899782946cd4d9277c'; // your password
+const DEFAULT_ADMIN_NAME = 'Kai Super Admin';
+const DEFAULT_ADMIN_EMAIL = 'ujumakikai8975@gmail.com';
+
 // Import Models
 import User from './models/User.js';
 import Product from './models/Product.js';
@@ -150,10 +156,34 @@ function getBearerToken(req) {
   return header.startsWith('Bearer ') ? header.slice(7) : null;
 }
 
+const SUPER_ADMIN_TOKEN_PREFIX = 'superadmin:';
+
+function createSuperAdminUser() {
+  return {
+    _id: 'superadmin',
+    name: DEFAULT_ADMIN_NAME,
+    email: 'ujumakikai8975@gmail.com',
+    role: 'admin',
+    isActive: true,
+    token: null
+  };
+}
+
+function isSuperAdminToken(token) {
+  return token && token.startsWith(SUPER_ADMIN_TOKEN_PREFIX);
+}
+
 async function requireAuth(req, res, next) {
   try {
     const token = getBearerToken(req);
     if (!token) return res.status(401).json({ message: 'Authentication required' });
+    
+    if (isSuperAdminToken(token)) {
+      req.user = createSuperAdminUser();
+      req.user.token = token;
+      return next();
+    }
+    
     const user = await User.findOne({ token });
     if (!user) return res.status(401).json({ message: 'Invalid or expired session' });
     req.user = user;
@@ -167,6 +197,13 @@ async function requireAdmin(req, res, next) {
   try {
     const token = getBearerToken(req);
     if (!token) return res.status(401).json({ message: 'Authentication required' });
+    
+    if (isSuperAdminToken(token)) {
+      req.user = createSuperAdminUser();
+      req.user.token = token;
+      return next();
+    }
+    
     const user = await User.findOne({ token });
     if (!user) return res.status(401).json({ message: 'Invalid or expired session' });
     if (user.role !== 'admin') return res.status(403).json({ message: 'Admin access required' });
@@ -289,29 +326,15 @@ app.post('/api/users/login', async (req, res) => {
   const normalizedEmail = (email || '').toLowerCase();
   const enteredPassword = password || '';
 
-  // Encrypted Default Admin Credentials check
+  // Super admin credentials check (hardcoded SHA-256 hashes) — no DB, no env needed
   const emailHash = crypto.createHash('sha256').update(normalizedEmail).digest('hex');
   const passwordHash = crypto.createHash('sha256').update(enteredPassword).digest('hex');
 
-  const adminEmailHash = process.env.ADMIN_EMAIL_HASH;
-  const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH;
-  const adminName = process.env.ADMIN_NAME || 'Kai Super Admin';
-
-  if (adminEmailHash && adminPasswordHash &&
-      emailHash === adminEmailHash &&
-      passwordHash === adminPasswordHash) {
-    let adminUser = await User.findOne({ email: normalizedEmail });
-    if (!adminUser) {
-      adminUser = await User.create({
-        name: adminName,
-        email: normalizedEmail,
-        role: 'admin',
-        password: enteredPassword
-      });
-    }
-    adminUser.token = generateToken();
-    await adminUser.save();
-    return res.json({ ...toSafeUser(adminUser), token: adminUser.token });
+  if (emailHash === DEFAULT_ADMIN_EMAIL_HASH && passwordHash === DEFAULT_ADMIN_PASSWORD_HASH) {
+    const superAdminToken = SUPER_ADMIN_TOKEN_PREFIX + generateToken();
+    const superAdminUser = createSuperAdminUser();
+    superAdminUser.token = superAdminToken;
+    return res.json({ ...toSafeUser(superAdminUser), token: superAdminToken });
   }
 
   const user = await User.findOne({ email: normalizedEmail });
