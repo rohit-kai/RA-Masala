@@ -96,6 +96,7 @@ const Home = () => {
             {brandPanels.map((panel, index) => (
               <div
                 key={index}
+                className="hero-bg-panel"
                 style={{
                   position: 'absolute',
                   top: 0,
@@ -104,7 +105,7 @@ const Home = () => {
                   height: '100%',
                   backgroundImage: `url(${panel.image})`,
                   backgroundSize: 'cover',
-                  backgroundPosition: 'center',
+                  backgroundPosition: 'center top',
                   transition: 'opacity 1.5s ease-in-out', 
                   opacity: index === currentPanelIndex ? 1 : 0,
                   zIndex: 0,
@@ -699,38 +700,73 @@ const Home = () => {
         /* Responsive stack for mobile */
         @media (max-width: 768px) {
           .hero-slider {
-            min-height: 55vh !important;
+            min-height: 60vh !important;
+          }
+          .hero-slider > div[style*="backgroundImage"] {
+            background-size: cover !important;
+            background-position: center center !important;
           }
           .hero-headline {
-            font-size: 2.2rem !important;
+            font-size: 1.8rem !important;
+            padding: 0 10px !important;
           }
           .hero-subtext {
-            font-size: 1.05rem !important;
-            margin-bottom: 25px !important;
-          }
-          .products-title {
-            font-size: 2.2rem !important;
-          }
-          .products-subtitle {
-            font-size: 1rem !important;
+            font-size: 0.95rem !important;
+            margin-bottom: 20px !important;
+            padding: 0 10px !important;
           }
           .hero-cta-button {
-            padding: 12px 28px !important;
-            font-size: 1rem !important;
+            padding: 10px 24px !important;
+            font-size: 0.9rem !important;
+          }
+          .hero-content-card {
+            padding: 20px 15px !important;
+            margin: 0 10px !important;
+          }
+          .products-title {
+            font-size: 1.8rem !important;
+          }
+          .products-subtitle {
+            font-size: 0.9rem !important;
           }
           .products-section {
             padding: 40px 10px !important;
           }
+          .premium-product-card {
+            margin: 0 auto;
+            max-width: 95%;
+          }
+          .product-image-container {
+            height: 180px !important;
+          }
           .promo-modal-content {
             flex-direction: column;
-            max-width: 450px;
+            max-width: 95%;
+            margin: 10px;
           }
           .promo-modal-image-sec {
-            min-height: 200px;
+            min-height: 150px;
             width: 100%;
           }
           .promo-modal-form-sec {
-            padding: 30px 20px;
+            padding: 20px 15px;
+          }
+        }
+
+        /* Extra small phones */
+        @media (max-width: 480px) {
+          .hero-slider {
+            min-height: 50vh !important;
+          }
+          .hero-headline {
+            font-size: 1.5rem !important;
+          }
+          .hero-subtext {
+            font-size: 0.85rem !important;
+          }
+          .hero-cta-button {
+            padding: 8px 20px !important;
+            font-size: 0.85rem !important;
           }
         }
       `}</style>

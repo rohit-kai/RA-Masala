@@ -614,11 +614,12 @@ app.get('/api/orders/:orderId', async (req, res) => {
   }
 });
 
-app.post('/api/orders', async (req, res) => {
+app.post('/api/orders', requireAuth, async (req, res) => {
   try {
     const orderData = req.body;
     const items = Array.isArray(orderData.items) ? orderData.items : [];
     const method = String(orderData.paymentMethod || '').toUpperCase();
+    const allowedMethods = ['COD', 'UPI', 'CARD', 'NETBANKING'];
     const allowedMethods = ['COD', 'UPI', 'CARD', 'NETBANKING'];
     const digitalMethod = method === 'UPI' || method === 'CARD' || method === 'NETBANKING';
 
