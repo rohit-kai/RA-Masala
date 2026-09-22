@@ -375,8 +375,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const forgotPassword = async (email: string) => {
     try {
-      // 30s cap so the UI fails cleanly if the mailer/host is slow
-      const res = await axios.post('/api/users/forgot-password', { email }, { timeout: 30000 });
+      // 45s cap: backend may use up to 2 SMTP attempts (20s deadline each + backoff)
+      const res = await axios.post('/api/users/forgot-password', { email }, { timeout: 45000 });
       return { success: true, message: res.data.message };
     } catch (error: any) {
       if (error?.code === 'ECONNABORTED') {

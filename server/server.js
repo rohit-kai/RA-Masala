@@ -34,24 +34,32 @@ import SecurityLog from './models/SecurityLog.js';
 dotenv.config();
 
 // SMTP mailer for password reset emails. Configure SMTP_HOST/SMTP_USER/SMTP_PASS in .env
+// IMPORTANT: reuse ONE pooled transport. Creating a fresh connection per email makes
+// Gmail throttle rapid connects (intermittent "Connection timeout" failures in prod).
+let sharedMailer = null;
 function getMailer() {
   const host = process.env.SMTP_HOST;
   if (!host) return null;
-  return nodemailer.createTransport({
+  if (sharedMailer) return sharedMailer;
+  sharedMailer = nodemailer.createTransport({
     host,
     port: Number(process.env.SMTP_PORT) || 587,
     secure: (process.env.SMTP_SECURE || 'false').toLowerCase() === 'true',
     auth: process.env.SMTP_USER
       ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS || '' }
       : undefined,
+    pool: true,
+    maxConnections: 1,
+    maxMessages: 20,
     // Fail fast in production instead of hanging the request for minutes.
-    connectionTimeout: Number(process.env.SMTP_CONNECTION_TIMEOUT) || 10000,
+    connectionTimeout: Number(process.env.SMTP_CONNECTION_TIMEOUT) || 15000,
     greetingTimeout: Number(process.env.SMTP_GREETING_TIMEOUT) || 10000,
-    socketTimeout: Number(process.env.SMTP_SOCKET_TIMEOUT) || 15000,
+    socketTimeout: Number(process.env.SMTP_SOCKET_TIMEOUT) || 20000,
     // Some office/college networks intercept TLS with a self-signed cert.
     // Set SMTP_REJECT_UNAUTHORIZED=false in .env only if your network does this.
     tls: { rejectUnauthorized: (process.env.SMTP_REJECT_UNAUTHORIZED || 'true').toLowerCase() !== 'false' }
   });
+  return sharedMailer;
 }
 
 // Gmail rejects a From address that is not the authenticated account.
@@ -66,24 +74,39 @@ function getFromAddress() {
   return configured || 'RA Masala <no-reply@ramasala.com>';
 }
 
-async function sendResetEmail(toEmail, resetLink) {
+// Shared send: 20s hard deadline per attempt + one automatic retry on failure.
+// Never closes the shared pooled transport.
+async function deliverMail(message) {
   const mailer = getMailer();
   if (!mailer) throw new Error('SMTP is not configured. Set SMTP_HOST/SMTP_USER/SMTP_PASS on the backend host (Render dashboard).');
 
-  // Hard deadline so Vercel/render requests never hang indefinitely.
   const timeoutMs = 20000;
-  let timer;
-  const timeoutPromise = new Promise((_, reject) => {
-    timer = setTimeout(() => reject(new Error(`SMTP send timed out after ${timeoutMs}ms`)), timeoutMs);
-  });
+  let lastErr;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    let timer;
+    const timeoutPromise = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`SMTP send timed out after ${timeoutMs}ms`)), timeoutMs);
+    });
+    try {
+      const info = await Promise.race([mailer.sendMail(message), timeoutPromise]);
+      return info;
+    } catch (err) {
+      lastErr = err;
+      console.error(`[SMTP] Attempt ${attempt}/2 failed: ${err?.message || err}`);
+      if (attempt < 2) await new Promise(r => setTimeout(r, 2000));
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  throw lastErr;
+}
 
-  try {
-    await Promise.race([
-      mailer.sendMail({
-        from: getFromAddress(),
-        to: toEmail,
-        subject: 'RA Masala - Reset Your Password',
-        html: `
+async function sendResetEmail(toEmail, resetLink) {
+  await deliverMail({
+    from: getFromAddress(),
+    to: toEmail,
+    subject: 'RA Masala - Reset Your Password',
+    html: `
       <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden;">
         <div style="background: #aa1a31; color: #fff; padding: 20px; text-align: center;">
           <h2 style="margin: 0;">RA Masala</h2>
@@ -100,43 +123,12 @@ async function sendResetEmail(toEmail, resetLink) {
         </div>
       </div>
     `
-      }),
-      timeoutPromise
-    ]);
-  } finally {
-    clearTimeout(timer);
-    try {
-      mailer.close();
-    } catch (e) {
-      // ignore transporter close errors
-    }
-  }
+  });
 }
 
-// Generic HTML mail helper (same fail-fast deadline as sendResetEmail)
+// Generic HTML mail helper (same fail-fast deadline + retry as sendResetEmail)
 async function sendHtmlMail(toEmail, subject, html) {
-  const mailer = getMailer();
-  if (!mailer) throw new Error('SMTP is not configured. Set SMTP_HOST/SMTP_USER/SMTP_PASS on the backend host (Render dashboard).');
-
-  const timeoutMs = 20000;
-  let timer;
-  const timeoutPromise = new Promise((_, reject) => {
-    timer = setTimeout(() => reject(new Error(`SMTP send timed out after ${timeoutMs}ms`)), timeoutMs);
-  });
-
-  try {
-    await Promise.race([
-      mailer.sendMail({ from: getFromAddress(), to: toEmail, subject, html }),
-      timeoutPromise
-    ]);
-  } finally {
-    clearTimeout(timer);
-    try {
-      mailer.close();
-    } catch (e) {
-      // ignore transporter close errors
-    }
-  }
+  await deliverMail({ from: getFromAddress(), to: toEmail, subject, html });
 }
 
 function escapeHtml(value) {

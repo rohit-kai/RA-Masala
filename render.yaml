@@ -21,8 +21,9 @@ services:
       - key: GATEWAY_KEY_SECRET
         sync: false
       # Public URL of the deployed FRONTEND (used to build password-reset links).
+      # NOTE: https://ra-masala.vercel.app 307-redirects here — use the canonical host.
       - key: APP_URL
-        value: "https://ra-masala.vercel.app"
+        value: "https://ramasala.vercel.app"
       # Gmail SMTP sender used for password-reset emails.
       # Must be the same account as SMTP_USER (Gmail rejects other From addresses).
       - key: SMTP_HOST
