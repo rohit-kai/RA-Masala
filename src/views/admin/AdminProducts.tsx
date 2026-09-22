@@ -61,25 +61,33 @@ const AdminProducts = () => {
     setEditingProduct(null);
   };
 
-  const handleAdd = (e: React.FormEvent) => {
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !description || price <= 0 || stock < 0) {
       Swal.fire(t('adm_error'), t('adm_fill_valid_details'), 'error');
       return;
     }
-    addProduct({
-      name,
-      description,
-      price,
-      stock,
-      category,
-      unit,
-      image: image || '/images/ra_waa.png',
-      brand,
-      subCategory
-    });
-    Swal.fire(t('adm_success'), t('adm_product_added'), 'success');
-    resetForm();
+    try {
+      await addProduct({
+        name,
+        description,
+        price,
+        stock,
+        category,
+        unit,
+        image: image || '/images/ra_waa.png',
+        brand,
+        subCategory
+      });
+      Swal.fire(t('adm_success'), t('adm_product_added'), 'success');
+      resetForm();
+    } catch (error: any) {
+      Swal.fire(
+        t('adm_error'),
+        error?.response?.data?.message || error?.message || 'Failed to add product',
+        'error'
+      );
+    }
   };
 
   const handleEditInit = (prod: Product) => {
@@ -95,26 +103,34 @@ const AdminProducts = () => {
     setSubCategory(prod.subCategory || '');
   };
 
-  const handleUpdate = (e: React.FormEvent) => {
+  const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingProduct) return;
-    updateProduct({
-      ...editingProduct,
-      name,
-      description,
-      price,
-      stock,
-      category,
-      unit,
-      image,
-      brand,
-      subCategory
-    });
-    Swal.fire(t('adm_success'), t('adm_product_updated'), 'success');
-    resetForm();
+    try {
+      await updateProduct({
+        ...editingProduct,
+        name,
+        description,
+        price,
+        stock,
+        category,
+        unit,
+        image,
+        brand,
+        subCategory
+      });
+      Swal.fire(t('adm_success'), t('adm_product_updated'), 'success');
+      resetForm();
+    } catch (error: any) {
+      Swal.fire(
+        t('adm_error'),
+        error?.response?.data?.message || error?.message || 'Failed to update product',
+        'error'
+      );
+    }
   };
 
-  const handleDelete = (id: number) => {
+  const handleDelete = (id: string | number) => {
     Swal.fire({
       title: t('adm_are_you_sure'),
       text: t('adm_cannot_revert'),
@@ -123,10 +139,18 @@ const AdminProducts = () => {
       confirmButtonColor: '#aa1a31',
       cancelButtonColor: '#secondary',
       confirmButtonText: t('adm_yes_delete')
-    }).then((result) => {
+    }).then(async (result) => {
       if (result.isConfirmed) {
-        deleteProduct(id);
-        Swal.fire(t('adm_deleted'), t('adm_product_deleted'), 'success');
+        try {
+          await deleteProduct(id);
+          Swal.fire(t('adm_deleted'), t('adm_product_deleted'), 'success');
+        } catch (error: any) {
+          Swal.fire(
+            t('adm_error'),
+            error?.response?.data?.message || error?.message || 'Failed to delete product',
+            'error'
+          );
+        }
       }
     });
   };

@@ -42,6 +42,8 @@ const RoutePaths = {
     adminSlides : '/admin/slides',
     adminCategories : '/admin/categories',
     adminCustomers: '/admin/customers',
+    adminSalesReport: '/admin/sales-report',
+    adminSendOffers: '/admin/send-offers',
     adminBlog: '/admin/blog',
     adminAccount: '/admin/account',
 

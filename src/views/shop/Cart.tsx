@@ -7,6 +7,7 @@ import Footer from '../includes/Footer';
 import RoutePaths from '../../config';
 import Swal from 'sweetalert2';
 import { getAssetPath } from '../../Utils/imageHelper';
+import { FREE_SHIPPING_THRESHOLD, FLAT_SHIPPING_FEE } from '../../Utils/shipping';
 
 const Cart = () => {
   const { t, tp } = useLanguage();
@@ -38,7 +39,9 @@ const Cart = () => {
   };
 
   const tax = (cartTotal - discount) * 0.05; // 5% GST for spices
-  const shipping = cartTotal > 500 || cartTotal === 0 ? 0 : 40;
+  const orderValue = Math.max(0, cartTotal - discount);
+  // Free delivery ≥ ₹499, else flat ₹40 (payment-method fees applied at checkout)
+  const shipping = orderValue === 0 || orderValue >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING_FEE;
   const finalTotal = cartTotal - discount + tax + shipping;
 
   const handleProceed = () => {
@@ -188,9 +191,19 @@ const Cart = () => {
                     {shipping === 0 ? <span className="text-success">{t('cart_free')}</span> : `₹${shipping}`}
                   </span>
                 </div>
+                <div className={`alert mb-3 rounded-3 py-2 px-3 ${shipping === 0 ? 'alert-success' : 'alert-warning'}`} style={{ fontSize: '0.82rem' }}>
+                  <i className={`bi ${shipping === 0 ? 'bi-truck' : 'bi-info-circle'} me-1`}></i>
+                  {shipping === 0
+                    ? t('cart_free_delivery_banner')
+                    : t('cart_flat_shipping_note')}
+                </div>
+                <div className="alert alert-info mb-3 rounded-3 py-2 px-3" style={{ fontSize: '0.8rem' }}>
+                  <i className="bi bi-lightning-charge-fill me-1"></i>
+                  {t('cart_prepaid_free_hint')}
+                </div>
                 {shipping > 0 && (
                   <small className="text-muted d-block mb-3" style={{ fontSize: '0.8rem' }}>
-                    {t('cart_add_more')} <strong>₹{(500 - cartTotal).toFixed(0)}</strong> {t('cart_free_shipping_hint')}
+                    {t('cart_add_more')} <strong>₹{Math.max(0, FREE_SHIPPING_THRESHOLD - orderValue).toFixed(0)}</strong> {t('cart_free_shipping_hint')}
                   </small>
                 )}
                 <hr />

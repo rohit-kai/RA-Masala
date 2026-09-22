@@ -57,7 +57,14 @@ const Header: FC = () => {
                     <div className="d-flex header-contacts d-none d-lg-block gap-4 position-relative" style={{ zIndex: 2, fontFamily: 'serif' }}>
                         <span className="me-2">
                             <i className='bi bi-envelope-fill traditional-gold-glow' style={{ color: '#FFB300' }}></i>
-                            &nbsp;&nbsp;{t('header_contact')}
+                            &nbsp;&nbsp;
+                            <a
+                              href={`mailto:${t('header_contact')}`}
+                              style={{ color: '#FDF6ED', textDecoration: 'underline' }}
+                              title={`Email ${t('header_contact')}`}
+                            >
+                              {t('header_contact')}
+                            </a>
                         </span>
                         <span>
                             <i className="bi bi-shop traditional-gold-glow" style={{ color: '#FFB300' }}></i>

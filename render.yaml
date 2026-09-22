@@ -22,8 +22,9 @@ services:
         sync: false
       # Public URL of the deployed FRONTEND (used to build password-reset links).
       - key: APP_URL
-        sync: false
+        value: "https://ra-masala.vercel.app"
       # Gmail SMTP sender used for password-reset emails.
+      # Must be the same account as SMTP_USER (Gmail rejects other From addresses).
       - key: SMTP_HOST
         value: smtp.gmail.com
       - key: SMTP_PORT
@@ -35,7 +36,9 @@ services:
       - key: SMTP_PASS
         sync: false
       - key: SMTP_FROM
-        value: "RA Masala <no-reply@ramasala.com>"
+        sync: false
+      - key: SMTP_REJECT_UNAUTHORIZED
+        value: "true"
       # Admin login (sha256 hex hashes — see server/scripts/generate-admin-hashes.js).
       - key: ADMIN_EMAIL_HASH
         sync: false

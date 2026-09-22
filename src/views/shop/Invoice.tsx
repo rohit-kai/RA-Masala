@@ -174,12 +174,16 @@ const Invoice = () => {
                 <span className="text-secondary">{t('inv_subtotal')}</span>
                 <span className="text-dark fw-semibold">₹{order.subtotal}</span>
               </div>
-              {order.subtotal > (order.total - order.tax - order.shipping) && (
-                <div className="d-flex justify-content-between mb-2 text-success">
-                  <span>{t('inv_discount')}</span>
-                  <span>-₹{(order.subtotal - (order.total - order.tax - order.shipping)).toFixed(1)}</span>
-                </div>
-              )}
+              {(() => {
+                const deliveryTotal = (order.shipping || 0) + (order.codFee || 0);
+                const discountAmt = order.subtotal - (order.total - order.tax - deliveryTotal);
+                return order.subtotal > (order.total - order.tax - deliveryTotal) && (
+                  <div className="d-flex justify-content-between mb-2 text-success">
+                    <span>{t('inv_discount')}</span>
+                    <span>-₹{discountAmt.toFixed(1)}</span>
+                  </div>
+                );
+              })()}
               <div className="d-flex justify-content-between mb-1 text-xs text-muted">
                 <span>{t('inv_cgst')}</span>
                 <span>₹{cgst.toFixed(1)}</span>
@@ -192,6 +196,12 @@ const Invoice = () => {
                 <span className="text-secondary">{t('inv_shipping_fee')}</span>
                 <span>{order.shipping === 0 ? t('inv_free') : `₹${order.shipping}`}</span>
               </div>
+              {!!order.codFee && order.codFee > 0 && (
+                <div className="d-flex justify-content-between mb-2">
+                  <span className="text-secondary">{t('inv_cod_fee')}</span>
+                  <span>₹{order.codFee}</span>
+                </div>
+              )}
               <hr />
               <div className="d-flex justify-content-between align-items-center mb-3">
                 <strong className="text-dark fs-5">{t('inv_grand_total')}</strong>

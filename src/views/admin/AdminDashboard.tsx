@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -29,6 +29,15 @@ const AdminDashboard = () => {
 
   // Maintenance state
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
+
+  // Inventory / production report filter states
+  const [logSearch, setLogSearch] = useState('');
+  const [logType, setLogType] = useState<'All' | 'sale' | 'restock' | 'correction'>('All');
+  const [logFrom, setLogFrom] = useState('');
+  const [logTo, setLogTo] = useState('');
+  const [restockProductId, setRestockProductId] = useState('');
+  const [restockQty, setRestockQty] = useState(1);
+  const [showRestockForm, setShowRestockForm] = useState(false);
 
   useEffect(() => {
     const fetchMaintenanceStatus = async () => {
@@ -169,7 +178,7 @@ const AdminDashboard = () => {
   };
 
   const handleExportInventoryLogs = () => {
-    const logList = inventoryLogs.map((l: any) => ({
+    const logList = filteredLogs.map((l: any) => ({
       id: l._id,
       productId: l.productId,
       productName: l.productName,
@@ -179,6 +188,195 @@ const AdminDashboard = () => {
       date: l.createdAt ? new Date(l.createdAt).toLocaleString() : ''
     }));
     exportToCSV(logList, 'inventory_logs.csv', ['id', 'productId', 'productName', 'changeType', 'quantityChanged', 'newStock', 'date']);
+  };
+
+  const resetLogFilters = () => {
+    setLogSearch('');
+    setLogType('All');
+    setLogFrom('');
+    setLogTo('');
+  };
+
+  const logDateStr = (l: { createdAt?: string }) =>
+    l.createdAt ? l.createdAt.split('T')[0] : '';
+
+  // Filtered inventory logs for production / sales reports
+  const filteredLogs = useMemo(() => {
+    return inventoryLogs.filter(log => {
+      const matchesSearch = !logSearch ||
+        (log.productName || '').toLowerCase().includes(logSearch.toLowerCase());
+      const matchesType = logType === 'All' || log.changeType === logType;
+      const d = logDateStr(log);
+      const matchesFrom = !logFrom || (d && d >= logFrom);
+      const matchesTo = !logTo || (d && d <= logTo);
+      return matchesSearch && matchesType && matchesFrom && matchesTo;
+    }).sort((a, b) => {
+      const da = a.createdAt || '';
+      const db = b.createdAt || '';
+      return db.localeCompare(da);
+    });
+  }, [inventoryLogs, logSearch, logType, logFrom, logTo]);
+
+  // Production inward (restock) report from filtered logs
+  const inwardLogs = filteredLogs.filter(l => l.changeType === 'restock' && l.quantityChanged > 0);
+  const saleLogs = filteredLogs.filter(l => l.changeType === 'sale');
+  const correctionLogs = filteredLogs.filter(l => l.changeType === 'correction');
+
+  const totalInwardUnits = inwardLogs.reduce((s, l) => s + l.quantityChanged, 0);
+  const totalSoldUnits = saleLogs.reduce((s, l) => s + Math.abs(l.quantityChanged), 0);
+  const totalCorrectionUnits = correctionLogs.reduce((s, l) => s + l.quantityChanged, 0);
+  const productsInwarded = new Set(inwardLogs.map(l => l.productName)).size;
+
+  // Which month got the most stock inward
+  const monthlyInward = useMemo(() => {
+    const map: { [key: string]: { label: string; units: number; entries: number } } = {};
+    inwardLogs.forEach(l => {
+      if (!l.createdAt) return;
+      const d = new Date(l.createdAt);
+      if (isNaN(d.getTime())) return;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (!map[key]) {
+        map[key] = {
+          label: d.toLocaleString('default', { month: 'short', year: 'numeric' }),
+          units: 0,
+          entries: 0
+        };
+      }
+      map[key].units += l.quantityChanged;
+      map[key].entries += 1;
+    });
+    return Object.keys(map).sort().reverse().map(k => ({ key: k, ...map[k] }));
+  }, [inwardLogs]);
+
+  const topInwardMonth = monthlyInward.length > 0
+    ? monthlyInward.reduce((a, b) => (b.units > a.units ? b : a))
+    : null;
+  const maxMonthlyInward = monthlyInward.length > 0
+    ? Math.max(...monthlyInward.map(m => m.units), 1)
+    : 1;
+
+  // Product-wise inward summary (filtered)
+  const productInwardSummary = useMemo(() => {
+    const map: { [name: string]: { qty: number; entries: number; lastIn: string; productId: string } } = {};
+    inwardLogs.forEach(l => {
+      const name = l.productName || 'Unknown';
+      if (!map[name]) {
+        map[name] = { qty: 0, entries: 0, lastIn: l.createdAt || '', productId: l.productId };
+      }
+      map[name].qty += l.quantityChanged;
+      map[name].entries += 1;
+      if ((l.createdAt || '') > map[name].lastIn) map[name].lastIn = l.createdAt || '';
+    });
+    return Object.entries(map)
+      .map(([name, data]) => ({ name, ...data }))
+      .sort((a, b) => b.qty - a.qty);
+  }, [inwardLogs]);
+
+  // Sales overview from filtered sale logs + matching product prices
+  const salesOverview = useMemo(() => {
+    const productPriceMap: { [id: string]: number } = {};
+    products.forEach(p => {
+      productPriceMap[String(p._id || p.id)] = p.price;
+      if (p.name) productPriceMap[p.name] = p.price;
+    });
+
+    const byProduct: { [name: string]: { qty: number; value: number } } = {};
+    saleLogs.forEach(l => {
+      const name = l.productName || 'Unknown';
+      const qty = Math.abs(l.quantityChanged);
+      const price = productPriceMap[l.productId] ?? productPriceMap[name] ?? 0;
+      if (!byProduct[name]) byProduct[name] = { qty: 0, value: 0 };
+      byProduct[name].qty += qty;
+      byProduct[name].value += qty * price;
+    });
+
+    const monthly: { [key: string]: { label: string; units: number; value: number } } = {};
+    saleLogs.forEach(l => {
+      if (!l.createdAt) return;
+      const d = new Date(l.createdAt);
+      if (isNaN(d.getTime())) return;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (!monthly[key]) {
+        monthly[key] = {
+          label: d.toLocaleString('default', { month: 'short', year: 'numeric' }),
+          units: 0,
+          value: 0
+        };
+      }
+      const qty = Math.abs(l.quantityChanged);
+      const price = productPriceMap[l.productId] ?? productPriceMap[l.productName] ?? 0;
+      monthly[key].units += qty;
+      monthly[key].value += qty * price;
+    });
+
+    const productList = Object.entries(byProduct)
+      .map(([name, data]) => ({ name, ...data }))
+      .sort((a, b) => b.value - a.value || b.qty - a.qty);
+
+    const monthlyList = Object.keys(monthly).sort().reverse().map(k => ({ key: k, ...monthly[k] }));
+
+    return {
+      productSales: productList,
+      monthlySales: monthlyList,
+      saleValue: productList.reduce((s, p) => s + p.value, 0)
+    };
+  }, [saleLogs, products]);
+
+  const maxProductInward = productInwardSummary.length > 0
+    ? Math.max(...productInwardSummary.map(p => p.qty), 1)
+    : 1;
+  const maxSaleValue = salesOverview.productSales.length > 0
+    ? Math.max(...salesOverview.productSales.map(p => p.value), 1)
+    : 1;
+
+  const toDateInput = (d: Date) => d.toISOString().split('T')[0];
+
+  const applyLogQuickRange = (range: 'today' | 'week' | 'month' | 'all') => {
+    const now = new Date();
+    if (range === 'all') {
+      setLogFrom('');
+      setLogTo('');
+      return;
+    }
+    if (range === 'today') {
+      setLogFrom(toDateInput(now));
+      setLogTo(toDateInput(now));
+      return;
+    }
+    if (range === 'week') {
+      const start = new Date(now);
+      start.setDate(now.getDate() - 6);
+      setLogFrom(toDateInput(start));
+      setLogTo(toDateInput(now));
+      return;
+    }
+    setLogFrom(toDateInput(new Date(now.getFullYear(), now.getMonth(), 1)));
+    setLogTo(toDateInput(now));
+  };
+
+  const handleRestock = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!restockProductId || restockQty <= 0) {
+      Swal.fire(t('adm_error'), t('adm_fill_valid_details'), 'error');
+      return;
+    }
+    try {
+      await axios.post('/api/inventory-logs/restock', {
+        productId: restockProductId,
+        quantity: restockQty
+      });
+      await loadData();
+      Swal.fire(t('adm_success'), t('adm_restock_success'), 'success');
+      setRestockProductId('');
+      setRestockQty(1);
+      setShowRestockForm(false);
+    } catch (err: any) {
+      Swal.fire(
+        t('adm_error'),
+        err?.response?.data?.message || err?.message || 'Failed to inward stock',
+        'error'
+      );
+    }
   };
 
   const handleImportCSV = () => {
@@ -396,6 +594,8 @@ const AdminDashboard = () => {
           <div className="d-flex gap-2 mt-3 mt-sm-0">
             <Link to={RoutePaths.adminProducts} className="btn btn-sm text-white fw-bold" style={{ backgroundColor: '#4A1525', border: '1px solid #FFB300' }}>{t('adm_manage_products')}</Link>
             <Link to={RoutePaths.adminCustomers} className="btn btn-sm text-white fw-bold" style={{ backgroundColor: '#4A1525', border: '1px solid #FFB300' }}>{t('adm_manage_customers')}</Link>
+            <Link to={RoutePaths.adminSalesReport} className="btn btn-sm text-white fw-bold" style={{ backgroundColor: '#4A1525', border: '1px solid #FFB300' }}>{t('adm_sales_report_title')}</Link>
+            <Link to={RoutePaths.adminSendOffers} className="btn btn-sm text-white fw-bold" style={{ backgroundColor: '#4A1525', border: '1px solid #FFB300' }}>{t('adm_send_offers')}</Link>
             <Link to={RoutePaths.userAccount} className="btn btn-sm text-white fw-bold" style={{ backgroundColor: '#aa1a31', border: '1px solid #FFB300' }}>{t('adm_my_account')}</Link>
           </div>
         </div>
@@ -1078,43 +1278,368 @@ const AdminDashboard = () => {
 
         {/* Inventory Logs Tab */}
         {activeTab === 'logs' && (
-          <div className="card border-0 shadow-sm rounded-4 p-4 bg-white">
-            <h5 className="mb-4 text-start fw-bold" style={{ fontFamily: 'serif', color: '#4A1525' }}>
-              <i className="bi bi-journal-text me-2 text-danger"></i> {t('adm_inventory_transaction_logs')}
-            </h5>
-            <div className="table-responsive">
-              <table className="table align-middle">
-                <thead>
-                  <tr className="table-light text-secondary">
-                    <th>{t('adm_th_product')}</th>
-                    <th>{t('adm_th_change_type')}</th>
-                    <th>{t('adm_th_quantity_changed')}</th>
-                    <th>{t('adm_th_new_stock_level')}</th>
-                    <th>{t('adm_th_timestamp')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {inventoryLogs.map(log => (
-                    <tr key={log._id}>
-                      <td><strong>{log.productName}</strong></td>
-                      <td>
-                        <span className={`badge ${
-                          log.changeType === 'sale' ? 'bg-danger' : log.changeType === 'restock' ? 'bg-success' : 'bg-primary'
-                        }`}>
-                          {log.changeType.toUpperCase()}
-                        </span>
-                      </td>
-                      <td className={log.quantityChanged < 0 ? 'text-danger fw-bold' : 'text-success fw-bold'}>
-                        {log.quantityChanged > 0 ? `+${log.quantityChanged}` : log.quantityChanged}
-                      </td>
-                      <td className="fw-semibold">{log.newStock} {t('adm_units')}</td>
-                      <td style={{ fontSize: '0.85rem' }}>{new Date(log.createdAt || '').toLocaleString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <>
+            {/* Production / Inventory Report Header */}
+            <div className="d-flex flex-wrap justify-content-between align-items-center mb-3">
+              <h5 className="mb-0 fw-bold" style={{ fontFamily: 'serif', color: '#4A1525' }}>
+                <i className="bi bi-box-seam me-2 text-danger"></i> {t('adm_production_reports')}
+              </h5>
+              <div className="d-flex gap-2">
+                <button
+                  className="btn btn-sm text-white fw-bold"
+                  style={{ backgroundColor: '#4A1525', border: '1px solid #FFB300' }}
+                  onClick={() => setShowRestockForm(v => !v)}
+                >
+                  <i className="bi bi-plus-circle me-1"></i> {t('adm_inward_stock')}
+                </button>
+                <button
+                  className="btn btn-sm text-white fw-bold"
+                  style={{ backgroundColor: '#aa1a31', border: '1px solid #FFB300' }}
+                  onClick={handleExportInventoryLogs}
+                >
+                  <i className="bi bi-download me-1"></i> {t('adm_export_inventory_logs')}
+                </button>
+              </div>
             </div>
-          </div>
+
+            {/* Manual production inward form */}
+            {showRestockForm && (
+              <form onSubmit={handleRestock} className="card border-0 shadow-sm rounded-4 p-3 bg-white mb-4 border-start border-5 border-success">
+                <div className="row g-2 align-items-end">
+                  <div className="col-md-5">
+                    <label className="form-label text-muted fw-semibold">{t('adm_th_product')}</label>
+                    <select
+                      className="form-select bg-light"
+                      required
+                      value={restockProductId}
+                      onChange={(e) => setRestockProductId(e.target.value)}
+                    >
+                      <option value="">{t('adm_select_product')}</option>
+                      {products.map(p => (
+                        <option key={p._id || p.id} value={String(p._id || p.id)}>
+                          {p.name} ({t('adm_th_stock')}: {p.stock})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-md-3">
+                    <label className="form-label text-muted fw-semibold">{t('adm_restock_qty')}</label>
+                    <input
+                      type="number"
+                      className="form-control bg-light"
+                      min={1}
+                      required
+                      value={restockQty}
+                      onChange={(e) => setRestockQty(Number(e.target.value))}
+                    />
+                  </div>
+                  <div className="col-md-4 d-flex gap-2">
+                    <button type="submit" className="btn text-white fw-bold px-4" style={{ backgroundColor: '#aa1a31' }}>
+                      {t('adm_save')}
+                    </button>
+                    <button type="button" className="btn btn-outline-secondary px-3" onClick={() => setShowRestockForm(false)}>
+                      {t('adm_cancel')}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            )}
+
+            {/* Inventory log filters */}
+            <div className="card border-0 shadow-sm rounded-4 p-3 bg-white mb-4">
+              <div className="row g-3 align-items-end">
+                <div className="col-md-3">
+                  <label className="form-label text-muted fw-semibold">{t('adm_filter_product')}</label>
+                  <input
+                    type="text"
+                    className="form-control bg-light"
+                    placeholder={t('adm_search_products_placeholder')}
+                    value={logSearch}
+                    onChange={(e) => setLogSearch(e.target.value)}
+                  />
+                </div>
+                <div className="col-md-2">
+                  <label className="form-label text-muted fw-semibold">{t('adm_th_change_type')}</label>
+                  <select className="form-select bg-light" value={logType} onChange={(e) => setLogType(e.target.value as any)}>
+                    <option value="All">{t('adm_all_types')}</option>
+                    <option value="restock">{t('adm_type_inward')}</option>
+                    <option value="sale">{t('adm_type_sale')}</option>
+                    <option value="correction">{t('adm_type_correction')}</option>
+                  </select>
+                </div>
+                <div className="col-md-2">
+                  <label className="form-label text-muted fw-semibold">{t('adm_filter_from_date')}</label>
+                  <input type="date" className="form-control bg-light" value={logFrom} onChange={(e) => setLogFrom(e.target.value)} />
+                </div>
+                <div className="col-md-2">
+                  <label className="form-label text-muted fw-semibold">{t('adm_filter_to_date')}</label>
+                  <input type="date" className="form-control bg-light" value={logTo} onChange={(e) => setLogTo(e.target.value)} />
+                </div>
+                <div className="col-md-2">
+                  <label className="form-label text-muted fw-semibold">{t('adm_quick_range')}</label>
+                  <select
+                    className="form-select bg-light"
+                    value=""
+                    onChange={(e) => {
+                      if (e.target.value) applyLogQuickRange(e.target.value as any);
+                    }}
+                  >
+                    <option value="">{t('adm_select')}</option>
+                    <option value="today">{t('adm_quick_today')}</option>
+                    <option value="week">{t('adm_quick_week')}</option>
+                    <option value="month">{t('adm_quick_month')}</option>
+                    <option value="all">{t('adm_quick_all')}</option>
+                  </select>
+                </div>
+                <div className="col-md-1">
+                  <button className="btn btn-outline-secondary w-100" onClick={resetLogFilters} title={t('adm_reset_filters')}>
+                    <i className="bi bi-arrow-counterclockwise"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Production summary cards */}
+            <div className="row g-3 mb-4">
+              <div className="col-xl-3 col-sm-6">
+                <div className="card border-0 shadow-sm rounded-4 p-3 bg-white border-start border-4 border-success">
+                  <small className="text-uppercase text-secondary fw-semibold" style={{ fontSize: '0.75rem' }}>{t('adm_total_inward_units')}</small>
+                  <h4 className="mb-0 fw-bold text-success">{totalInwardUnits}</h4>
+                  <small className="text-muted">{inwardLogs.length} {t('adm_entries')} • {productsInwarded} {t('adm_products_label')}</small>
+                </div>
+              </div>
+              <div className="col-xl-3 col-sm-6">
+                <div className="card border-0 shadow-sm rounded-4 p-3 bg-white border-start border-4 border-danger">
+                  <small className="text-uppercase text-secondary fw-semibold" style={{ fontSize: '0.75rem' }}>{t('adm_total_sold_units')}</small>
+                  <h4 className="mb-0 fw-bold text-danger">{totalSoldUnits}</h4>
+                  <small className="text-muted">{saleLogs.length} {t('adm_sale_entries')}</small>
+                </div>
+              </div>
+              <div className="col-xl-3 col-sm-6">
+                <div className="card border-0 shadow-sm rounded-4 p-3 bg-white border-start border-4 border-warning">
+                  <small className="text-uppercase text-secondary fw-semibold" style={{ fontSize: '0.75rem' }}>{t('adm_est_sale_value')}</small>
+                  <h4 className="mb-0 fw-bold" style={{ color: '#E65100' }}>
+                    ₹{salesOverview.saleValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                  </h4>
+                  <small className="text-muted">{salesOverview.productSales.length} {t('adm_products_label')}</small>
+                </div>
+              </div>
+              <div className="col-xl-3 col-sm-6">
+                <div className="card border-0 shadow-sm rounded-4 p-3 bg-white border-start border-4 border-primary">
+                  <small className="text-uppercase text-secondary fw-semibold" style={{ fontSize: '0.75rem' }}>{t('adm_top_inward_month')}</small>
+                  <h5 className="mb-0 fw-bold text-primary">{topInwardMonth ? topInwardMonth.label : t('adm_na')}</h5>
+                  <small className="text-muted">
+                    {topInwardMonth ? `${topInwardMonth.units} ${t('adm_units_in')}` : '—'}
+                  </small>
+                </div>
+              </div>
+            </div>
+
+            {/* Monthly inward + sales overview charts */}
+            <div className="row g-4 mb-4">
+              <div className="col-lg-6">
+                <div className="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                  <h6 className="mb-3 fw-bold" style={{ fontFamily: 'serif', color: '#4A1525' }}>
+                    <i className="bi bi-bar-chart-fill text-success me-2"></i> {t('adm_monthly_inward_title')}
+                  </h6>
+                  {monthlyInward.length === 0 ? (
+                    <p className="text-muted mb-0">{t('adm_no_inventory_match')}</p>
+                  ) : (
+                    <div className="d-flex align-items-end gap-2 overflow-auto" style={{ minHeight: '140px' }}>
+                      {monthlyInward.slice(0, 12).reverse().map(m => {
+                        const h = Math.max(8, Math.round((m.units / maxMonthlyInward) * 110));
+                        const isTop = topInwardMonth && m.key === topInwardMonth.key;
+                        return (
+                          <div key={m.key} className="text-center flex-fill" style={{ minWidth: '48px' }}
+                            title={`${m.label}: ${m.units} ${t('adm_units_in')} (${m.entries})`}>
+                            <small className="text-muted d-block" style={{ fontSize: '0.65rem' }}>{m.units}</small>
+                            <div className="rounded-top mx-auto" style={{
+                              width: '70%',
+                              height: `${h}px`,
+                              backgroundColor: isTop ? '#FFB300' : '#2E7D32',
+                              opacity: isTop ? 1 : 0.8
+                            }}></div>
+                            <small className="text-muted d-block mt-1" style={{ fontSize: '0.65rem' }}>
+                              {m.label.split(' ')[0]}
+                            </small>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="col-lg-6">
+                <div className="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                  <h6 className="mb-3 fw-bold" style={{ fontFamily: 'serif', color: '#4A1525' }}>
+                    <i className="bi bi-graph-up text-danger me-2"></i> {t('adm_sales_overview_title')}
+                  </h6>
+                  {salesOverview.monthlySales.length === 0 ? (
+                    <p className="text-muted mb-0">{t('adm_no_inventory_match')}</p>
+                  ) : (
+                    <div className="d-flex align-items-end gap-2 overflow-auto" style={{ minHeight: '140px' }}>
+                      {salesOverview.monthlySales.slice(0, 12).reverse().map(m => {
+                        const maxV = Math.max(...salesOverview.monthlySales.map(x => x.value), 1);
+                        const h = Math.max(8, Math.round((m.value / maxV) * 110));
+                        return (
+                          <div key={m.key} className="text-center flex-fill" style={{ minWidth: '48px' }}
+                            title={`${m.label}: ${m.units} units • ₹${m.value.toLocaleString('en-IN')}`}>
+                            <small className="text-muted d-block" style={{ fontSize: '0.65rem' }}>
+                              ₹{m.value.toLocaleString('en-IN')}
+                            </small>
+                            <div className="rounded-top mx-auto" style={{
+                              width: '70%',
+                              height: `${h}px`,
+                              backgroundColor: '#aa1a31',
+                              opacity: 0.85
+                            }}></div>
+                            <small className="text-muted d-block mt-1" style={{ fontSize: '0.65rem' }}>
+                              {m.label.split(' ')[0]}
+                            </small>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Product-wise inward + product sales side by side */}
+            <div className="row g-4 mb-4">
+              <div className="col-lg-6">
+                <div className="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                  <h6 className="mb-3 fw-bold" style={{ fontFamily: 'serif', color: '#4A1525' }}>
+                    <i className="bi bi-truck text-success me-2"></i> {t('adm_product_inward_report')}
+                  </h6>
+                  {productInwardSummary.length === 0 ? (
+                    <p className="text-muted mb-0">{t('adm_no_inventory_match')}</p>
+                  ) : (
+                    <div className="table-responsive">
+                      <table className="table align-middle mb-0">
+                        <thead>
+                          <tr className="table-light text-secondary" style={{ fontSize: '0.8rem' }}>
+                            <th>{t('adm_th_product')}</th>
+                            <th>{t('adm_units_in')}</th>
+                            <th>{t('adm_th_entries')}</th>
+                            <th>{t('adm_last_inward')}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {productInwardSummary.map(p => (
+                            <tr key={p.name}>
+                              <td>
+                                <strong className="text-dark d-block">{p.name}</strong>
+                                <div className="progress mt-1" style={{ height: '6px', maxWidth: '140px' }}>
+                                  <div className="progress-bar bg-success" style={{ width: `${Math.max(6, Math.round((p.qty / maxProductInward) * 100))}%` }}></div>
+                                </div>
+                              </td>
+                              <td className="fw-bold text-success">{p.qty}</td>
+                              <td>{p.entries}</td>
+                              <td style={{ fontSize: '0.8rem' }}>
+                                {p.lastIn ? new Date(p.lastIn).toLocaleDateString() : '—'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="col-lg-6">
+                <div className="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                  <h6 className="mb-3 fw-bold" style={{ fontFamily: 'serif', color: '#4A1525' }}>
+                    <i className="bi bi-currency-rupee text-danger me-2"></i> {t('adm_product_sales_overview')}
+                  </h6>
+                  {salesOverview.productSales.length === 0 ? (
+                    <p className="text-muted mb-0">{t('adm_no_inventory_match')}</p>
+                  ) : (
+                    <div className="table-responsive">
+                      <table className="table align-middle mb-0">
+                        <thead>
+                          <tr className="table-light text-secondary" style={{ fontSize: '0.8rem' }}>
+                            <th>{t('adm_th_product')}</th>
+                            <th>{t('adm_units_sold')}</th>
+                            <th>{t('adm_th_revenue')}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {salesOverview.productSales.map(p => (
+                            <tr key={p.name}>
+                              <td>
+                                <strong className="text-dark d-block">{p.name}</strong>
+                                <div className="progress mt-1" style={{ height: '6px', maxWidth: '140px' }}>
+                                  <div className="progress-bar" style={{
+                                    width: `${Math.max(6, Math.round((p.value / maxSaleValue) * 100))}%`,
+                                    backgroundColor: '#aa1a31'
+                                  }}></div>
+                                </div>
+                              </td>
+                              <td className="fw-bold">{p.qty}</td>
+                              <td className="fw-bold text-danger">₹{p.value.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Filtered inventory transaction log table */}
+            <div className="card border-0 shadow-sm rounded-4 p-4 bg-white">
+              <div className="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                <h5 className="mb-0 fw-bold" style={{ fontFamily: 'serif', color: '#4A1525' }}>
+                  <i className="bi bi-journal-text me-2 text-danger"></i> {t('adm_inventory_transaction_logs')}
+                  <span className="text-muted fw-normal fs-6">({filteredLogs.length})</span>
+                </h5>
+              </div>
+              <div className="table-responsive">
+                <table className="table align-middle">
+                  <thead>
+                    <tr className="table-light text-secondary">
+                      <th>{t('adm_th_product')}</th>
+                      <th>{t('adm_th_change_type')}</th>
+                      <th>{t('adm_th_quantity_changed')}</th>
+                      <th>{t('adm_th_new_stock_level')}</th>
+                      <th>{t('adm_th_timestamp')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredLogs.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="text-center text-muted py-4">{t('adm_no_inventory_match')}</td>
+                      </tr>
+                    ) : (
+                      filteredLogs.map(log => (
+                        <tr key={log._id}>
+                          <td><strong>{log.productName}</strong></td>
+                          <td>
+                            <span className={`badge ${
+                              log.changeType === 'sale' ? 'bg-danger' : log.changeType === 'restock' ? 'bg-success' : 'bg-primary'
+                            }`}>
+                              {log.changeType === 'restock'
+                                ? t('adm_type_inward').toUpperCase()
+                                : log.changeType === 'sale'
+                                  ? t('adm_type_sale').toUpperCase()
+                                  : log.changeType.toUpperCase()}
+                            </span>
+                          </td>
+                          <td className={log.quantityChanged < 0 ? 'text-danger fw-bold' : 'text-success fw-bold'}>
+                            {log.quantityChanged > 0 ? `+${log.quantityChanged}` : log.quantityChanged}
+                          </td>
+                          <td className="fw-semibold">{log.newStock} {t('adm_units')}</td>
+                          <td style={{ fontSize: '0.85rem' }}>{new Date(log.createdAt || '').toLocaleString()}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
         )}
 
         {/* Tickets Handling & Report Tab */}

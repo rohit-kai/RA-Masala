@@ -122,7 +122,23 @@ const PrivacyPolicy: React.FC = () => {
               <h5 className="fw-bold mb-2" style={{ color: '#4A1525', fontFamily: 'serif' }}>{section.title}</h5>
               <ul className="text-muted mb-0" style={{ lineHeight: '1.8' }}>
                 {section.items.map((item, idx) => (
-                  <li key={idx}>{item}</li>
+                  <li key={idx}>
+                    {String(item).split(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g).map((part, i) =>
+                      /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(part) ? (
+                        <a
+                          key={i}
+                          href={`mailto:${part}`}
+                          className="text-decoration-underline fw-semibold"
+                          style={{ color: '#aa1a31' }}
+                          title={`Email ${part}`}
+                        >
+                          {part}
+                        </a>
+                      ) : (
+                        part
+                      )
+                    )}
+                  </li>
                 ))}
               </ul>
             </div>

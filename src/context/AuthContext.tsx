@@ -34,6 +34,7 @@ export interface Order {
   subtotal: number;
   tax: number;
   shipping: number;
+  codFee?: number;
   discount?: number;
   total: number;
   date: string;
@@ -374,9 +375,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const forgotPassword = async (email: string) => {
     try {
-      const res = await axios.post('/api/users/forgot-password', { email });
+      // 30s cap so the UI fails cleanly if the mailer/host is slow
+      const res = await axios.post('/api/users/forgot-password', { email }, { timeout: 30000 });
       return { success: true, message: res.data.message };
     } catch (error: any) {
+      if (error?.code === 'ECONNABORTED') {
+        return { success: false, message: 'Request timed out. Please try again in a moment.' };
+      }
       return { success: false, message: error.response?.data?.message || 'Error sending reset link' };
     }
   };
@@ -393,9 +398,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const addProduct = async (newProd: Omit<Product, 'id'>) => {
     try {
       await axios.post('/api/products', newProd);
-      loadData();
+      await loadData();
     } catch (error) {
       console.error('Error adding product to MongoDB:', error);
+      throw error;
     }
   };
 
@@ -403,18 +409,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const dbId = updatedProd._id || updatedProd.id;
       await axios.put(`/api/products/${dbId}`, updatedProd);
-      loadData();
+      await loadData();
     } catch (error) {
       console.error('Error updating product in MongoDB:', error);
+      throw error;
     }
   };
 
   const deleteProduct = async (id: string | number) => {
     try {
       await axios.delete(`/api/products/${id}`);
-      loadData();
+      await loadData();
     } catch (error) {
       console.error('Error deleting product from MongoDB:', error);
+      throw error;
     }
   };
 

@@ -43,6 +43,8 @@ import { useAuth } from "./context/AuthContext"
 import AdminDashboard from "./views/admin/AdminDashboard"
 import AdminProducts from "./views/admin/AdminProducts"
 import AdminCustomers from "./views/admin/AdminCustomers"
+import AdminSalesReport from "./views/admin/AdminSalesReport"
+import AdminSendOffers from "./views/admin/AdminSendOffers"
 
 function AppContent() {
   const { user } = useAuth();
@@ -118,6 +120,8 @@ function AppContent() {
       <Route path={RoutePaths.admin} element={<AdminDashboard />}></Route>
       <Route path={RoutePaths.adminProducts} element={<AdminProducts />}></Route>
       <Route path={RoutePaths.adminCustomers} element={<AdminCustomers />}></Route>
+      <Route path={RoutePaths.adminSalesReport} element={<AdminSalesReport />}></Route>
+      <Route path={RoutePaths.adminSendOffers} element={<AdminSendOffers />}></Route>
 
       <Route path="*" element={<Welcome />}></Route>
     </Routes>

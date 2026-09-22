@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useCart } from '../../context/CartContext';
@@ -9,6 +9,7 @@ import Footer from '../includes/Footer';
 import RoutePaths from '../../config';
 import Swal from 'sweetalert2';
 import { getAssetPath } from '../../Utils/imageHelper';
+import { calculateShipping } from '../../Utils/shipping';
 
 const Checkout = () => {
   const { t } = useLanguage();
@@ -17,9 +18,9 @@ const Checkout = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Route state data
-  const stateData = location.state || { discount: 0, tax: 0, shipping: 40, total: 0 };
-  const { discount, tax, shipping, total } = stateData;
+  // Route state data (discount/tax come from cart; shipping is re-derived per payment method)
+  const stateData = location.state || { discount: 0, tax: 0, shipping: 0, total: 0 };
+  const { discount = 0, tax: stateTax } = stateData;
 
   // Form states
   const [name, setName] = useState('');
@@ -28,6 +29,16 @@ const Checkout = () => {
   const [city, setCity] = useState('');
   const [zip, setZip] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('COD');
+
+  // Live shipping calculation based on payment method + order value
+  const orderValue = Math.max(0, cartTotal - discount);
+  const tax = typeof stateTax === 'number' ? stateTax : orderValue * 0.05;
+  const delivery = useMemo(
+    () => calculateShipping(orderValue, paymentMethod),
+    [orderValue, paymentMethod]
+  );
+  const shipping = delivery.totalDelivery;
+  const total = orderValue + tax + delivery.totalDelivery;
 
   // Dynamic Payment Config States
   const [gatewayKeyId, setGatewayKeyId] = useState('');
@@ -108,7 +119,8 @@ const Checkout = () => {
         })),
         subtotal: cartTotal,
         tax: tax,
-        shipping: shipping,
+        shipping: delivery.shipping,
+        codFee: delivery.codFee,
         discount: discount,
         total: total,
         paymentMethod: paymentMethod,
@@ -495,12 +507,40 @@ const Checkout = () => {
                   <span className="text-secondary">{t('chk_gst_tax')}</span>
                   <span className="fw-semibold text-dark">₹{tax.toFixed(1)}</span>
                 </div>
-                <div className="d-flex justify-content-between mb-3">
+                <div className={`alert mb-3 rounded-3 py-2 px-3 ${delivery.isFreeShipping ? 'alert-success' : 'alert-warning'}`} style={{ fontSize: '0.82rem' }}>
+                  <i className={`bi ${delivery.isFreeShipping ? 'bi-truck' : 'bi-info-circle'} me-1`}></i>
+                  {delivery.isFreeShipping
+                    ? t('chk_free_delivery_banner')
+                    : t('chk_flat_shipping_note')}
+                </div>
+                <div className="d-flex justify-content-between mb-2">
                   <span className="text-secondary">{t('chk_shipping')}</span>
                   <span className="fw-semibold text-dark">
-                    {shipping === 0 ? <span className="text-success">{t('chk_free')}</span> : `₹${shipping}`}
+                    {delivery.shipping === 0
+                      ? <span className="text-success">{t('chk_free')}</span>
+                      : `₹${delivery.shipping}`}
                   </span>
                 </div>
+                {delivery.codFee > 0 && (
+                  <div className="d-flex justify-content-between mb-2">
+                    <span className="text-secondary">
+                      {t('chk_cod_fee')}
+                      <small className="d-block text-muted" style={{ fontSize: '0.75rem' }}>{t('chk_cod_fee_note')}</small>
+                    </span>
+                    <span className="fw-semibold text-warning">+₹{delivery.codFee}</span>
+                  </div>
+                )}
+                {paymentMethod !== 'COD' && (
+                  <div className="alert alert-success mb-2 rounded-3 py-1 px-2" style={{ fontSize: '0.78rem' }}>
+                    <i className="bi bi-lightning-charge-fill me-1"></i>
+                    {t('chk_prepaid_free_delivery')}
+                  </div>
+                )}
+                {delivery.remainingForFreeShipping > 0 && paymentMethod === 'COD' && (
+                  <small className="text-muted d-block mb-2" style={{ fontSize: '0.8rem' }}>
+                    {t('cart_add_more')} <strong>₹{delivery.remainingForFreeShipping}</strong> {t('cart_free_shipping_hint')}
+                  </small>
+                )}
                 <hr />
                 <div className="d-flex justify-content-between align-items-center mb-4">
                   <strong className="text-dark fs-5">{t('chk_total_amount')}</strong>

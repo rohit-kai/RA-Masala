@@ -29,7 +29,9 @@ import Wishlist from './models/Wishlist.js';
 import SystemConfig from './models/SystemConfig.js';
 import SecurityLog from './models/SecurityLog.js';
 
-dotenv.config({ override: true });
+// Load local .env only when the platform has not already provided values.
+// Do NOT use override:true — it would replace Render/Vercel secrets with a stale file.
+dotenv.config();
 
 // SMTP mailer for password reset emails. Configure SMTP_HOST/SMTP_USER/SMTP_PASS in .env
 function getMailer() {
@@ -42,20 +44,46 @@ function getMailer() {
     auth: process.env.SMTP_USER
       ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS || '' }
       : undefined,
+    // Fail fast in production instead of hanging the request for minutes.
+    connectionTimeout: Number(process.env.SMTP_CONNECTION_TIMEOUT) || 10000,
+    greetingTimeout: Number(process.env.SMTP_GREETING_TIMEOUT) || 10000,
+    socketTimeout: Number(process.env.SMTP_SOCKET_TIMEOUT) || 15000,
     // Some office/college networks intercept TLS with a self-signed cert.
     // Set SMTP_REJECT_UNAUTHORIZED=false in .env only if your network does this.
     tls: { rejectUnauthorized: (process.env.SMTP_REJECT_UNAUTHORIZED || 'true').toLowerCase() !== 'false' }
   });
 }
 
+// Gmail rejects a From address that is not the authenticated account.
+// Prefer SMTP_FROM only when it matches SMTP_USER (or host is not Gmail).
+function getFromAddress() {
+  const configured = process.env.SMTP_FROM;
+  const user = process.env.SMTP_USER;
+  const host = (process.env.SMTP_HOST || '').toLowerCase();
+  if (configured && user && configured.includes(user)) return configured;
+  if (configured && user && !host.includes('gmail')) return configured;
+  if (user) return `RA Masala <${user}>`;
+  return configured || 'RA Masala <no-reply@ramasala.com>';
+}
+
 async function sendResetEmail(toEmail, resetLink) {
   const mailer = getMailer();
-  if (!mailer) throw new Error('SMTP is not configured. Set SMTP_HOST in server/.env');
-  await mailer.sendMail({
-    from: process.env.SMTP_FROM || 'RA Masala <no-reply@ramasala.com>',
-    to: toEmail,
-    subject: 'RA Masala - Reset Your Password',
-    html: `
+  if (!mailer) throw new Error('SMTP is not configured. Set SMTP_HOST/SMTP_USER/SMTP_PASS on the backend host (Render dashboard).');
+
+  // Hard deadline so Vercel/render requests never hang indefinitely.
+  const timeoutMs = 20000;
+  let timer;
+  const timeoutPromise = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`SMTP send timed out after ${timeoutMs}ms`)), timeoutMs);
+  });
+
+  try {
+    await Promise.race([
+      mailer.sendMail({
+        from: getFromAddress(),
+        to: toEmail,
+        subject: 'RA Masala - Reset Your Password',
+        html: `
       <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden;">
         <div style="background: #aa1a31; color: #fff; padding: 20px; text-align: center;">
           <h2 style="margin: 0;">RA Masala</h2>
@@ -68,11 +96,150 @@ async function sendResetEmail(toEmail, resetLink) {
           </p>
           <p>If you did not request this, you can safely ignore this email.</p>
           <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
-          <p style="color: #888; font-size: 12px;">Customer Care: 7518166686 | ramasale@ymail.com</p>
+          <p style="color: #888; font-size: 12px;">Customer Care: 7518166686 | <a href="mailto:ramasale.6686@gmail.com" style="color: #aa1a31;">ramasale.6686@gmail.com</a></p>
         </div>
       </div>
     `
+      }),
+      timeoutPromise
+    ]);
+  } finally {
+    clearTimeout(timer);
+    try {
+      mailer.close();
+    } catch (e) {
+      // ignore transporter close errors
+    }
+  }
+}
+
+// Generic HTML mail helper (same fail-fast deadline as sendResetEmail)
+async function sendHtmlMail(toEmail, subject, html) {
+  const mailer = getMailer();
+  if (!mailer) throw new Error('SMTP is not configured. Set SMTP_HOST/SMTP_USER/SMTP_PASS on the backend host (Render dashboard).');
+
+  const timeoutMs = 20000;
+  let timer;
+  const timeoutPromise = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`SMTP send timed out after ${timeoutMs}ms`)), timeoutMs);
   });
+
+  try {
+    await Promise.race([
+      mailer.sendMail({ from: getFromAddress(), to: toEmail, subject, html }),
+      timeoutPromise
+    ]);
+  } finally {
+    clearTimeout(timer);
+    try {
+      mailer.close();
+    } catch (e) {
+      // ignore transporter close errors
+    }
+  }
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function brandEmailShell(title, bodyHtml) {
+  return `
+      <div style="font-family: Arial, sans-serif; max-width: 520px; margin: auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden;">
+        <div style="background: #aa1a31; color: #fff; padding: 20px; text-align: center;">
+          <h2 style="margin: 0;">RA Masala</h2>
+          <p style="margin: 4px 0 0; font-size: 13px;">${escapeHtml(title)}</p>
+        </div>
+        <div style="padding: 24px; color: #333;">
+          ${bodyHtml}
+          <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
+          <p style="color: #888; font-size: 12px;">Customer Care: 7518166686 | <a href="mailto:ramasale.6686@gmail.com" style="color: #aa1a31;">ramasale.6686@gmail.com</a></p>
+        </div>
+      </div>
+    `;
+}
+
+// --- Low stock alerts ---
+const LOW_STOCK_THRESHOLD = Number(process.env.LOW_STOCK_THRESHOLD) || 10;
+// Products already alerted at/below threshold (cleared automatically on restock)
+const lowStockAlerted = new Set();
+
+function isLowStock(product) {
+  return Number(product?.stock || 0) <= LOW_STOCK_THRESHOLD;
+}
+
+async function getAdminEmails() {
+  try {
+    const admins = await User.find({ role: 'admin', isActive: { $ne: false } }).select('email');
+    const emails = admins.map(a => a.email).filter(Boolean);
+    if (emails.length > 0) return [...new Set(emails)];
+  } catch (e) {
+    console.error('Error loading admin emails for alert:', e);
+  }
+  return [DEFAULT_ADMIN_EMAIL];
+}
+
+// Fire-and-forget digest email to all admins about low/out-of-stock products
+async function sendLowStockAlertEmail(products) {
+  if (!Array.isArray(products) || products.length === 0) return;
+  const admins = await getAdminEmails();
+  const appUrl = (process.env.APP_URL || 'http://localhost:5173').replace(/\/$/, '');
+  const rows = products.map(p => `
+      <tr>
+        <td style="padding: 8px; border-bottom: 1px solid #eee;">${escapeHtml(p.name)}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: center; ${Number(p.stock) === 0 ? 'color:#c62828;font-weight:bold;' : 'color:#e65100;font-weight:bold;'}">${Number(p.stock)}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #eee;">${escapeHtml(p.category || '-')}</td>
+      </tr>`).join('');
+
+  const html = brandEmailShell('Low Stock Alert', `
+          <p>Hello Admin,</p>
+          <p><strong>${products.length}</strong> product(s) are at or below the low-stock threshold of <strong>${LOW_STOCK_THRESHOLD}</strong>:</p>
+          <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin: 16px 0;">
+            <thead>
+              <tr style="background: #FDF6ED;">
+                <th style="padding: 8px; text-align: left;">Product</th>
+                <th style="padding: 8px; text-align: center;">Stock</th>
+                <th style="padding: 8px; text-align: left;">Category</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+          <p style="text-align: center; margin: 24px 0;">
+            <a href="${appUrl}/admin/products" style="background: #aa1a31; color: #fff; padding: 12px 28px; border-radius: 6px; text-decoration: none; display: inline-block;">Manage Inventory</a>
+          </p>
+  `);
+
+  for (const admin of admins) {
+    try {
+      await sendHtmlMail(admin, `RA Masala - Low Stock Alert (${products.length} product${products.length > 1 ? 's' : ''})`, html);
+      console.log(`[Low Stock Alert] Sent to ${admin} for ${products.length} product(s)`);
+    } catch (err) {
+      console.error(`Error sending low stock alert to ${admin}:`, err?.message || err);
+    }
+  }
+}
+
+// Call after a stock change. Dedups per product until stock rises above threshold again.
+// Returns true when a new alert email was queued for this product.
+async function maybeAlertLowStock(product) {
+  if (!product) return false;
+  const id = String(product._id);
+  if (!isLowStock(product)) {
+    lowStockAlerted.delete(id); // restocked — allow future alerts
+    return false;
+  }
+  if (lowStockAlerted.has(id)) return false;
+  lowStockAlerted.add(id);
+  // Non-blocking: never delay order placement / product saves on SMTP
+  sendLowStockAlertEmail([{ name: product.name, stock: product.stock, category: product.category }]).catch(err => {
+    console.error('Low stock alert failed:', err?.message || err);
+  });
+  return true;
 }
 
 // Helper to get active payment configurations (database config overrides .env config)
@@ -110,7 +277,7 @@ let isMaintenanceMode = false;
 app.use(cors());
 // Capture the RAW body for the payment webhook so signatures are verified over the exact bytes sent.
 app.use('/api/payments/webhook', express.raw({ type: '*/*' }));
-app.use(express.json());
+app.use(express.json({ limit: '20mb' }));
 
 // True only when real (non-placeholder) Razorpay credentials are configured.
 function isRealGateway(cfg) {
@@ -475,7 +642,11 @@ app.post('/api/users/forgot-password', async (req, res) => {
       await sendResetEmail(email, resetLink);
     } catch (mailErr) {
       console.error('Error sending reset email:', mailErr);
-      return res.status(503).json({ message: 'Could not send the reset email right now. Please try again later.' });
+      return res.status(503).json({
+        message: 'Could not send the reset email right now. Please try again later.',
+        // Safe diagnostic detail for the operator (never includes the password)
+        detail: mailErr?.message || 'SMTP error'
+      });
     }
 
     console.log(`[Password Reset] Reset link generated for ${email}`);
@@ -577,13 +748,67 @@ app.get('/api/products/:id', async (req, res) => {
 
 app.post('/api/products', requireAdmin, async (req, res) => {
   const newProduct = await Product.create(req.body);
+  // Log initial stock as production inward so reports can track stock-in
+  if (newProduct.stock > 0) {
+    await InventoryLog.create({
+      productId: String(newProduct._id),
+      productName: newProduct.name,
+      changeType: 'restock',
+      quantityChanged: newProduct.stock,
+      newStock: newProduct.stock
+    });
+  }
   res.status(201).json(newProduct);
 });
 
 app.put('/api/products/:id', requireAdmin, async (req, res) => {
   const { _id, id, ...update } = req.body;
+  const before = await Product.findById(req.params.id);
   const updated = await Product.findByIdAndUpdate(req.params.id, update, { new: true });
+  // Stock increase = production inward — record it for inventory reports
+  if (before && updated && typeof update.stock === 'number' && update.stock > before.stock) {
+    await InventoryLog.create({
+      productId: String(updated._id),
+      productName: updated.name,
+      changeType: 'restock',
+      quantityChanged: update.stock - before.stock,
+      newStock: updated.stock
+    });
+  }
+  // Stock dropped to/below threshold via admin edit — alert admins (non-blocking)
+  if (before && updated && typeof update.stock === 'number' && updated.stock < before.stock) {
+    await maybeAlertLowStock(updated);
+  }
   res.json(updated);
+});
+
+// Manual production inward (stock-in) for a product
+app.post('/api/inventory-logs/restock', requireAdmin, async (req, res) => {
+  try {
+    const { productId, quantity } = req.body;
+    const qty = Math.floor(Number(quantity));
+    if (!productId || !qty || qty <= 0) {
+      return res.status(400).json({ message: 'Valid product and positive quantity required' });
+    }
+    const product = await Product.findById(productId);
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+
+    product.stock = (product.stock || 0) + qty;
+    await product.save();
+
+    const log = await InventoryLog.create({
+      productId: String(product._id),
+      productName: product.name,
+      changeType: 'restock',
+      quantityChanged: qty,
+      newStock: product.stock
+    });
+    // Restock may clear the low-stock state so future drops alert again
+    if (!isLowStock(product)) lowStockAlerted.delete(String(product._id));
+    res.status(201).json(log);
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Error inwarding stock' });
+  }
 });
 
 app.delete('/api/products/:id', requireAdmin, async (req, res) => {
@@ -620,7 +845,6 @@ app.post('/api/orders', requireAuth, async (req, res) => {
     const items = Array.isArray(orderData.items) ? orderData.items : [];
     const method = String(orderData.paymentMethod || '').toUpperCase();
     const allowedMethods = ['COD', 'UPI', 'CARD', 'NETBANKING'];
-    const allowedMethods = ['COD', 'UPI', 'CARD', 'NETBANKING'];
     const digitalMethod = method === 'UPI' || method === 'CARD' || method === 'NETBANKING';
 
     if (items.length === 0) {
@@ -652,11 +876,26 @@ app.post('/api/orders', requireAuth, async (req, res) => {
     }
 
     const tax = Math.round(subtotal * 0.05); // 5% GST matches the UI
-    const clientShipping = Number(orderData.shipping);
-    const shipping = !isNaN(clientShipping) && clientShipping >= 0 ? clientShipping : 40;
     const clientDiscount = Math.max(0, Number(orderData.discount) || 0);
     const discount = Math.min(clientDiscount, subtotal);
-    const total = subtotal + tax + shipping - discount;
+    const orderValue = subtotal - discount; // product value used for free-shipping threshold
+
+    // Delivery rules (server-authoritative — do not trust client shipping):
+    // • Free delivery on orders ≥ ₹499
+    // • Flat ₹40 shipping below ₹499 (up to 1 kg)
+    // • Prepaid (UPI/CARD/NETBANKING): free delivery always
+    // • COD: +₹30 convenience fee
+    const FREE_SHIPPING_THRESHOLD = 499;
+    const FLAT_SHIPPING_FEE = 40;
+    const COD_CONVENIENCE_FEE = 30;
+
+    const isPrepaid = method === 'UPI' || method === 'CARD' || method === 'NETBANKING';
+    let shipping = 0;
+    if (!isPrepaid && orderValue > 0 && orderValue < FREE_SHIPPING_THRESHOLD) {
+      shipping = FLAT_SHIPPING_FEE;
+    }
+    const codFee = method === 'COD' && orderValue > 0 ? COD_CONVENIENCE_FEE : 0;
+    const total = subtotal + tax + shipping + codFee - discount;
 
     const orderId = 'ORD-' + crypto.randomBytes(4).toString('hex').toUpperCase();
     const newOrder = await Order.create({
@@ -666,6 +905,8 @@ app.post('/api/orders', requireAuth, async (req, res) => {
       subtotal,
       tax,
       shipping,
+      codFee,
+      discount,
       total,
       items: verifiedItems.map(({ product: p, qty, image }) => ({
         id: String(p._id),
@@ -712,6 +953,7 @@ app.post('/api/orders', requireAuth, async (req, res) => {
     });
 
     // 3. Update product inventory stock & create OrderItem and InventoryLog records
+    const lowStockHits = [];
     for (const { product: p, qty } of verifiedItems) {
       await OrderItem.create({
         orderId,
@@ -731,6 +973,22 @@ app.post('/api/orders', requireAuth, async (req, res) => {
         changeType: 'sale',
         quantityChanged: -qty,
         newStock: p.stock
+      });
+
+      // Track newly low/out-of-stock items for one digest email to admins
+      const id = String(p._id);
+      if (isLowStock(p) && !lowStockAlerted.has(id)) {
+        lowStockAlerted.add(id);
+        lowStockHits.push({ name: p.name, stock: p.stock, category: p.category });
+      } else if (!isLowStock(p)) {
+        lowStockAlerted.delete(id);
+      }
+    }
+
+    // Non-blocking: one combined low-stock email after the order completes
+    if (lowStockHits.length > 0) {
+      sendLowStockAlertEmail(lowStockHits).catch(err => {
+        console.error('Low stock alert failed:', err?.message || err);
       });
     }
 
@@ -1098,6 +1356,137 @@ app.post('/api/config/payment', requireAdmin, async (req, res) => {
     res.json({ success: true, message: 'Settings saved successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message || 'Error saving configuration' });
+  }
+});
+
+// 14. Email / Alerts API (admin)
+// List products at/below the low-stock threshold
+app.get('/api/email/low-stock', requireAdmin, async (req, res) => {
+  try {
+    const products = await Product.find({ stock: { $lte: LOW_STOCK_THRESHOLD } }).sort({ stock: 1 });
+    res.json({
+      threshold: LOW_STOCK_THRESHOLD,
+      products: products.map(p => ({
+        id: String(p._id),
+        name: p.name,
+        stock: p.stock,
+        category: p.category,
+        alreadyAlerted: lowStockAlerted.has(String(p._id))
+      }))
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Error fetching low stock products' });
+  }
+});
+
+// Manually send the low-stock digest to admins right now
+app.post('/api/email/low-stock-alert', requireAdmin, async (req, res) => {
+  try {
+    const products = await Product.find({ stock: { $lte: LOW_STOCK_THRESHOLD } }).sort({ stock: 1 });
+    if (products.length === 0) {
+      return res.json({ message: 'No low-stock products found', sent: 0, count: 0 });
+    }
+    const list = products.map(p => ({ name: p.name, stock: p.stock, category: p.category }));
+    await sendLowStockAlertEmail(list);
+    // mark all as alerted so automatic hooks do not duplicate this email
+    products.forEach(p => lowStockAlerted.add(String(p._id)));
+    res.json({
+      message: `Low-stock alert sent for ${products.length} product(s)`,
+      sent: 1,
+      count: products.length,
+      threshold: LOW_STOCK_THRESHOLD
+    });
+  } catch (error) {
+    console.error('Manual low-stock alert error:', error);
+    res.status(503).json({
+      message: 'Could not send the low-stock alert right now.',
+      detail: error?.message || 'SMTP error'
+    });
+  }
+});
+
+// Send a promotional "new offers" email to customers
+app.post('/api/email/offers', requireAdmin, async (req, res) => {
+  try {
+    const subject = String(req.body.subject || '').trim();
+    const heading = String(req.body.heading || '').trim();
+    const message = String(req.body.message || '').trim();
+    const offerCode = String(req.body.offerCode || '').trim();
+    const shopLink = String(req.body.shopLink || '').trim();
+    const recipientsInput = req.body.recipients;
+
+    if (!subject || subject.length > 150) {
+      return res.status(400).json({ message: 'A subject (max 150 characters) is required' });
+    }
+    if (!message || message.length > 5000) {
+      return res.status(400).json({ message: 'A message (max 5000 characters) is required' });
+    }
+
+    // Resolve recipients: explicit list, or all active customers
+    let recipients = [];
+    if (Array.isArray(recipientsInput) && recipientsInput.length > 0) {
+      recipients = recipientsInput
+        .map(e => String(e || '').trim().toLowerCase())
+        .filter(e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
+      recipients = [...new Set(recipients)];
+    } else {
+      const customers = await User.find({ role: 'customer', isActive: { $ne: false } }).select('email');
+      recipients = [...new Set(customers.map(c => String(c.email || '').trim().toLowerCase()).filter(Boolean))];
+    }
+
+    if (recipients.length === 0) {
+      return res.status(400).json({ message: 'No recipients found (no active customers or invalid emails)' });
+    }
+    const MAX_RECIPIENTS = 200;
+    if (recipients.length > MAX_RECIPIENTS) {
+      return res.status(400).json({ message: `Too many recipients (${recipients.length}). Limit is ${MAX_RECIPIENTS} per send.` });
+    }
+
+    const appUrl = (process.env.APP_URL || 'http://localhost:5173').replace(/\/$/, '');
+    const ctaUrl = shopLink ? escapeHtml(shopLink) : `${appUrl}/shop`;
+    const bodyParagraphs = message
+      .split(/\n{2,}/)
+      .map(par => `<p style="margin: 0 0 12px;">${escapeHtml(par).replace(/\n/g, '<br />')}</p>`)
+      .join('');
+    const offerBlock = offerCode
+      ? `<p style="text-align:center; margin: 20px 0;">
+           <span style="display:inline-block; background:#FDF6ED; border:2px dashed #aa1a31; color:#4A1525; font-size:20px; font-weight:bold; letter-spacing:3px; padding:10px 24px; border-radius:8px;">${escapeHtml(offerCode)}</span>
+         </p>
+         <p style="text-align:center; color:#888; font-size:13px; margin-top:-8px;">Use this code at checkout</p>`
+      : '';
+
+    const html = brandEmailShell(heading || 'Special Offer', `
+          <p>Hello,</p>
+          ${bodyParagraphs}
+          ${offerBlock}
+          <p style="text-align: center; margin: 28px 0;">
+            <a href="${ctaUrl}" style="background: #aa1a31; color: #fff; padding: 12px 28px; border-radius: 6px; text-decoration: none; display: inline-block;">Shop Now</a>
+          </p>
+    `);
+
+    let sent = 0;
+    const failed = [];
+    for (const email of recipients) {
+      try {
+        await sendHtmlMail(email, subject, html);
+        sent += 1;
+      } catch (err) {
+        failed.push(email);
+        console.error(`Offer email failed for ${email}:`, err?.message || err);
+      }
+    }
+
+    console.log(`[Offers Email] "${subject}" — sent ${sent}/${recipients.length} by admin ${req.user?.email || ''}`);
+    res.json({
+      message: `Offer email sent to ${sent} of ${recipients.length} customer(s)`,
+      sent,
+      failed: failed.length,
+      failedEmails: failed.slice(0, 20),
+      total: recipients.length
+    });
+  } catch (error) {
+    console.error('Offers email error:', error);
+    res.status(500).json({ message: error.message || 'Error sending offer emails' });
   }
 });
 

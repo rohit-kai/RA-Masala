@@ -67,7 +67,15 @@ const Footer: FC = () => {
                                 </div>
                                 <div className="d-flex align-items-start">
                                     <i className="bi bi-envelope-fill me-2 fs-5" style={{ color: '#FFD700' }}></i>
-                                    <span>ramasale@ymail.com<br />RAMASALE.6686@GMAIL.COM</span>
+                                    <span>
+                                      <a
+                                        href="mailto:ramasale.6686@gmail.com"
+                                        style={{ color: 'inherit', textDecoration: 'underline' }}
+                                        title="Email ramasale.6686@gmail.com"
+                                      >
+                                        ramasale.6686@gmail.com
+                                      </a>
+                                    </span>
                                 </div>
                             </div>
                             <div className="mt-4 traditional-social-wrapper">

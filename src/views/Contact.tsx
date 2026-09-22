@@ -120,8 +120,13 @@ const Contact: React.FC = () => {
                 <div>
                   <h5 className="fw-bold mb-1" style={{ color: '#4A1525' }}>{t('cnt_email_title')}</h5>
                   <p className="text-muted mb-0 small">
-                    ramasale@ymail.com<br />
-                    RAMASALE.6686@GMAIL.COM
+                    <a
+                      href="mailto:ramasale.6686@gmail.com"
+                      className="text-decoration-none fw-semibold dev-email-link"
+                      title="Email ramasale.6686@gmail.com"
+                    >
+                      ramasale.6686@gmail.com
+                    </a>
                   </p>
                 </div>
               </div>
