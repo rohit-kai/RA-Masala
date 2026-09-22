@@ -115,13 +115,13 @@ function getFromAddress() {
   return configured || 'RA Masala <no-reply@ramasala.com>';
 }
 
-// Shared send: 20s hard deadline per attempt + one automatic retry on failure.
+// Shared send: 28s hard deadline per attempt + one automatic retry on failure.
 // Never closes the shared pooled transport.
 async function deliverMail(message) {
   const mailer = getMailer();
   if (!mailer) throw new Error('SMTP is not configured. Set SMTP_HOST/SMTP_USER/SMTP_PASS on the backend host (Render dashboard).');
 
-  const timeoutMs = 20000;
+  const timeoutMs = 28000;
   let lastErr;
   for (let attempt = 1; attempt <= 2; attempt++) {
     let timer;
