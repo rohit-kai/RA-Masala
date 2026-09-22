@@ -14,6 +14,7 @@ import ReadyMixRecipes from "./views/recipescate/ReadyMixRecipes"
 import RoutePaths from "./config"
 import Contact from "./views/Contact"
 import PrivacyPolicy from "./views/PrivacyPolicy"
+import { Analytics } from '@vercel/analytics/react'
 
 // Auth, Cart & Wishlist Contexts
 import { AuthProvider } from "./context/AuthContext"
@@ -134,6 +135,7 @@ function App() {
       <CartProvider>
         <WishlistProvider>
           <AppContent />
+          <Analytics />
         </WishlistProvider>
       </CartProvider>
     </AuthProvider>
