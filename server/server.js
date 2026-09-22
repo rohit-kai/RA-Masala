@@ -6,6 +6,8 @@ import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import Razorpay from 'razorpay';
 import nodemailer from 'nodemailer';
+import net from 'net';
+import tls from 'tls';
 
 // Hardcoded super admin credentials (SHA-256 hashes from your .env) — always work, no env needed
 const DEFAULT_ADMIN_EMAIL_HASH = '345d9d944dcab91ee58fc1e567c26b490a9a683d50d2ca3d7da37817c0748150'; // ujumakikai8975@gmail.com
@@ -1352,6 +1354,51 @@ app.post('/api/config/payment', requireAdmin, async (req, res) => {
 });
 
 // 14. Email / Alerts API (admin)
+// SMTP connectivity diagnostics (returns reachability only — no secrets).
+// Used to find which SMTP port works from this host (Render/Vercel).
+app.get('/api/email/diag', async (req, res) => {
+  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
+  const testPort = (port, secure) => new Promise((resolve) => {
+    const start = Date.now();
+    let settled = false;
+    const done = (result) => {
+      if (settled) return;
+      settled = true;
+      try { socket.destroy(); } catch (e) { /* ignore */ }
+      resolve({ ok: result.ok, ms: Date.now() - start, error: result.error || null });
+    };
+    let socket;
+    try {
+      if (secure) {
+        socket = tls.connect({ host, port, servername: host }, () => done({ ok: true }));
+      } else {
+        socket = net.connect({ host, port }, () => done({ ok: true }));
+      }
+      socket.setTimeout(8000, () => done({ ok: false, error: 'timeout (8s)' }));
+      socket.on('error', (e) => done({ ok: false, error: e.code || e.message }));
+    } catch (e) {
+      done({ ok: false, error: e.code || e.message });
+    }
+  });
+
+  try {
+    const [p587, p465, p25] = await Promise.all([
+      testPort(587, false),
+      testPort(465, true),
+      testPort(25, false)
+    ]);
+    res.json({
+      host,
+      configuredPort: Number(process.env.SMTP_PORT) || 587,
+      smtpUserConfigured: Boolean(process.env.SMTP_USER),
+      smtpPassConfigured: Boolean(process.env.SMTP_PASS),
+      ports: { '587': p587, '465': p465, '25': p25 }
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Diagnostic failed' });
+  }
+});
+
 // List products at/below the low-stock threshold
 app.get('/api/email/low-stock', requireAdmin, async (req, res) => {
   try {
@@ -1458,12 +1505,14 @@ app.post('/api/email/offers', requireAdmin, async (req, res) => {
 
     let sent = 0;
     const failed = [];
+    const errors = [];
     for (const email of recipients) {
       try {
         await sendHtmlMail(email, subject, html);
         sent += 1;
       } catch (err) {
         failed.push(email);
+        errors.push({ email, error: err?.message || String(err) });
         console.error(`Offer email failed for ${email}:`, err?.message || err);
       }
     }
@@ -1474,6 +1523,7 @@ app.post('/api/email/offers', requireAdmin, async (req, res) => {
       sent,
       failed: failed.length,
       failedEmails: failed.slice(0, 20),
+      errors: errors.slice(0, 5),
       total: recipients.length
     });
   } catch (error) {
