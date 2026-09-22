@@ -374,15 +374,43 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const forgotPassword = async (email: string) => {
+    const attempt = () =>
+      axios.post('/api/users/forgot-password', { email }, { timeout: 60000 });
     try {
-      // 45s cap: backend may use up to 2 SMTP attempts (20s deadline each + backoff)
-      const res = await axios.post('/api/users/forgot-password', { email }, { timeout: 45000 });
+      let res;
+      try {
+        res = await attempt();
+      } catch (firstErr: any) {
+        // Auto-retry once on transient failures (Render cold start / redeploy 5xx)
+        const status = firstErr?.response?.status;
+        const retriable = !firstErr?.response || status >= 500;
+        if (firstErr?.code === 'ECONNABORTED' || !retriable) throw firstErr;
+        await new Promise(r => setTimeout(r, 2500));
+        res = await attempt();
+      }
       return { success: true, message: res.data.message };
     } catch (error: any) {
       if (error?.code === 'ECONNABORTED') {
-        return { success: false, message: 'Request timed out. Please try again in a moment.' };
+        return {
+          success: false,
+          message: 'The server is taking too long to respond (it may be waking up). Please try again in a moment.'
+        };
       }
-      return { success: false, message: error.response?.data?.message || 'Error sending reset link' };
+      const msg = error?.response?.data?.message;
+      const detail = error?.response?.data?.detail;
+      if (msg) {
+        return { success: false, message: detail ? `${msg} (${detail})` : msg };
+      }
+      if (error?.response) {
+        return {
+          success: false,
+          message: `Server error (HTTP ${error.response.status}). Please wait a minute and try again.`
+        };
+      }
+      return {
+        success: false,
+        message: `Cannot reach the server${error?.code ? ` (${error.code})` : ''}. Check your internet connection and try again.`
+      };
     }
   };
 
