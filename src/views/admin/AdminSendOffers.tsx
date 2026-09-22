@@ -109,10 +109,11 @@ const AdminSendOffers = () => {
         { timeout: 120000 }
       );
       const firstError = res.data.errors?.[0]?.error;
+      const hasFailures = res.data.failed > 0;
       Swal.fire({
-        icon: res.data.failed > 0 ? 'warning' : 'success',
-        title: t('adm_success'),
-        text: res.data.failed > 0
+        icon: hasFailures ? 'error' : 'success',
+        title: hasFailures ? t('adm_error') : t('adm_success'),
+        text: hasFailures
           ? `${res.data.message} — ${firstError || 'see Render logs'}`
           : res.data.message,
         confirmButtonColor: '#aa1a31'

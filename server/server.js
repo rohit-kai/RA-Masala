@@ -8,6 +8,12 @@ import Razorpay from 'razorpay';
 import nodemailer from 'nodemailer';
 import net from 'net';
 import tls from 'tls';
+import dns from 'dns';
+
+// Render has no working IPv6 route — connecting to Google's AAAA records fails
+// with ENETUNREACH (seen as intermittent SMTP "Connection timeout").
+// Always prefer IPv4 for every outbound connection.
+dns.setDefaultResultOrder('ipv4first');
 
 // Hardcoded super admin credentials (SHA-256 hashes from your .env) — always work, no env needed
 const DEFAULT_ADMIN_EMAIL_HASH = '345d9d944dcab91ee58fc1e567c26b490a9a683d50d2ca3d7da37817c0748150'; // ujumakikai8975@gmail.com
@@ -59,7 +65,40 @@ function getMailer() {
     socketTimeout: Number(process.env.SMTP_SOCKET_TIMEOUT) || 20000,
     // Some office/college networks intercept TLS with a self-signed cert.
     // Set SMTP_REJECT_UNAUTHORIZED=false in .env only if your network does this.
-    tls: { rejectUnauthorized: (process.env.SMTP_REJECT_UNAUTHORIZED || 'true').toLowerCase() !== 'false' }
+    tls: { rejectUnauthorized: (process.env.SMTP_REJECT_UNAUTHORIZED || 'true').toLowerCase() !== 'false' },
+    // Force an IPv4 connection. Render's IPv6 egress is broken (ENETUNREACH to
+    // Google's AAAA records), and nodemailer otherwise picks a random address.
+    // We resolve the A record ourselves and hand it a ready IPv4 socket;
+    // `host` stays the original hostname so TLS/SNI still validates correctly.
+    getSocket: (options, callback) => {
+      const destHost = options.host || host;
+      const destPort = Number(options.port) || Number(process.env.SMTP_PORT) || 587;
+      let settled = false;
+      const finish = (err, socketOptions) => {
+        if (settled) return;
+        settled = true;
+        callback(err, socketOptions);
+      };
+      dns.resolve4(destHost, (err, addresses) => {
+        if (err || !addresses || addresses.length === 0) {
+          // No A record resolved — fall back to nodemailer's default resolution
+          return finish(null, false);
+        }
+        const socket = net.connect({ host: addresses[0], port: destPort, family: 4 });
+        const timer = setTimeout(() => {
+          try { socket.destroy(); } catch (e) { /* ignore */ }
+          finish(new Error(`SMTP IPv4 connect timeout to ${destHost}:${destPort}`));
+        }, Number(process.env.SMTP_CONNECTION_TIMEOUT) || 15000);
+        socket.once('connect', () => {
+          clearTimeout(timer);
+          finish(null, { connection: socket, host: destHost });
+        });
+        socket.once('error', (e) => {
+          clearTimeout(timer);
+          finish(e);
+        });
+      });
+    }
   });
   return sharedMailer;
 }
@@ -1369,10 +1408,11 @@ app.get('/api/email/diag', async (req, res) => {
     };
     let socket;
     try {
+      // family:4 — this host's IPv6 route is broken; test the IPv4 path only
       if (secure) {
-        socket = tls.connect({ host, port, servername: host }, () => done({ ok: true }));
+        socket = tls.connect({ host, port, servername: host, family: 4 }, () => done({ ok: true }));
       } else {
-        socket = net.connect({ host, port }, () => done({ ok: true }));
+        socket = net.connect({ host, port, family: 4 }, () => done({ ok: true }));
       }
       socket.setTimeout(8000, () => done({ ok: false, error: 'timeout (8s)' }));
       socket.on('error', (e) => done({ ok: false, error: e.code || e.message }));
