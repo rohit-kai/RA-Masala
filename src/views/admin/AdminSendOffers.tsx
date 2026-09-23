@@ -109,15 +109,31 @@ const AdminSendOffers = () => {
         { timeout: 120000 }
       );
       const firstError = res.data.errors?.[0]?.error;
-      const hasFailures = res.data.failed > 0;
-      Swal.fire({
-        icon: hasFailures ? 'error' : 'success',
-        title: hasFailures ? t('adm_error') : t('adm_success'),
-        text: hasFailures
-          ? `${res.data.message} — ${firstError || 'see Render logs'}`
-          : res.data.message,
-        confirmButtonColor: '#aa1a31'
-      });
+      const sentCount = res.data.sent || 0;
+      const failedCount = res.data.failed || 0;
+
+      if (sentCount > 0 && failedCount === 0) {
+        Swal.fire({
+          icon: 'success',
+          title: t('adm_success'),
+          text: res.data.message,
+          confirmButtonColor: '#aa1a31'
+        });
+      } else if (sentCount > 0 && failedCount > 0) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Partial Success',
+          text: `${res.data.message} (${firstError || 'Some recipients failed'})`,
+          confirmButtonColor: '#aa1a31'
+        });
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: t('adm_error'),
+          text: firstError || res.data.message || 'Email delivery failed',
+          confirmButtonColor: '#aa1a31'
+        });
+      }
       setSubject('');
       setHeading('');
       setMessage('');

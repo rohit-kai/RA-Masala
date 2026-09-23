@@ -57,60 +57,41 @@ dotenv.config();
 // IMPORTANT: reuse ONE pooled transport. Creating a fresh connection per email makes
 // Gmail throttle rapid connects (intermittent "Connection timeout" failures in prod).
 let sharedMailer = null;
+function resetMailer() {
+  if (sharedMailer) {
+    try { sharedMailer.close(); } catch (e) { /* ignore */ }
+    sharedMailer = null;
+  }
+}
+
 function getMailer() {
   const host = process.env.SMTP_HOST;
   if (!host) return null;
   if (sharedMailer) return sharedMailer;
+
+  const port = Number(process.env.SMTP_PORT) || 587;
+  // If SMTP_SECURE is explicitly set, use it; otherwise default to true for SSL port 465
+  const secure = process.env.SMTP_SECURE !== undefined
+    ? (process.env.SMTP_SECURE || 'false').toLowerCase() === 'true'
+    : port === 465;
+
   sharedMailer = nodemailer.createTransport({
     host,
-    port: Number(process.env.SMTP_PORT) || 587,
-    secure: (process.env.SMTP_SECURE || 'false').toLowerCase() === 'true',
+    port,
+    secure,
     auth: process.env.SMTP_USER
       ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS || '' }
       : undefined,
     pool: true,
-    maxConnections: 1,
-    maxMessages: 20,
-    // Fail fast in production instead of hanging the request for minutes.
-    connectionTimeout: Number(process.env.SMTP_CONNECTION_TIMEOUT) || 15000,
-    greetingTimeout: Number(process.env.SMTP_GREETING_TIMEOUT) || 10000,
-    socketTimeout: Number(process.env.SMTP_SOCKET_TIMEOUT) || 20000,
+    maxConnections: 3,
+    maxMessages: 50,
+    // Fail fast in production instead of hanging requests for minutes
+    connectionTimeout: Number(process.env.SMTP_CONNECTION_TIMEOUT) || 8000,
+    greetingTimeout: Number(process.env.SMTP_GREETING_TIMEOUT) || 8000,
+    socketTimeout: Number(process.env.SMTP_SOCKET_TIMEOUT) || 10000,
     // Some office/college networks intercept TLS with a self-signed cert.
     // Set SMTP_REJECT_UNAUTHORIZED=false in .env only if your network does this.
-    tls: { rejectUnauthorized: (process.env.SMTP_REJECT_UNAUTHORIZED || 'true').toLowerCase() !== 'false' },
-    // Force an IPv4 connection. Render's IPv6 egress is broken (ENETUNREACH to
-    // Google's AAAA records), and nodemailer otherwise picks a random address.
-    // We resolve the A record ourselves and hand it a ready IPv4 socket;
-    // `host` stays the original hostname so TLS/SNI still validates correctly.
-    getSocket: (options, callback) => {
-      const destHost = options.host || host;
-      const destPort = Number(options.port) || Number(process.env.SMTP_PORT) || 587;
-      let settled = false;
-      const finish = (err, socketOptions) => {
-        if (settled) return;
-        settled = true;
-        callback(err, socketOptions);
-      };
-      dns.resolve4(destHost, (err, addresses) => {
-        if (err || !addresses || addresses.length === 0) {
-          // No A record resolved — fall back to nodemailer's default resolution
-          return finish(null, false);
-        }
-        const socket = net.connect({ host: addresses[0], port: destPort, family: 4 });
-        const timer = setTimeout(() => {
-          try { socket.destroy(); } catch (e) { /* ignore */ }
-          finish(new Error(`SMTP IPv4 connect timeout to ${destHost}:${destPort}`));
-        }, Number(process.env.SMTP_CONNECTION_TIMEOUT) || 15000);
-        socket.once('connect', () => {
-          clearTimeout(timer);
-          finish(null, { connection: socket, host: destHost });
-        });
-        socket.once('error', (e) => {
-          clearTimeout(timer);
-          finish(e);
-        });
-      });
-    }
+    tls: { rejectUnauthorized: (process.env.SMTP_REJECT_UNAUTHORIZED || 'true').toLowerCase() !== 'false' }
   });
   return sharedMailer;
 }
@@ -127,8 +108,7 @@ function getFromAddress() {
   return configured || 'RA Masala <no-reply@ramasala.com>';
 }
 
-// Shared send: tries Resend API first (fast, <1s), falls back to SMTP with 28s deadline + retry.
-// Never closes the shared pooled transport.
+// Shared send: tries Resend API first (fast, <1s), falls back to SMTP with 8s deadline + auto reset.
 async function deliverMail(message) {
   // Try Resend first (if RESEND_API_KEY is configured) — typically <1s
   const resend = await getResend();
@@ -147,13 +127,13 @@ async function deliverMail(message) {
     }
   }
 
-  // Fallback to SMTP (pooled, IPv4-forced, with retry)
-  const mailer = getMailer();
-  if (!mailer) throw new Error('No email transport configured. Set RESEND_API_KEY or SMTP_HOST/SMTP_USER/SMTP_PASS on the backend host (Render dashboard).');
-
-  const timeoutMs = 28000;
+  // Fallback to SMTP with tight 8s timeout and transport auto-recycle on error
+  const timeoutMs = Number(process.env.SMTP_SEND_TIMEOUT) || 8000;
   let lastErr;
   for (let attempt = 1; attempt <= 2; attempt++) {
+    const mailer = getMailer();
+    if (!mailer) throw new Error('No email transport configured. Set RESEND_API_KEY or SMTP_HOST/SMTP_USER/SMTP_PASS on the backend host (Render dashboard).');
+
     let timer;
     const timeoutPromise = new Promise((_, reject) => {
       timer = setTimeout(() => reject(new Error(`SMTP send timed out after ${timeoutMs}ms`)), timeoutMs);
@@ -164,7 +144,8 @@ async function deliverMail(message) {
     } catch (err) {
       lastErr = err;
       console.error(`[SMTP] Attempt ${attempt}/2 failed: ${err?.message || err}`);
-      if (attempt < 2) await new Promise(r => setTimeout(r, 2000));
+      resetMailer(); // Discard broken pooled socket immediately
+      if (attempt < 2) await new Promise(r => setTimeout(r, 1000));
     } finally {
       clearTimeout(timer);
     }
@@ -1576,20 +1557,32 @@ app.post('/api/email/offers', requireAdmin, async (req, res) => {
     let sent = 0;
     const failed = [];
     const errors = [];
-    for (const email of recipients) {
-      try {
-        await sendHtmlMail(email, subject, html);
-        sent += 1;
-      } catch (err) {
-        failed.push(email);
-        errors.push({ email, error: err?.message || String(err) });
-        console.error(`Offer email failed for ${email}:`, err?.message || err);
-      }
+    const BATCH_SIZE = 5;
+
+    for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
+      const batch = recipients.slice(i, i + BATCH_SIZE);
+      await Promise.all(
+        batch.map(async (email) => {
+          try {
+            await sendHtmlMail(email, subject, html);
+            sent += 1;
+          } catch (err) {
+            failed.push(email);
+            errors.push({ email, error: err?.message || String(err) });
+            console.error(`Offer email failed for ${email}:`, err?.message || err);
+          }
+        })
+      );
     }
 
     console.log(`[Offers Email] "${subject}" — sent ${sent}/${recipients.length} by admin ${req.user?.email || ''}`);
-    res.json({
-      message: `Offer email sent to ${sent} of ${recipients.length} customer(s)`,
+
+    const isSuccess = sent > 0;
+    const responseStatus = isSuccess ? 200 : 500;
+    res.status(responseStatus).json({
+      message: isSuccess
+        ? `Offer email sent to ${sent} of ${recipients.length} customer(s)`
+        : `Offer email failed for all recipient(s): ${errors[0]?.error || 'SMTP timeout'}`,
       sent,
       failed: failed.length,
       failedEmails: failed.slice(0, 20),
