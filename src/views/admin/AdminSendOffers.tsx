@@ -230,21 +230,6 @@ const AdminSendOffers = () => {
           </div>
         </div>
 
-        {/* Vercel / Cloud Notice Banner */}
-        <div className="alert alert-info d-flex flex-wrap align-items-center justify-content-between rounded-4 shadow-sm mb-4 border-0 p-3" style={{ background: '#FFF8E1', borderLeft: '5px solid #FFB300' }}>
-          <div>
-            <h6 className="fw-bold mb-1" style={{ color: '#4A1525' }}>
-              <i className="bi bi-lightning-charge-fill text-warning me-2"></i> Fast Vercel / Cloud Email Delivery
-              {isResendActive && <span className="badge bg-success ms-2">Resend HTTPS API Active (300ms)</span>}
-            </h6>
-            <small className="text-muted">
-              Vercel serverless functions block raw outbound SMTP (port 587/465). Use a free <strong>Resend API Key</strong> (HTTPS port 443) for <strong>instant 300ms email delivery</strong> on live sites!
-            </small>
-          </div>
-          <button className="btn btn-sm btn-outline-danger fw-bold mt-2 mt-sm-0" onClick={() => setShowConfigModal(true)}>
-            <i className="bi bi-sliders me-1"></i> Configure Key
-          </button>
-        </div>
 
         <div className="row g-4">
           {/* Low stock alerts panel */}

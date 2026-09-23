@@ -27,9 +27,6 @@ async function getEmailConfig() {
   } catch (e) {
     return {};
   }
-}
-
-// Resend (transactional email API over HTTPS Port 443) — ultra fast (<300ms) & works on Vercel/serverless!
 let resendInstance = null;
 let lastResendKey = null;
 
