@@ -248,6 +248,43 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const secRes = await axios.get('/api/security-logs');
         setSecurityLogs(secRes.data);
       } else if (currentUser?.token) {
+        const orderRes = await axios.get('/api/orders');
+        setOrders(orderRes.data.map((o: any) => ({
+          ...o,
+          id: o.id || o._id,
+          date: o.date || (o.createdAt ? new Date(o.createdAt).toISOString().split('T')[0] : '')
+        })));
+
+        const userRes = await axios.get('/api/users');
+        const mappedUsers = userRes.data.map((u: any) => ({
+          ...u,
+          id: u._id
+        }));
+        setUsers(mappedUsers);
+
+        const ticketRes = await axios.get('/api/tickets');
+        const mappedTickets = ticketRes.data.map((t: any) => ({
+          ...t,
+          id: t._id,
+          date: new Date(t.createdAt).toISOString().split('T')[0]
+        }));
+        setTickets(mappedTickets);
+
+        const payRes = await axios.get('/api/payments');
+        setPayments(payRes.data);
+
+        const shipRes = await axios.get('/api/shipping');
+        setShippingList(shipRes.data);
+
+        const discRes = await axios.get('/api/discounts');
+        setDiscounts(discRes.data);
+
+        const logRes = await axios.get('/api/inventory-logs');
+        setInventoryLogs(logRes.data);
+
+        const secRes = await axios.get('/api/security-logs');
+        setSecurityLogs(secRes.data);
+      } else if (currentUser?.token) {
         // Customer: only their own orders and tickets
         try {
           const myOrders = await axios.get('/api/my/orders');
@@ -275,6 +312,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  // Lightweight product-only refresh for real-time updates across all users
+  const refreshProducts = async () => {
+    try {
+      const prodRes = await axios.get('/api/products');
+      const mappedProds = prodRes.data.map((p: any) => ({
+        ...p,
+        id: p._id
+      }));
+      if (mappedProds && mappedProds.length > 0) {
+        setProducts(mappedProds);
+      }
+    } catch (error) {
+      console.error('Error refreshing products:', error);
+    }
+  };
+
   useEffect(() => {
     loadData();
 
@@ -289,7 +342,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       loadData();
     }, 5000);
 
-    return () => clearInterval(interval);
+    // Real-time product updates every 2 seconds for all users
+    const productInterval = setInterval(() => {
+      refreshProducts();
+    }, 2000);
+
+    return () => {
+      clearInterval(interval);
+      clearInterval(productInterval);
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -426,7 +487,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const addProduct = async (newProd: Omit<Product, 'id'>) => {
     try {
       await axios.post('/api/products', newProd);
-      await loadData();
+      await refreshProducts();
     } catch (error) {
       console.error('Error adding product to MongoDB:', error);
       throw error;
@@ -437,7 +498,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const dbId = updatedProd._id || updatedProd.id;
       await axios.put(`/api/products/${dbId}`, updatedProd);
-      await loadData();
+      await refreshProducts();
     } catch (error) {
       console.error('Error updating product in MongoDB:', error);
       throw error;
@@ -447,7 +508,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const deleteProduct = async (id: string | number) => {
     try {
       await axios.delete(`/api/products/${id}`);
-      await loadData();
+      await refreshProducts();
     } catch (error) {
       console.error('Error deleting product from MongoDB:', error);
       throw error;
