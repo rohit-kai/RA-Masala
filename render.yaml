@@ -47,3 +47,8 @@ services:
         sync: false
       - key: ADMIN_NAME
         value: "Kai Super Admin"
+      # Resend API key for fast, reliable transactional emails (free tier: 3000/month).
+      # Sign up at https://resend.com, create an API key, and add it here.
+      # If set, this is used INSTEAD of SMTP for all emails (password reset, offers, alerts).
+      - key: RESEND_API_KEY
+        sync: false

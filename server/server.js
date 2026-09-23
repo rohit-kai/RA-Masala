@@ -10,6 +10,18 @@ import net from 'net';
 import tls from 'tls';
 import dns from 'dns';
 
+// Resend (transactional email API) — fast & reliable from cloud hosts.
+// Configure RESEND_API_KEY in Render dashboard to use it (falls back to SMTP if not set).
+let resend = null;
+async function getResend() {
+  if (resend) return resend;
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return null;
+  const { Resend } = await import('resend');
+  resend = new Resend(apiKey);
+  return resend;
+}
+
 // Render has no working IPv6 route — connecting to Google's AAAA records fails
 // with ENETUNREACH (seen as intermittent SMTP "Connection timeout").
 // Always prefer IPv4 for every outbound connection.
@@ -115,11 +127,29 @@ function getFromAddress() {
   return configured || 'RA Masala <no-reply@ramasala.com>';
 }
 
-// Shared send: 28s hard deadline per attempt + one automatic retry on failure.
+// Shared send: tries Resend API first (fast, <1s), falls back to SMTP with 28s deadline + retry.
 // Never closes the shared pooled transport.
 async function deliverMail(message) {
+  // Try Resend first (if RESEND_API_KEY is configured) — typically <1s
+  const resend = await getResend();
+  if (resend) {
+    try {
+      const result = await resend.emails.send({
+        from: message.from,
+        to: message.to,
+        subject: message.subject,
+        html: message.html
+      });
+      console.log('[Resend] Email sent:', result.data?.id);
+      return result;
+    } catch (err) {
+      console.warn('[Resend] Send failed, falling back to SMTP:', err?.message || err);
+    }
+  }
+
+  // Fallback to SMTP (pooled, IPv4-forced, with retry)
   const mailer = getMailer();
-  if (!mailer) throw new Error('SMTP is not configured. Set SMTP_HOST/SMTP_USER/SMTP_PASS on the backend host (Render dashboard).');
+  if (!mailer) throw new Error('No email transport configured. Set RESEND_API_KEY or SMTP_HOST/SMTP_USER/SMTP_PASS on the backend host (Render dashboard).');
 
   const timeoutMs = 28000;
   let lastErr;
