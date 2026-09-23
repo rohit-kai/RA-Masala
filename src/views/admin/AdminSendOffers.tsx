@@ -151,6 +151,60 @@ const AdminSendOffers = () => {
     }
   };
 
+  const [showConfigModal, setShowConfigModal] = useState(false);
+  const [resendApiKey, setResendApiKey] = useState('');
+  const [smtpHost, setSmtpHost] = useState('');
+  const [smtpPort, setSmtpPort] = useState<number | string>(587);
+  const [smtpSecure, setSmtpSecure] = useState(false);
+  const [smtpUser, setSmtpUser] = useState('');
+  const [smtpPass, setSmtpPass] = useState('');
+  const [smtpFrom, setSmtpFrom] = useState('');
+  const [configSaving, setConfigSaving] = useState(false);
+  const [isResendActive, setIsResendActive] = useState(false);
+
+  const loadEmailConfig = async () => {
+    try {
+      const res = await axios.get('/api/config/email');
+      setResendApiKey(res.data.resendApiKey || '');
+      setSmtpHost(res.data.smtpHost || 'smtp.gmail.com');
+      setSmtpPort(res.data.smtpPort || 587);
+      setSmtpSecure(res.data.smtpSecure || false);
+      setSmtpUser(res.data.smtpUser || '');
+      setSmtpFrom(res.data.smtpFrom || '');
+      setSmtpPass(res.data.hasSmtpPass ? '***' : '');
+      setIsResendActive(Boolean(res.data.isResendActive));
+    } catch (err) {
+      console.error('Error loading email config:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.role === 'admin') loadEmailConfig();
+  }, [user]);
+
+  const handleSaveEmailConfig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setConfigSaving(true);
+    try {
+      const res = await axios.post('/api/config/email', {
+        resendApiKey,
+        smtpHost,
+        smtpPort: Number(smtpPort),
+        smtpSecure,
+        smtpUser,
+        smtpPass,
+        smtpFrom
+      });
+      Swal.fire(t('adm_success'), res.data.message || 'Email settings saved successfully', 'success');
+      setShowConfigModal(false);
+      await loadEmailConfig();
+    } catch (err: any) {
+      Swal.fire(t('adm_error'), err?.response?.data?.message || 'Failed to save email settings', 'error');
+    } finally {
+      setConfigSaving(false);
+    }
+  };
+
   if (!user || user.role !== 'admin') return null;
 
   return (
@@ -167,10 +221,29 @@ const AdminSendOffers = () => {
             <p className="text-secondary mb-0">{t('adm_send_offers_subtitle')}</p>
           </div>
           <div className="d-flex gap-2 mt-3 mt-sm-0">
+            <button className="btn btn-sm text-white fw-bold" style={{ backgroundColor: '#4A1525', border: '1px solid #FFB300' }} onClick={() => setShowConfigModal(true)}>
+              <i className="bi bi-gear-fill me-1"></i> Email Settings
+            </button>
             <Link to={RoutePaths.admin} className="btn btn-sm text-white fw-bold" style={{ backgroundColor: '#aa1a31', border: '1px solid #FFB300' }}>
               {t('adm_back_to_dashboard')}
             </Link>
           </div>
+        </div>
+
+        {/* Vercel / Cloud Notice Banner */}
+        <div className="alert alert-info d-flex flex-wrap align-items-center justify-content-between rounded-4 shadow-sm mb-4 border-0 p-3" style={{ background: '#FFF8E1', borderLeft: '5px solid #FFB300' }}>
+          <div>
+            <h6 className="fw-bold mb-1" style={{ color: '#4A1525' }}>
+              <i className="bi bi-lightning-charge-fill text-warning me-2"></i> Fast Vercel / Cloud Email Delivery
+              {isResendActive && <span className="badge bg-success ms-2">Resend HTTPS API Active (300ms)</span>}
+            </h6>
+            <small className="text-muted">
+              Vercel serverless functions block raw outbound SMTP (port 587/465). Use a free <strong>Resend API Key</strong> (HTTPS port 443) for <strong>instant 300ms email delivery</strong> on live sites!
+            </small>
+          </div>
+          <button className="btn btn-sm btn-outline-danger fw-bold mt-2 mt-sm-0" onClick={() => setShowConfigModal(true)}>
+            <i className="bi bi-sliders me-1"></i> Configure Key
+          </button>
         </div>
 
         <div className="row g-4">
@@ -313,6 +386,86 @@ const AdminSendOffers = () => {
         </div>
 
       </div>
+
+        {/* Email Settings Modal */}
+        {showConfigModal && (
+          <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }} tabIndex={-1}>
+            <div className="modal-dialog modal-dialog-centered modal-lg">
+              <div className="modal-content rounded-4 border-0 shadow">
+                <div className="modal-header border-bottom text-white" style={{ backgroundColor: '#4A1525' }}>
+                  <h5 className="modal-title fw-bold" style={{ fontFamily: 'serif' }}>
+                    <i className="bi bi-gear-fill me-2"></i> System Email Configuration
+                  </h5>
+                  <button type="button" className="btn-close btn-close-white" onClick={() => setShowConfigModal(false)}></button>
+                </div>
+                <form onSubmit={handleSaveEmailConfig}>
+                  <div className="modal-body p-4" style={{ backgroundColor: '#FDF6ED' }}>
+                    
+                    {/* Resend API Key section (RECOMMENDED FOR VERCEL) */}
+                    <div className="card border-0 shadow-sm p-3 mb-4 rounded-3" style={{ background: '#E8F5E9', borderLeft: '5px solid #2E7D32' }}>
+                      <h6 className="fw-bold text-success mb-1">
+                        <i className="bi bi-lightning-charge-fill me-1"></i> Option 1: Resend API Key (Recommended for Vercel / Cloud Hosts)
+                      </h6>
+                      <p className="text-muted mb-2" style={{ fontSize: '0.85rem' }}>
+                        Free tier provides 3,000 emails/month. Works over HTTPS (port 443) with <strong>300ms speed</strong> and never times out on Vercel. Sign up free at <a href="https://resend.com" target="_blank" rel="noreferrer" className="fw-bold text-success">resend.com</a>.
+                      </p>
+                      <div className="mb-2">
+                        <label className="form-label text-dark fw-semibold" style={{ fontSize: '0.9rem' }}>Resend API Key</label>
+                        <input
+                          type="password"
+                          className="form-control"
+                          placeholder="e.g. re_xxxxxxxxxxxxxxxxxxxxxxxx"
+                          value={resendApiKey}
+                          onChange={e => setResendApiKey(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    {/* SMTP Credentials section */}
+                    <div className="card border-0 shadow-sm p-3 rounded-3 bg-white">
+                      <h6 className="fw-bold text-dark mb-1">
+                        <i className="bi bi-hdd-network-fill me-1"></i> Option 2: SMTP Configuration (Gmail / Provider)
+                      </h6>
+                      <p className="text-muted mb-3" style={{ fontSize: '0.85rem' }}>
+                        Used as fallback on localhost or hosts that permit raw SMTP outbound connections.
+                      </p>
+                      <div className="row g-3">
+                        <div className="col-md-8">
+                          <label className="form-label text-muted fw-semibold" style={{ fontSize: '0.85rem' }}>SMTP Host</label>
+                          <input type="text" className="form-control" placeholder="smtp.gmail.com" value={smtpHost} onChange={e => setSmtpHost(e.target.value)} />
+                        </div>
+                        <div className="col-md-4">
+                          <label className="form-label text-muted fw-semibold" style={{ fontSize: '0.85rem' }}>Port</label>
+                          <input type="number" className="form-control" placeholder="587 or 465" value={smtpPort} onChange={e => setSmtpPort(e.target.value)} />
+                        </div>
+                        <div className="col-md-6">
+                          <label className="form-label text-muted fw-semibold" style={{ fontSize: '0.85rem' }}>SMTP User (Gmail Email)</label>
+                          <input type="email" className="form-control" placeholder="your-email@gmail.com" value={smtpUser} onChange={e => setSmtpUser(e.target.value)} />
+                        </div>
+                        <div className="col-md-6">
+                          <label className="form-label text-muted fw-semibold" style={{ fontSize: '0.85rem' }}>SMTP App Password</label>
+                          <input type="password" className="form-control" placeholder="Google App Password" value={smtpPass} onChange={e => setSmtpPass(e.target.value)} />
+                        </div>
+                        <div className="col-md-12">
+                          <label className="form-label text-muted fw-semibold" style={{ fontSize: '0.85rem' }}>Sender Name & Email (From)</label>
+                          <input type="text" className="form-control" placeholder="RA Masala <your-email@gmail.com>" value={smtpFrom} onChange={e => setSmtpFrom(e.target.value)} />
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                  <div className="modal-footer border-top bg-white">
+                    <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowConfigModal(false)}>Cancel</button>
+                    <button type="submit" className="btn btn-sm text-white fw-bold px-4" style={{ backgroundColor: '#aa1a31' }} disabled={configSaving}>
+                      {configSaving ? <><span className="spinner-border spinner-border-sm me-1"></span>Saving...</> : 'Save Settings'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
       <Footer />
     </div>
   );

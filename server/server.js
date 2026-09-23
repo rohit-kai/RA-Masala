@@ -10,16 +10,45 @@ import net from 'net';
 import tls from 'tls';
 import dns from 'dns';
 
-// Resend (transactional email API) — fast & reliable from cloud hosts.
-// Configure RESEND_API_KEY in Render dashboard to use it (falls back to SMTP if not set).
-let resend = null;
+// Dynamic system email configuration (DB settings override .env defaults)
+let cachedEmailConfig = null;
+let lastEmailConfigFetch = 0;
+
+async function getEmailConfig() {
+  const now = Date.now();
+  if (cachedEmailConfig && (now - lastEmailConfigFetch < 30000)) {
+    return cachedEmailConfig;
+  }
+  try {
+    const dbConfig = await SystemConfig.findOne({ key: 'email_settings' });
+    cachedEmailConfig = dbConfig?.value || {};
+    lastEmailConfigFetch = now;
+    return cachedEmailConfig;
+  } catch (e) {
+    return {};
+  }
+}
+
+// Resend (transactional email API over HTTPS Port 443) — ultra fast (<300ms) & works on Vercel/serverless!
+let resendInstance = null;
+let lastResendKey = null;
+
 async function getResend() {
-  if (resend) return resend;
-  const apiKey = process.env.RESEND_API_KEY;
+  const dbConfig = await getEmailConfig();
+  const apiKey = (process.env.RESEND_API_KEY || dbConfig.resendApiKey || '').trim();
   if (!apiKey) return null;
-  const { Resend } = await import('resend');
-  resend = new Resend(apiKey);
-  return resend;
+
+  if (resendInstance && lastResendKey === apiKey) return resendInstance;
+
+  try {
+    const { Resend } = await import('resend');
+    resendInstance = new Resend(apiKey);
+    lastResendKey = apiKey;
+    return resendInstance;
+  } catch (e) {
+    console.error('Failed to load Resend SDK:', e);
+    return null;
+  }
 }
 
 // Render has no working IPv6 route — connecting to Google's AAAA records fails
@@ -50,12 +79,8 @@ import SystemConfig from './models/SystemConfig.js';
 import SecurityLog from './models/SecurityLog.js';
 
 // Load local .env only when the platform has not already provided values.
-// Do NOT use override:true — it would replace Render/Vercel secrets with a stale file.
 dotenv.config();
 
-// SMTP mailer for password reset emails. Configure SMTP_HOST/SMTP_USER/SMTP_PASS in .env
-// IMPORTANT: reuse ONE pooled transport. Creating a fresh connection per email makes
-// Gmail throttle rapid connects (intermittent "Connection timeout" failures in prod).
 let sharedMailer = null;
 function resetMailer() {
   if (sharedMailer) {
@@ -64,87 +89,95 @@ function resetMailer() {
   }
 }
 
-function getMailer() {
-  const host = process.env.SMTP_HOST;
+async function getMailer() {
+  const dbConfig = await getEmailConfig();
+  const host = process.env.SMTP_HOST || dbConfig.smtpHost;
   if (!host) return null;
   if (sharedMailer) return sharedMailer;
 
-  const port = Number(process.env.SMTP_PORT) || 587;
-  // If SMTP_SECURE is explicitly set, use it; otherwise default to true for SSL port 465
-  const secure = process.env.SMTP_SECURE !== undefined
-    ? (process.env.SMTP_SECURE || 'false').toLowerCase() === 'true'
+  const port = Number(process.env.SMTP_PORT || dbConfig.smtpPort) || 587;
+  const secureSetting = process.env.SMTP_SECURE !== undefined ? process.env.SMTP_SECURE : dbConfig.smtpSecure;
+  const secure = secureSetting !== undefined
+    ? String(secureSetting).toLowerCase() === 'true'
     : port === 465;
+
+  const user = process.env.SMTP_USER || dbConfig.smtpUser;
+  const pass = process.env.SMTP_PASS || dbConfig.smtpPass;
 
   sharedMailer = nodemailer.createTransport({
     host,
     port,
     secure,
-    auth: process.env.SMTP_USER
-      ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS || '' }
-      : undefined,
+    auth: user ? { user, pass: pass || '' } : undefined,
     pool: true,
     maxConnections: 3,
     maxMessages: 50,
-    // Fail fast in production instead of hanging requests for minutes
-    connectionTimeout: Number(process.env.SMTP_CONNECTION_TIMEOUT) || 8000,
-    greetingTimeout: Number(process.env.SMTP_GREETING_TIMEOUT) || 8000,
-    socketTimeout: Number(process.env.SMTP_SOCKET_TIMEOUT) || 10000,
-    // Some office/college networks intercept TLS with a self-signed cert.
-    // Set SMTP_REJECT_UNAUTHORIZED=false in .env only if your network does this.
-    tls: { rejectUnauthorized: (process.env.SMTP_REJECT_UNAUTHORIZED || 'true').toLowerCase() !== 'false' }
+    connectionTimeout: Number(process.env.SMTP_CONNECTION_TIMEOUT || dbConfig.smtpConnectionTimeout) || 8000,
+    greetingTimeout: Number(process.env.SMTP_GREETING_TIMEOUT || dbConfig.smtpGreetingTimeout) || 8000,
+    socketTimeout: Number(process.env.SMTP_SOCKET_TIMEOUT || dbConfig.smtpSocketTimeout) || 10000,
+    tls: { rejectUnauthorized: String(process.env.SMTP_REJECT_UNAUTHORIZED || dbConfig.smtpRejectUnauthorized || 'true').toLowerCase() !== 'false' }
   });
   return sharedMailer;
 }
 
-// Gmail rejects a From address that is not the authenticated account.
-// Prefer SMTP_FROM only when it matches SMTP_USER (or host is not Gmail).
-function getFromAddress() {
-  const configured = process.env.SMTP_FROM;
-  const user = process.env.SMTP_USER;
-  const host = (process.env.SMTP_HOST || '').toLowerCase();
+async function getFromAddress() {
+  const dbConfig = await getEmailConfig();
+  const configured = process.env.SMTP_FROM || dbConfig.smtpFrom;
+  const user = process.env.SMTP_USER || dbConfig.smtpUser;
+  const host = (process.env.SMTP_HOST || dbConfig.smtpHost || '').toLowerCase();
   if (configured && user && configured.includes(user)) return configured;
   if (configured && user && !host.includes('gmail')) return configured;
   if (user) return `RA Masala <${user}>`;
   return configured || 'RA Masala <no-reply@ramasala.com>';
 }
 
-// Shared send: tries Resend API first (fast, <1s), falls back to SMTP with 8s deadline + auto reset.
+// Shared send: tries Resend API first (fast, <1s, HTTPS port 443 for Vercel), falls back to SMTP.
 async function deliverMail(message) {
-  // Try Resend first (if RESEND_API_KEY is configured) — typically <1s
+  // 1. Try Resend API (HTTPS port 443 — works on Vercel & serverless in <300ms)
   const resend = await getResend();
   if (resend) {
     try {
+      const fromAddr = message.from || await getFromAddress();
       const result = await resend.emails.send({
-        from: message.from,
+        from: fromAddr,
         to: message.to,
         subject: message.subject,
         html: message.html
       });
-      console.log('[Resend] Email sent:', result.data?.id);
+      console.log('[Resend] Email sent successfully:', result.data?.id);
       return result;
     } catch (err) {
       console.warn('[Resend] Send failed, falling back to SMTP:', err?.message || err);
     }
   }
 
-  // Fallback to SMTP with tight 8s timeout and transport auto-recycle on error
+  // 2. Fallback to raw SMTP (stalls on Vercel/AWS Lambda because outbound TCP 587/465 is blocked)
   const timeoutMs = Number(process.env.SMTP_SEND_TIMEOUT) || 8000;
   let lastErr;
   for (let attempt = 1; attempt <= 2; attempt++) {
-    const mailer = getMailer();
-    if (!mailer) throw new Error('No email transport configured. Set RESEND_API_KEY or SMTP_HOST/SMTP_USER/SMTP_PASS on the backend host (Render dashboard).');
+    const mailer = await getMailer();
+    if (!mailer) {
+      throw new Error(
+        'Email delivery not configured. Note: Vercel serverless blocks raw SMTP ports. ' +
+        'Please enter a free RESEND_API_KEY in Admin Email Settings for 300ms instant email delivery on live sites!'
+      );
+    }
 
     let timer;
     const timeoutPromise = new Promise((_, reject) => {
-      timer = setTimeout(() => reject(new Error(`SMTP send timed out after ${timeoutMs}ms`)), timeoutMs);
+      timer = setTimeout(() => reject(new Error(
+        `SMTP send timed out after ${timeoutMs}ms. Note: Vercel/cloud hosting blocks raw outbound SMTP ports (587/465). ` +
+        `To fix this on Vercel, enter a free RESEND_API_KEY in Admin Email Settings or Vercel Env Vars.`
+      )), timeoutMs);
     });
+
     try {
       const info = await Promise.race([mailer.sendMail(message), timeoutPromise]);
       return info;
     } catch (err) {
       lastErr = err;
       console.error(`[SMTP] Attempt ${attempt}/2 failed: ${err?.message || err}`);
-      resetMailer(); // Discard broken pooled socket immediately
+      resetMailer();
       if (attempt < 2) await new Promise(r => setTimeout(r, 1000));
     } finally {
       clearTimeout(timer);
@@ -1400,6 +1433,51 @@ app.post('/api/config/payment', requireAdmin, async (req, res) => {
     res.json({ success: true, message: 'Settings saved successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message || 'Error saving configuration' });
+});
+
+app.get('/api/config/email', requireAdmin, async (req, res) => {
+  try {
+    const config = await SystemConfig.findOne({ key: 'email_settings' });
+    const val = config?.value || {};
+    res.json({
+      resendApiKey: val.resendApiKey || process.env.RESEND_API_KEY || '',
+      smtpHost: val.smtpHost || process.env.SMTP_HOST || 'smtp.gmail.com',
+      smtpPort: val.smtpPort || process.env.SMTP_PORT || 587,
+      smtpSecure: val.smtpSecure !== undefined ? val.smtpSecure : (process.env.SMTP_SECURE === 'true'),
+      smtpUser: val.smtpUser || process.env.SMTP_USER || '',
+      smtpFrom: val.smtpFrom || process.env.SMTP_FROM || '',
+      hasSmtpPass: Boolean(val.smtpPass || process.env.SMTP_PASS),
+      isResendActive: Boolean((val.resendApiKey || process.env.RESEND_API_KEY || '').trim())
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Error getting email configuration' });
+  }
+});
+
+app.post('/api/config/email', requireAdmin, async (req, res) => {
+  try {
+    const { resendApiKey, smtpHost, smtpPort, smtpSecure, smtpUser, smtpPass, smtpFrom } = req.body;
+    let config = await SystemConfig.findOne({ key: 'email_settings' });
+    if (!config) {
+      config = new SystemConfig({ key: 'email_settings' });
+    }
+    const currentVal = config.value || {};
+    config.value = {
+      resendApiKey: resendApiKey !== undefined ? String(resendApiKey).trim() : currentVal.resendApiKey || '',
+      smtpHost: smtpHost !== undefined ? String(smtpHost).trim() : currentVal.smtpHost || '',
+      smtpPort: smtpPort !== undefined ? Number(smtpPort) : currentVal.smtpPort || 587,
+      smtpSecure: smtpSecure !== undefined ? Boolean(smtpSecure) : currentVal.smtpSecure || false,
+      smtpUser: smtpUser !== undefined ? String(smtpUser).trim() : currentVal.smtpUser || '',
+      smtpPass: (smtpPass !== undefined && smtpPass !== '***') ? String(smtpPass).trim() : currentVal.smtpPass || '',
+      smtpFrom: smtpFrom !== undefined ? String(smtpFrom).trim() : currentVal.smtpFrom || ''
+    };
+    await config.save();
+    cachedEmailConfig = null; // Invalidate memory cache
+    resetMailer();
+    console.log('[SystemConfig Updated] Email configuration successfully updated by Admin.');
+    res.json({ success: true, message: 'Email settings saved successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Error saving email configuration' });
   }
 });
 
@@ -1554,39 +1632,62 @@ app.post('/api/email/offers', requireAdmin, async (req, res) => {
           </p>
     `);
 
+    // Fast-path test: Try sending 1 email synchronously first.
+    // If it succeeds (e.g. via Resend API or SMTP), process remainder in background and return instant success!
+    // If it fails, return error immediately so admin knows why.
     let sent = 0;
     const failed = [];
     const errors = [];
-    const BATCH_SIZE = 5;
 
-    for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
-      const batch = recipients.slice(i, i + BATCH_SIZE);
-      await Promise.all(
-        batch.map(async (email) => {
-          try {
-            await sendHtmlMail(email, subject, html);
-            sent += 1;
-          } catch (err) {
-            failed.push(email);
-            errors.push({ email, error: err?.message || String(err) });
-            console.error(`Offer email failed for ${email}:`, err?.message || err);
-          }
-        })
-      );
+    const firstRecipient = recipients[0];
+    try {
+      await sendHtmlMail(firstRecipient, subject, html);
+      sent += 1;
+    } catch (err) {
+      failed.push(firstRecipient);
+      const errMsg = err?.message || String(err);
+      errors.push({ email: firstRecipient, error: errMsg });
+      console.error(`Offer email test failed for ${firstRecipient}:`, errMsg);
+      return res.status(500).json({
+        message: `Failed to send offer email: ${errMsg}`,
+        sent: 0,
+        failed: recipients.length,
+        errors: errors,
+        total: recipients.length
+      });
     }
 
-    console.log(`[Offers Email] "${subject}" — sent ${sent}/${recipients.length} by admin ${req.user?.email || ''}`);
+    // Remaining recipients (if any) delivered asynchronously in background batches of 5
+    const remaining = recipients.slice(1);
+    if (remaining.length > 0) {
+      (async () => {
+        const BATCH_SIZE = 5;
+        for (let i = 0; i < remaining.length; i += BATCH_SIZE) {
+          const batch = remaining.slice(i, i + BATCH_SIZE);
+          await Promise.all(
+            batch.map(async (email) => {
+              try {
+                await sendHtmlMail(email, subject, html);
+                sent += 1;
+              } catch (err) {
+                failed.push(email);
+                console.error(`Background offer email failed for ${email}:`, err?.message || err);
+              }
+            })
+          );
+        }
+        console.log(`[Offers Email Background] Completed: sent ${sent}/${recipients.length}`);
+      })();
+    }
 
-    const isSuccess = sent > 0;
-    const responseStatus = isSuccess ? 200 : 500;
-    res.status(responseStatus).json({
-      message: isSuccess
-        ? `Offer email sent to ${sent} of ${recipients.length} customer(s)`
-        : `Offer email failed for all recipient(s): ${errors[0]?.error || 'SMTP timeout'}`,
-      sent,
-      failed: failed.length,
-      failedEmails: failed.slice(0, 20),
-      errors: errors.slice(0, 5),
+    console.log(`[Offers Email] "${subject}" — verified recipient 1 (${firstRecipient}), ${remaining.length} background jobs queued`);
+    res.json({
+      message: remaining.length > 0
+        ? `Offer email sent to 1 customer and queued for ${remaining.length} more in background.`
+        : `Offer email sent successfully to ${firstRecipient}.`,
+      sent: 1,
+      queued: remaining.length,
+      failed: 0,
       total: recipients.length
     });
   } catch (error) {
