@@ -802,6 +802,99 @@ app.put('/api/users/:id/status', requireAdmin, async (req, res) => {
   }
 });
 
+// Admin: Create New Customer / User
+app.post('/api/users', requireAdmin, async (req, res) => {
+  try {
+    const { name, email, password, phone, address, city, zip, isActive, role } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(400).json({ message: 'Customer name is required' });
+    }
+    if (!email || !email.trim()) {
+      return res.status(400).json({ message: 'Customer email is required' });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const existing = await User.findOne({ email: normalizedEmail });
+    if (existing) {
+      return res.status(400).json({ message: 'A customer or account with this email address already exists' });
+    }
+
+    const newUser = new User({
+      name: name.trim(),
+      email: normalizedEmail,
+      password: password && password.trim() ? password.trim() : 'user123',
+      role: role || 'customer',
+      phone: phone ? phone.trim() : '',
+      address: address ? address.trim() : '',
+      city: city ? city.trim() : '',
+      zip: zip ? zip.trim() : '',
+      isActive: isActive !== false
+    });
+
+    await newUser.save();
+    res.status(201).json(toSafeUser(newUser));
+  } catch (error) {
+    console.error('Error creating customer:', error);
+    res.status(500).json({ message: error.message || 'Error creating customer account' });
+  }
+});
+
+// Admin: Update Customer / User Details
+app.put('/api/users/:id', requireAdmin, async (req, res) => {
+  try {
+    const { name, email, password, phone, address, city, zip, isActive } = req.body;
+    const targetUser = await User.findById(req.params.id);
+    if (!targetUser) {
+      return res.status(404).json({ message: 'Customer account not found' });
+    }
+
+    if (email && email.trim().toLowerCase() !== targetUser.email) {
+      const emailTaken = await User.findOne({ email: email.trim().toLowerCase(), _id: { $ne: targetUser._id } });
+      if (emailTaken) {
+        return res.status(400).json({ message: 'Another account already uses this email address' });
+      }
+      targetUser.email = email.trim().toLowerCase();
+    }
+
+    if (name) targetUser.name = name.trim();
+    if (phone !== undefined) targetUser.phone = phone.trim();
+    if (address !== undefined) targetUser.address = address.trim();
+    if (city !== undefined) targetUser.city = city.trim();
+    if (zip !== undefined) targetUser.zip = zip.trim();
+    if (isActive !== undefined) targetUser.isActive = Boolean(isActive);
+
+    if (password && password.trim().length >= 6) {
+      targetUser.password = password.trim(); // Hashes automatically in pre-save hook
+    }
+
+    await targetUser.save();
+    res.json(toSafeUser(targetUser));
+  } catch (error) {
+    console.error('Error updating customer:', error);
+    res.status(500).json({ message: error.message || 'Error updating customer account' });
+  }
+});
+
+// Admin: Delete Customer / User
+app.delete('/api/users/:id', requireAdmin, async (req, res) => {
+  try {
+    const targetUser = await User.findById(req.params.id);
+    if (!targetUser) {
+      return res.status(404).json({ message: 'Customer account not found' });
+    }
+
+    if (targetUser.role === 'admin' || targetUser.email === DEFAULT_ADMIN_EMAIL) {
+      return res.status(403).json({ message: 'Cannot delete an administrator account' });
+    }
+
+    await User.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: 'Customer account deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting customer:', error);
+    res.status(500).json({ message: error.message || 'Error deleting customer account' });
+  }
+});
+
 // Security Logs API
 app.get('/api/security-logs', requireAdmin, async (req, res) => {
   try {

@@ -156,6 +156,9 @@ interface AuthContextType {
   addReview: (review: Omit<Review, '_id'>) => Promise<void>;
   deleteReview: (id: string) => Promise<void>;
   toggleUserStatus: (userId: string, isActive: boolean) => Promise<void>;
+  addCustomer: (data: { name: string; email: string; phone?: string; address?: string; city?: string; zip?: string; password?: string; isActive?: boolean }) => Promise<User>;
+  updateCustomer: (data: { id: string; name?: string; email?: string; phone?: string; address?: string; city?: string; zip?: string; password?: string; isActive?: boolean }) => Promise<User>;
+  deleteCustomer: (id: string) => Promise<void>;
   securityLogs: SecurityLog[];
   loadData: () => Promise<void>;
 }
@@ -633,6 +636,49 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const addCustomer = async (customerData: { name: string; email: string; phone?: string; address?: string; city?: string; zip?: string; password?: string; isActive?: boolean }): Promise<User> => {
+    try {
+      const res = await axios.post('/api/users', customerData);
+      const createdUser: User = {
+        ...res.data,
+        id: res.data._id || res.data.id
+      };
+      setUsers(prev => [createdUser, ...prev]);
+      loadData();
+      return createdUser;
+    } catch (error) {
+      console.error('Error adding customer:', error);
+      throw error;
+    }
+  };
+
+  const updateCustomer = async (customerData: { id: string; name?: string; email?: string; phone?: string; address?: string; city?: string; zip?: string; password?: string; isActive?: boolean }): Promise<User> => {
+    try {
+      const res = await axios.put(`/api/users/${customerData.id}`, customerData);
+      const updatedUser: User = {
+        ...res.data,
+        id: res.data._id || res.data.id
+      };
+      setUsers(prev => prev.map(u => (u.id === customerData.id || u._id === customerData.id ? updatedUser : u)));
+      loadData();
+      return updatedUser;
+    } catch (error) {
+      console.error('Error updating customer:', error);
+      throw error;
+    }
+  };
+
+  const deleteCustomer = async (id: string): Promise<void> => {
+    try {
+      await axios.delete(`/api/users/${id}`);
+      setUsers(prev => prev.filter(u => u.id !== id && u._id !== id));
+      loadData();
+    } catch (error) {
+      console.error('Error deleting customer:', error);
+      throw error;
+    }
+  };
+
   return (
     <AuthContext.Provider value={{
       user, users, orders, products, tickets,
@@ -641,7 +687,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       addProduct, updateProduct, deleteProduct,
       updateOrderStatus, addTicket, resolveTicket, placeOrder,
       updatePaymentStatus, updateShipping, addDiscount, updateDiscount, deleteDiscount,
-      addReview, deleteReview, toggleUserStatus, securityLogs, loadData
+      addReview, deleteReview, toggleUserStatus, addCustomer, updateCustomer, deleteCustomer,
+      securityLogs, loadData
     }}>
       {children}
     </AuthContext.Provider>
