@@ -41,6 +41,91 @@ const MyAccount = () => {
   const [zip, setZip] = useState(user?.zip || '');
   const [activeTab, setActiveTab] = useState<'profile' | 'orders' | 'tickets' | 'reviews' | 'settings'>('profile');
 
+  // Address Form Validation States
+  const [profileErrors, setProfileErrors] = useState<{
+    name?: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+    zip?: string;
+  }>({});
+  const [profileTouched, setProfileTouched] = useState<{
+    name?: boolean;
+    phone?: boolean;
+    address?: boolean;
+    city?: boolean;
+    zip?: boolean;
+  }>({});
+
+  // Sync state when user profile is updated or loaded
+  useEffect(() => {
+    if (user) {
+      setName(user.name || '');
+      setPhone(user.phone || '');
+      setAddress(user.address || '');
+      setCity(user.city || '');
+      setZip(user.zip || '');
+    }
+  }, [user]);
+
+  const validateProfileField = (field: 'name' | 'phone' | 'address' | 'city' | 'zip', val: string): string => {
+    switch (field) {
+      case 'name':
+        if (!val.trim()) return 'Full Name is required.';
+        if (val.trim().length < 2) return 'Full Name must be at least 2 characters.';
+        return '';
+      case 'phone':
+        if (!val.trim()) return 'Phone Number is required.';
+        const cleanPhone = val.replace(/[\s-]/g, '');
+        if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+          return 'Enter a valid 10-digit Indian mobile number (e.g. 9822012345).';
+        }
+        return '';
+      case 'address':
+        if (!val.trim()) return 'Delivery street address is required.';
+        if (val.trim().length < 5) return 'Address must be at least 5 characters.';
+        return '';
+      case 'city':
+        if (!val.trim()) return 'City / Region is required.';
+        if (val.trim().length < 2) return 'City must be at least 2 characters.';
+        return '';
+      case 'zip':
+        if (!val.trim()) return 'Postal / PIN code is required.';
+        if (!/^\d{6}$/.test(val.trim())) return 'Enter a valid 6-digit postal PIN code (e.g. 411001).';
+        return '';
+      default:
+        return '';
+    }
+  };
+
+  const handleProfileFieldChange = (field: 'name' | 'phone' | 'address' | 'city' | 'zip', val: string) => {
+    let cleanVal = val;
+    if (field === 'phone') {
+      cleanVal = val.replace(/\D/g, '').slice(0, 10);
+      setPhone(cleanVal);
+    } else if (field === 'zip') {
+      cleanVal = val.replace(/\D/g, '').slice(0, 6);
+      setZip(cleanVal);
+    } else if (field === 'name') {
+      setName(val);
+    } else if (field === 'address') {
+      setAddress(val);
+    } else if (field === 'city') {
+      setCity(val);
+    }
+
+    if (profileTouched[field]) {
+      const err = validateProfileField(field, cleanVal);
+      setProfileErrors(prev => ({ ...prev, [field]: err || undefined }));
+    }
+  };
+
+  const handleProfileFieldBlur = (field: 'name' | 'phone' | 'address' | 'city' | 'zip', val: string) => {
+    setProfileTouched(prev => ({ ...prev, [field]: true }));
+    const err = validateProfileField(field, val);
+    setProfileErrors(prev => ({ ...prev, [field]: err || undefined }));
+  };
+
   // Change Password State
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -64,16 +149,51 @@ const MyAccount = () => {
   const userTickets = tickets.filter(t => t.customerEmail?.toLowerCase() === user?.email?.toLowerCase());
   const userReviews = reviews.filter(r => r.customerEmail?.toLowerCase() === user?.email?.toLowerCase());
 
-  const handleUpdate = (e: React.FormEvent) => {
+  const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateProfile(name, phone, address, city, zip);
-    Swal.fire({
-      icon: 'success',
-      title: t('my_swal_profile_updated_title'),
-      text: t('my_swal_profile_updated_text'),
-      timer: 1500,
-      showConfirmButton: false
-    });
+    const eName = validateProfileField('name', name);
+    const ePhone = validateProfileField('phone', phone);
+    const eAddress = validateProfileField('address', address);
+    const eCity = validateProfileField('city', city);
+    const eZip = validateProfileField('zip', zip);
+
+    const newErrors: Record<string, string> = {};
+    if (eName) newErrors.name = eName;
+    if (ePhone) newErrors.phone = ePhone;
+    if (eAddress) newErrors.address = eAddress;
+    if (eCity) newErrors.city = eCity;
+    if (eZip) newErrors.zip = eZip;
+
+    setProfileErrors(newErrors);
+    setProfileTouched({ name: true, phone: true, address: true, city: true, zip: true });
+
+    if (Object.keys(newErrors).length > 0) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Validation Required',
+        text: 'Please fill in all required shipping address fields with valid details.',
+        confirmButtonColor: '#aa1a31'
+      });
+      return;
+    }
+
+    try {
+      await updateProfile(name.trim(), phone.trim(), address.trim(), city.trim(), zip.trim());
+      Swal.fire({
+        icon: 'success',
+        title: t('my_swal_profile_updated_title'),
+        text: t('my_swal_profile_updated_text'),
+        timer: 1500,
+        showConfirmButton: false
+      });
+    } catch (err: any) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Update Failed',
+        text: err?.response?.data?.message || err?.message || 'Could not update profile',
+        confirmButtonColor: '#aa1a31'
+      });
+    }
   };
 
   const handleChangePassword = async (e: React.FormEvent) => {
@@ -282,55 +402,113 @@ const MyAccount = () => {
             {activeTab === 'profile' && (
               <div className="card border-0 shadow-sm rounded-4 p-4 bg-white">
                 <h4 className="mb-4" style={{ fontFamily: 'serif', color: '#4A1525', fontWeight: 'bold' }}>{t('my_profile_heading')}</h4>
-                <form onSubmit={handleUpdate}>
+                <form onSubmit={handleUpdate} noValidate>
                   <div className="row g-3">
+                    {/* Full Name */}
                     <div className="col-md-6">
-                      <label className="form-label text-muted fw-semibold">{t('my_full_name_label')}</label>
+                      <label className="form-label text-muted fw-semibold">
+                        {t('my_full_name_label')} <span className="text-danger">*</span>
+                      </label>
                       <input 
                         type="text" 
-                        className="form-control" 
+                        className={`form-control ${profileTouched.name ? (profileErrors.name ? 'is-invalid border-danger' : 'is-valid border-success') : ''}`} 
                         required 
                         value={name} 
-                        onChange={(e) => setName(e.target.value)} 
+                        onChange={(e) => handleProfileFieldChange('name', e.target.value)} 
+                        onBlur={(e) => handleProfileFieldBlur('name', e.target.value)}
+                        placeholder="Enter your full name"
                       />
+                      {profileTouched.name && profileErrors.name && (
+                        <div className="text-danger small mt-1 animate__animated animate__fadeIn">
+                          <i className="bi bi-exclamation-circle-fill me-1"></i>{profileErrors.name}
+                        </div>
+                      )}
                     </div>
+
+                    {/* Phone Number */}
                     <div className="col-md-6">
-                      <label className="form-label text-muted fw-semibold">{t('my_phone_label')}</label>
+                      <label className="form-label text-muted fw-semibold">
+                        {t('my_phone_label')} <span className="text-danger">*</span>
+                      </label>
                       <input 
-                        type="text" 
-                        className="form-control" 
-                        placeholder={t('my_phone_placeholder')} 
+                        type="tel" 
+                        maxLength={10}
+                        className={`form-control ${profileTouched.phone ? (profileErrors.phone ? 'is-invalid border-danger' : 'is-valid border-success') : ''}`} 
+                        placeholder="10-digit mobile number" 
                         value={phone} 
-                        onChange={(e) => setPhone(e.target.value)} 
+                        onChange={(e) => handleProfileFieldChange('phone', e.target.value)} 
+                        onBlur={(e) => handleProfileFieldBlur('phone', e.target.value)}
+                        required 
                       />
+                      {profileTouched.phone && profileErrors.phone && (
+                        <div className="text-danger small mt-1 animate__animated animate__fadeIn">
+                          <i className="bi bi-exclamation-circle-fill me-1"></i>{profileErrors.phone}
+                        </div>
+                      )}
                     </div>
+
+                    {/* Delivery Address */}
                     <div className="col-12">
-                      <label className="form-label text-muted fw-semibold">{t('my_address_label')}</label>
+                      <label className="form-label text-muted fw-semibold">
+                        {t('my_address_label')} <span className="text-danger">*</span>
+                      </label>
                       <textarea 
-                        className="form-control" 
+                        className={`form-control ${profileTouched.address ? (profileErrors.address ? 'is-invalid border-danger' : 'is-valid border-success') : ''}`} 
                         rows={3} 
                         placeholder={t('my_address_placeholder')} 
                         value={address} 
-                        onChange={(e) => setAddress(e.target.value)} 
+                        onChange={(e) => handleProfileFieldChange('address', e.target.value)} 
+                        onBlur={(e) => handleProfileFieldBlur('address', e.target.value)}
+                        required 
                       />
+                      {profileTouched.address && profileErrors.address && (
+                        <div className="text-danger small mt-1 animate__animated animate__fadeIn">
+                          <i className="bi bi-exclamation-circle-fill me-1"></i>{profileErrors.address}
+                        </div>
+                      )}
                     </div>
+
+                    {/* City */}
                     <div className="col-md-6">
-                      <label className="form-label text-muted fw-semibold">{t('my_city_label')}</label>
+                      <label className="form-label text-muted fw-semibold">
+                        {t('my_city_label')} <span className="text-danger">*</span>
+                      </label>
                       <input 
                         type="text" 
-                        className="form-control" 
+                        className={`form-control ${profileTouched.city ? (profileErrors.city ? 'is-invalid border-danger' : 'is-valid border-success') : ''}`} 
                         value={city} 
-                        onChange={(e) => setCity(e.target.value)} 
+                        onChange={(e) => handleProfileFieldChange('city', e.target.value)} 
+                        onBlur={(e) => handleProfileFieldBlur('city', e.target.value)}
+                        placeholder="Enter City / Town"
+                        required 
                       />
+                      {profileTouched.city && profileErrors.city && (
+                        <div className="text-danger small mt-1 animate__animated animate__fadeIn">
+                          <i className="bi bi-exclamation-circle-fill me-1"></i>{profileErrors.city}
+                        </div>
+                      )}
                     </div>
+
+                    {/* ZIP / Pincode */}
                     <div className="col-md-6">
-                      <label className="form-label text-muted fw-semibold">{t('my_zip_label')}</label>
+                      <label className="form-label text-muted fw-semibold">
+                        {t('my_zip_label')} <span className="text-danger">*</span>
+                      </label>
                       <input 
                         type="text" 
-                        className="form-control" 
+                        maxLength={6}
+                        className={`form-control ${profileTouched.zip ? (profileErrors.zip ? 'is-invalid border-danger' : 'is-valid border-success') : ''}`} 
                         value={zip} 
-                        onChange={(e) => setZip(e.target.value)} 
+                        onChange={(e) => handleProfileFieldChange('zip', e.target.value)} 
+                        onBlur={(e) => handleProfileFieldBlur('zip', e.target.value)}
+                        placeholder="6-digit PIN code"
+                        required 
                       />
+                      {profileTouched.zip && profileErrors.zip && (
+                        <div className="text-danger small mt-1 animate__animated animate__fadeIn">
+                          <i className="bi bi-exclamation-circle-fill me-1"></i>{profileErrors.zip}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <button 

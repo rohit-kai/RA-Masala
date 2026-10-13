@@ -30,6 +30,82 @@ const Checkout = () => {
   const [zip, setZip] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('COD');
 
+  // Shipping Form Validation States
+  const [shippingErrors, setShippingErrors] = useState<{
+    name?: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+    zip?: string;
+  }>({});
+  const [shippingTouched, setShippingTouched] = useState<{
+    name?: boolean;
+    phone?: boolean;
+    address?: boolean;
+    city?: boolean;
+    zip?: boolean;
+  }>({});
+
+  const validateShippingField = (field: 'name' | 'phone' | 'address' | 'city' | 'zip', val: string): string => {
+    switch (field) {
+      case 'name':
+        if (!val.trim()) return 'Recipient full name is required.';
+        if (val.trim().length < 2) return 'Full name must be at least 2 characters.';
+        return '';
+      case 'phone':
+        if (!val.trim()) return 'Mobile number is required.';
+        const cleanPhone = val.replace(/[\s-]/g, '');
+        if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+          return 'Enter a valid 10-digit Indian mobile number (e.g. 9822012345).';
+        }
+        return '';
+      case 'address':
+        if (!val.trim()) return 'Complete delivery address is required.';
+        if (val.trim().length < 5) return 'Address must be at least 5 characters.';
+        return '';
+      case 'city':
+        if (!val.trim()) return 'City / Region is required.';
+        if (val.trim().length < 2) return 'City must be at least 2 characters.';
+        return '';
+      case 'zip':
+        if (!val.trim()) return 'Postal / PIN code is required.';
+        if (!/^\d{6}$/.test(val.trim())) {
+          return 'Enter a valid 6-digit PIN code (e.g. 411001).';
+        }
+        return '';
+      default:
+        return '';
+    }
+  };
+
+  const handleShippingChange = (field: 'name' | 'phone' | 'address' | 'city' | 'zip', val: string) => {
+    let cleanVal = val;
+    if (field === 'phone') {
+      cleanVal = val.replace(/\D/g, '').slice(0, 10);
+      setPhone(cleanVal);
+    } else if (field === 'zip') {
+      cleanVal = val.replace(/\D/g, '').slice(0, 6);
+      setZip(cleanVal);
+    } else if (field === 'name') {
+      setName(val);
+    } else if (field === 'address') {
+      setAddress(val);
+    } else if (field === 'city') {
+      setCity(val);
+    }
+
+    if (shippingTouched[field]) {
+      const err = validateShippingField(field, cleanVal);
+      setShippingErrors(prev => ({ ...prev, [field]: err || undefined }));
+    }
+  };
+
+  const handleShippingBlur = (field: 'name' | 'phone' | 'address' | 'city' | 'zip', val: string) => {
+    setShippingTouched(prev => ({ ...prev, [field]: true }));
+    const err = validateShippingField(field, val);
+    setShippingErrors(prev => ({ ...prev, [field]: err || undefined }));
+  };
+
   // Live shipping calculation based on payment method + order value
   const orderValue = Math.max(0, cartTotal - discount);
   const tax = typeof stateTax === 'number' ? stateTax : orderValue * 0.05;
@@ -231,11 +307,27 @@ const Checkout = () => {
     e.preventDefault();
     if (placingOrder) return;
 
-    if (!name || !phone || !address || !city || !zip) {
+    const eName = validateShippingField('name', name);
+    const ePhone = validateShippingField('phone', phone);
+    const eAddress = validateShippingField('address', address);
+    const eCity = validateShippingField('city', city);
+    const eZip = validateShippingField('zip', zip);
+
+    const newErrors: Record<string, string> = {};
+    if (eName) newErrors.name = eName;
+    if (ePhone) newErrors.phone = ePhone;
+    if (eAddress) newErrors.address = eAddress;
+    if (eCity) newErrors.city = eCity;
+    if (eZip) newErrors.zip = eZip;
+
+    setShippingErrors(newErrors);
+    setShippingTouched({ name: true, phone: true, address: true, city: true, zip: true });
+
+    if (Object.keys(newErrors).length > 0) {
       Swal.fire({
         icon: 'error',
-        title: t('chk_missing_details_title'),
-        text: t('chk_missing_details_text'),
+        title: 'Validation Required',
+        text: 'Please provide valid shipping and contact details before proceeding.',
         confirmButtonColor: '#aa1a31'
       });
       return;
@@ -339,56 +431,98 @@ const Checkout = () => {
 
                 <div className="row g-3">
                   <div className="col-md-6">
-                    <label className="form-label text-muted fw-semibold">{t('chk_contact_name_label')}</label>
+                    <label className="form-label text-muted fw-semibold">
+                      {t('chk_contact_name_label')} <span className="text-danger">*</span>
+                    </label>
                     <input 
                       type="text" 
-                      className="form-control" 
+                      className={`form-control ${shippingTouched.name ? (shippingErrors.name ? 'is-invalid border-danger' : 'is-valid border-success') : ''}`} 
                       required 
                       value={name} 
-                      onChange={(e) => setName(e.target.value)} 
+                      onChange={(e) => handleShippingChange('name', e.target.value)} 
+                      onBlur={(e) => handleShippingBlur('name', e.target.value)}
                     />
+                    {shippingTouched.name && shippingErrors.name && (
+                      <div className="text-danger small mt-1 animate__animated animate__fadeIn">
+                        <i className="bi bi-exclamation-circle-fill me-1"></i>{shippingErrors.name}
+                      </div>
+                    )}
                   </div>
                   <div className="col-md-6">
-                    <label className="form-label text-muted fw-semibold">{t('chk_phone_label')}</label>
+                    <label className="form-label text-muted fw-semibold">
+                      {t('chk_phone_label')} <span className="text-danger">*</span>
+                    </label>
                     <input 
-                      type="text" 
-                      className="form-control" 
+                      type="tel" 
+                      maxLength={10}
+                      className={`form-control ${shippingTouched.phone ? (shippingErrors.phone ? 'is-invalid border-danger' : 'is-valid border-success') : ''}`} 
                       placeholder={t('chk_phone_placeholder')} 
                       required 
                       value={phone} 
-                      onChange={(e) => setPhone(e.target.value)} 
+                      onChange={(e) => handleShippingChange('phone', e.target.value)} 
+                      onBlur={(e) => handleShippingBlur('phone', e.target.value)}
                     />
+                    {shippingTouched.phone && shippingErrors.phone && (
+                      <div className="text-danger small mt-1 animate__animated animate__fadeIn">
+                        <i className="bi bi-exclamation-circle-fill me-1"></i>{shippingErrors.phone}
+                      </div>
+                    )}
                   </div>
                   <div className="col-12">
-                    <label className="form-label text-muted fw-semibold">{t('chk_address_line_label')}</label>
+                    <label className="form-label text-muted fw-semibold">
+                      {t('chk_address_line_label')} <span className="text-danger">*</span>
+                    </label>
                     <input 
                       type="text" 
-                      className="form-control" 
+                      className={`form-control ${shippingTouched.address ? (shippingErrors.address ? 'is-invalid border-danger' : 'is-valid border-success') : ''}`} 
                       placeholder={t('chk_address_placeholder')} 
                       required 
                       value={address} 
-                      onChange={(e) => setAddress(e.target.value)} 
+                      onChange={(e) => handleShippingChange('address', e.target.value)} 
+                      onBlur={(e) => handleShippingBlur('address', e.target.value)}
                     />
+                    {shippingTouched.address && shippingErrors.address && (
+                      <div className="text-danger small mt-1 animate__animated animate__fadeIn">
+                        <i className="bi bi-exclamation-circle-fill me-1"></i>{shippingErrors.address}
+                      </div>
+                    )}
                   </div>
                   <div className="col-md-6">
-                    <label className="form-label text-muted fw-semibold">{t('chk_city_label')}</label>
+                    <label className="form-label text-muted fw-semibold">
+                      {t('chk_city_label')} <span className="text-danger">*</span>
+                    </label>
                     <input 
                       type="text" 
-                      className="form-control" 
+                      className={`form-control ${shippingTouched.city ? (shippingErrors.city ? 'is-invalid border-danger' : 'is-valid border-success') : ''}`} 
                       required 
                       value={city} 
-                      onChange={(e) => setCity(e.target.value)} 
+                      onChange={(e) => handleShippingChange('city', e.target.value)} 
+                      onBlur={(e) => handleShippingBlur('city', e.target.value)}
                     />
+                    {shippingTouched.city && shippingErrors.city && (
+                      <div className="text-danger small mt-1 animate__animated animate__fadeIn">
+                        <i className="bi bi-exclamation-circle-fill me-1"></i>{shippingErrors.city}
+                      </div>
+                    )}
                   </div>
                   <div className="col-md-6">
-                    <label className="form-label text-muted fw-semibold">{t('chk_zip_label')}</label>
+                    <label className="form-label text-muted fw-semibold">
+                      {t('chk_zip_label')} <span className="text-danger">*</span>
+                    </label>
                     <input 
                       type="text" 
-                      className="form-control" 
+                      maxLength={6}
+                      className={`form-control ${shippingTouched.zip ? (shippingErrors.zip ? 'is-invalid border-danger' : 'is-valid border-success') : ''}`} 
                       required 
                       value={zip} 
-                      onChange={(e) => setZip(e.target.value)} 
+                      onChange={(e) => handleShippingChange('zip', e.target.value)} 
+                      onBlur={(e) => handleShippingBlur('zip', e.target.value)}
                     />
+                    {shippingTouched.zip && shippingErrors.zip && (
+                      <div className="text-danger small mt-1 animate__animated animate__fadeIn">
+                        <i className="bi bi-exclamation-circle-fill me-1"></i>{shippingErrors.zip}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

@@ -10,24 +10,65 @@ import { useLanguage } from '../../context/LanguageContext';
 const Signup = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
+  const [city, setCity] = useState('');
+  const [zip, setZip] = useState('');
   const [password, setPassword] = useState('');
   const { signup } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
 
+  const validatePhone = (phone: string) => {
+    const phoneRegex = /^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{4,6}$/;
+    return phoneRegex.test(phone);
+  };
+
+  const validateZip = (zip: string) => {
+    return /^[0-9]{5,6}$/.test(zip);
+  };
+
+  const validateEmail = (email: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
+  const validatePassword = (password: string) => {
+    return password.length >= 6;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !email || !password) {
-      Swal.fire({
-        icon: 'error',
-        title: t('sgn_swal_error_title'),
-        text: t('sgn_swal_fill_fields'),
-        confirmButtonColor: '#aa1a31'
-      });
+    
+    if (!name.trim()) {
+      Swal.fire({ icon: 'error', title: t('sgn_swal_error_title'), text: t('sgn_name_required'), confirmButtonColor: '#aa1a31' });
+      return;
+    }
+    if (!email.trim() || !validateEmail(email)) {
+      Swal.fire({ icon: 'error', title: t('sgn_swal_error_title'), text: t('sgn_email_invalid'), confirmButtonColor: '#aa1a31' });
+      return;
+    }
+    if (phone && !validatePhone(phone)) {
+      Swal.fire({ icon: 'error', title: t('sgn_swal_error_title'), text: t('sgn_phone_invalid'), confirmButtonColor: '#aa1a31' });
+      return;
+    }
+    if (!address.trim()) {
+      Swal.fire({ icon: 'error', title: t('sgn_swal_error_title'), text: t('sgn_address_required'), confirmButtonColor: '#aa1a31' });
+      return;
+    }
+    if (!city.trim()) {
+      Swal.fire({ icon: 'error', title: t('sgn_swal_error_title'), text: t('sgn_city_required'), confirmButtonColor: '#aa1a31' });
+      return;
+    }
+    if (!zip.trim() || !validateZip(zip)) {
+      Swal.fire({ icon: 'error', title: t('sgn_swal_error_title'), text: t('sgn_zip_invalid'), confirmButtonColor: '#aa1a31' });
+      return;
+    }
+    if (!password || !validatePassword(password)) {
+      Swal.fire({ icon: 'error', title: t('sgn_swal_error_title'), text: t('sgn_password_min'), confirmButtonColor: '#aa1a31' });
       return;
     }
 
-    const res = await signup(name, email, password);
+    const res = await signup(name, email, password, phone, address, city, zip);
     if (res.success) {
       Swal.fire({
         icon: 'success',
@@ -68,6 +109,7 @@ const Signup = () => {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   style={{ borderColor: '#EAEAEA' }}
+                  required
                 />
               </div>
               <div className="mb-3">
@@ -79,6 +121,55 @@ const Signup = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   style={{ borderColor: '#EAEAEA' }}
+                  required
+                />
+              </div>
+              <div className="mb-3">
+                <label className="form-label text-secondary fw-semibold">{t('chk_phone_label')}</label>
+                <input 
+                  type="tel" 
+                  className="form-control border-2 rounded-3" 
+                  placeholder={t('chk_phone_placeholder')} 
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  style={{ borderColor: '#EAEAEA' }}
+                  required
+                />
+              </div>
+              <div className="mb-3">
+                <label className="form-label text-secondary fw-semibold">{t('chk_address_line_label')}</label>
+                <input 
+                  type="text" 
+                  className="form-control border-2 rounded-3" 
+                  placeholder={t('chk_address_placeholder')} 
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  style={{ borderColor: '#EAEAEA' }}
+                  required
+                />
+              </div>
+              <div className="mb-3">
+                <label className="form-label text-secondary fw-semibold">{t('chk_city_label')}</label>
+                <input 
+                  type="text" 
+                  className="form-control border-2 rounded-3" 
+                  placeholder={t('sgn_city_placeholder')} 
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  style={{ borderColor: '#EAEAEA' }}
+                  required
+                />
+              </div>
+              <div className="mb-4">
+                <label className="form-label text-secondary fw-semibold">{t('chk_zip_label')}</label>
+                <input 
+                  type="text" 
+                  className="form-control border-2 rounded-3" 
+                  placeholder={t('sgn_zip_placeholder')} 
+                  value={zip}
+                  onChange={(e) => setZip(e.target.value)}
+                  style={{ borderColor: '#EAEAEA' }}
+                  required
                 />
               </div>
               <div className="mb-4">
@@ -90,6 +181,7 @@ const Signup = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   style={{ borderColor: '#EAEAEA' }}
+                  required
                 />
               </div>
               <button 

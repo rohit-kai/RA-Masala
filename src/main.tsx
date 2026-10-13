@@ -17,14 +17,29 @@ import axios from 'axios';
 // When unset, requests go to the same origin (dev server proxy / relative path).
 axios.defaults.baseURL = import.meta.env.VITE_API_URL || '';
 
-// Attach the session token to every API request.
+// Attach the session token and user email to every API request.
 axios.interceptors.request.use((config) => {
   try {
     const raw = localStorage.getItem('ra_current_user');
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed && parsed.token) {
-        config.headers.Authorization = `Bearer ${parsed.token}`;
+      if (parsed) {
+        if (parsed.email) {
+          if (config.headers && typeof (config.headers as any).set === 'function') {
+            (config.headers as any).set('X-User-Email', parsed.email);
+          } else {
+            config.headers = config.headers || {};
+            config.headers['X-User-Email'] = parsed.email;
+          }
+        }
+        if (parsed.token) {
+          if (config.headers && typeof (config.headers as any).set === 'function') {
+            (config.headers as any).set('Authorization', `Bearer ${parsed.token}`);
+          } else {
+            config.headers = config.headers || {};
+            config.headers['Authorization'] = `Bearer ${parsed.token}`;
+          }
+        }
       }
     }
   } catch (e) {
@@ -32,6 +47,27 @@ axios.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// Auto-capture refreshed tokens from response headers
+axios.interceptors.response.use(
+  (response) => {
+    const refreshedToken = response.headers && (response.headers['x-refreshed-token'] || response.headers['X-Refreshed-Token']);
+    if (refreshedToken) {
+      try {
+        const raw = localStorage.getItem('ra_current_user');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && !parsed.token) {
+            parsed.token = refreshedToken;
+            localStorage.setItem('ra_current_user', JSON.stringify(parsed));
+          }
+        }
+      } catch (e) {}
+    }
+    return response;
+  },
+  (error) => Promise.reject(error)
+);
 
 // Register the base-aware service worker for offline support.
 if ('serviceWorker' in navigator) {
