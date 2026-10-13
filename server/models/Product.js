@@ -12,4 +12,7 @@ const ProductSchema = new mongoose.Schema({
   subCategory: { type: String, default: '' }
 }, { timestamps: true });
 
+// GET /api/products sorts by newest first on every request
+ProductSchema.index({ createdAt: -1 });
+
 export default mongoose.model('Product', ProductSchema);

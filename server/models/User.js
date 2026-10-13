@@ -17,6 +17,11 @@ const UserSchema = new mongoose.Schema({
   resetTokenExpires: { type: Date, default: null }
 }, { timestamps: true });
 
+// Fast session lookups (requireAuth/requireAdmin query by token on every request)
+UserSchema.index({ token: 1 });
+// Fast password-reset lookup
+UserSchema.index({ resetToken: 1 });
+
 // Hash password automatically before saving whenever it changes
 UserSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();

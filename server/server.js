@@ -118,9 +118,9 @@ async function getMailer() {
     pool: true,
     maxConnections: 3,
     maxMessages: 50,
-    connectionTimeout: Number(process.env.SMTP_CONNECTION_TIMEOUT || dbConfig.smtpConnectionTimeout) || 8000,
-    greetingTimeout: Number(process.env.SMTP_GREETING_TIMEOUT || dbConfig.smtpGreetingTimeout) || 8000,
-    socketTimeout: Number(process.env.SMTP_SOCKET_TIMEOUT || dbConfig.smtpSocketTimeout) || 10000,
+    connectionTimeout: Number(process.env.SMTP_CONNECTION_TIMEOUT || dbConfig.smtpConnectionTimeout) || 15000,
+    greetingTimeout: Number(process.env.SMTP_GREETING_TIMEOUT || dbConfig.smtpGreetingTimeout) || 15000,
+    socketTimeout: Number(process.env.SMTP_SOCKET_TIMEOUT || dbConfig.smtpSocketTimeout) || 20000,
     tls: { rejectUnauthorized: String(process.env.SMTP_REJECT_UNAUTHORIZED || dbConfig.smtpRejectUnauthorized || 'true').toLowerCase() !== 'false' }
   });
   return sharedMailer;
@@ -163,8 +163,8 @@ async function deliverMail(message) {
     }
   }
 
-  // 2. Fallback to raw SMTP with 8s deadline + auto reset
-  const timeoutMs = Number(process.env.SMTP_SEND_TIMEOUT) || 8000;
+  // 2. Fallback to raw SMTP with 28s deadline + auto reset
+  const timeoutMs = Number(process.env.SMTP_SEND_TIMEOUT) || 28000;
   let lastErr;
   for (let attempt = 1; attempt <= 2; attempt++) {
     const mailer = await getMailer();
@@ -1049,8 +1049,12 @@ app.get('/api/products', async (req, res) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.set('Pragma', 'no-cache');
   res.set('Expires', '0');
-  const products = await Product.find().sort({ createdAt: -1 });
-  res.json(products);
+  try {
+    const products = await Product.find().sort({ createdAt: -1 }).lean();
+    res.json(products);
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Error fetching products' });
+  }
 });
 
 app.get('/api/products/:id', async (req, res) => {
@@ -1067,39 +1071,49 @@ app.get('/api/products/:id', async (req, res) => {
 });
 
 app.post('/api/products', requireAdmin, async (req, res) => {
-  const newProduct = await Product.create(req.body);
-  // Log initial stock as production inward so reports can track stock-in
-  if (newProduct.stock > 0) {
-    await InventoryLog.create({
-      productId: String(newProduct._id),
-      productName: newProduct.name,
-      changeType: 'restock',
-      quantityChanged: newProduct.stock,
-      newStock: newProduct.stock
-    });
+  try {
+    const newProduct = await Product.create(req.body);
+    // Log initial stock as production inward so reports can track stock-in.
+    // Fire-and-forget: the log write must not delay the admin's response.
+    if (newProduct.stock > 0) {
+      InventoryLog.create({
+        productId: String(newProduct._id),
+        productName: newProduct.name,
+        changeType: 'restock',
+        quantityChanged: newProduct.stock,
+        newStock: newProduct.stock
+      }).catch(err => console.error('Inventory log write failed:', err.message));
+    }
+    res.status(201).json(newProduct);
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Error adding product' });
   }
-  res.status(201).json(newProduct);
 });
 
 app.put('/api/products/:id', requireAdmin, async (req, res) => {
-  const { _id, id, ...update } = req.body;
-  const before = await Product.findById(req.params.id);
-  const updated = await Product.findByIdAndUpdate(req.params.id, update, { new: true });
-  // Stock increase = production inward — record it for inventory reports
-  if (before && updated && typeof update.stock === 'number' && update.stock > before.stock) {
-    await InventoryLog.create({
-      productId: String(updated._id),
-      productName: updated.name,
-      changeType: 'restock',
-      quantityChanged: update.stock - before.stock,
-      newStock: updated.stock
-    });
+  try {
+    const { _id, id, ...update } = req.body;
+    const before = await Product.findById(req.params.id);
+    const updated = await Product.findByIdAndUpdate(req.params.id, update, { new: true });
+    if (!updated) return res.status(404).json({ message: 'Product not found' });
+    // Stock increase = production inward — record it for inventory reports
+    if (before && updated && typeof update.stock === 'number' && update.stock > before.stock) {
+      InventoryLog.create({
+        productId: String(updated._id),
+        productName: updated.name,
+        changeType: 'restock',
+        quantityChanged: update.stock - before.stock,
+        newStock: updated.stock
+      }).catch(err => console.error('Inventory log write failed:', err.message));
+    }
+    // Stock dropped to/below threshold via admin edit — alert admins (non-blocking)
+    if (before && updated && typeof update.stock === 'number' && updated.stock < before.stock) {
+      maybeAlertLowStock(updated).catch(err => console.error('Low stock alert failed:', err.message));
+    }
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Error updating product' });
   }
-  // Stock dropped to/below threshold via admin edit — alert admins (non-blocking)
-  if (before && updated && typeof update.stock === 'number' && updated.stock < before.stock) {
-    await maybeAlertLowStock(updated);
-  }
-  res.json(updated);
 });
 
 // Manual production inward (stock-in) for a product
@@ -1132,14 +1146,22 @@ app.post('/api/inventory-logs/restock', requireAdmin, async (req, res) => {
 });
 
 app.delete('/api/products/:id', requireAdmin, async (req, res) => {
-  await Product.findByIdAndDelete(req.params.id);
-  res.json({ message: 'Product deleted' });
+  try {
+    await Product.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Product deleted' });
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Error deleting product' });
+  }
 });
 
 // 3. Orders API
 app.get('/api/orders', requireAdmin, async (req, res) => {
-  const orders = await Order.find().sort({ createdAt: -1 });
-  res.json(orders);
+  try {
+    const orders = await Order.find().sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Error fetching orders' });
+  }
 });
 
 // A customer's own orders (for My Account page)

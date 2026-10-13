@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import axios from 'axios';
-import { Product, INITIAL_PRODUCTS } from '../config/products';
+import { Product } from '../config/products';
 
 export interface User {
   id: string;
@@ -172,7 +172,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   });
   const [users, setUsers] = useState<User[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
+  const [products, setProducts] = useState<Product[]>([]);
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [shippingList, setShippingList] = useState<Shipping[]>([]);
@@ -182,7 +182,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [securityLogs, setSecurityLogs] = useState<SecurityLog[]>([]);
 
   // Fetch all databases from MongoDB on mount
+  const productSeqRef = useRef(0);
+  const loadDataBusyRef = useRef(false);
+  const refreshBusyRef = useRef(false);
+
+  // Single product fetch with a sequence guard: a slow stale response can
+  // never overwrite the result of a newer request.
+  const fetchProductsOnce = async () => {
+    const seq = ++productSeqRef.current;
+    const prodRes = await axios.get('/api/products');
+    const mappedProds = prodRes.data.map((p: any) => ({
+      ...p,
+      id: p._id
+    }));
+    if (seq !== productSeqRef.current) return; // a newer request finished already
+    if (mappedProds && mappedProds.length > 0) {
+      setProducts(mappedProds);
+    }
+    // If API returns empty, keep existing products (don't swap to fake INITIAL_PRODUCTS)
+  };
+
   const loadData = async () => {
+    if (loadDataBusyRef.current) return; // don't stack polls while one is still running
+    loadDataBusyRef.current = true;
     try {
       // Determine role from persisted session (state may not be updated yet during login)
       let currentUser: User | null = null;
@@ -194,138 +216,119 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       const isAdmin = currentUser?.role === 'admin';
+      const hasSession = Boolean(currentUser?.token);
+
+      const jobs: Promise<void>[] = [];
 
       // Products (public) - NO silent fallback to fake data
-      const prodRes = await axios.get('/api/products');
-      const mappedProds = prodRes.data.map((p: any) => ({
-        ...p,
-        id: p._id
-      }));
-      if (mappedProds && mappedProds.length > 0) {
-        setProducts(mappedProds);
-      }
-      // If API returns empty, keep existing products (don't swap to fake INITIAL_PRODUCTS)
+      jobs.push(fetchProductsOnce());
 
       // Reviews (public - shown on product pages)
-      const revRes = await axios.get('/api/reviews');
-      setReviews(revRes.data);
+      jobs.push((async () => {
+        const revRes = await axios.get('/api/reviews');
+        setReviews(revRes.data);
+      })());
 
-      // Admin-only data
-      if (isAdmin && currentUser?.token) {
-        const orderRes = await axios.get('/api/orders');
-        setOrders(orderRes.data.map((o: any) => ({
-          ...o,
-          id: o.id || o._id,
-          date: o.date || (o.createdAt ? new Date(o.createdAt).toISOString().split('T')[0] : '')
-        })));
-
-        const userRes = await axios.get('/api/users');
-        const mappedUsers = userRes.data.map((u: any) => ({
-          ...u,
-          id: u._id
-        }));
-        setUsers(mappedUsers);
-
-        const ticketRes = await axios.get('/api/tickets');
-        const mappedTickets = ticketRes.data.map((t: any) => ({
-          ...t,
-          id: t._id,
-          date: new Date(t.createdAt).toISOString().split('T')[0]
-        }));
-        setTickets(mappedTickets);
-
-        const payRes = await axios.get('/api/payments');
-        setPayments(payRes.data);
-
-        const shipRes = await axios.get('/api/shipping');
-        setShippingList(shipRes.data);
-
-        const discRes = await axios.get('/api/discounts');
-        setDiscounts(discRes.data);
-
-        const logRes = await axios.get('/api/inventory-logs');
-        setInventoryLogs(logRes.data);
-
-        const secRes = await axios.get('/api/security-logs');
-        setSecurityLogs(secRes.data);
-      } else if (currentUser?.token) {
-        const orderRes = await axios.get('/api/orders');
-        setOrders(orderRes.data.map((o: any) => ({
-          ...o,
-          id: o.id || o._id,
-          date: o.date || (o.createdAt ? new Date(o.createdAt).toISOString().split('T')[0] : '')
-        })));
-
-        const userRes = await axios.get('/api/users');
-        const mappedUsers = userRes.data.map((u: any) => ({
-          ...u,
-          id: u._id
-        }));
-        setUsers(mappedUsers);
-
-        const ticketRes = await axios.get('/api/tickets');
-        const mappedTickets = ticketRes.data.map((t: any) => ({
-          ...t,
-          id: t._id,
-          date: new Date(t.createdAt).toISOString().split('T')[0]
-        }));
-        setTickets(mappedTickets);
-
-        const payRes = await axios.get('/api/payments');
-        setPayments(payRes.data);
-
-        const shipRes = await axios.get('/api/shipping');
-        setShippingList(shipRes.data);
-
-        const discRes = await axios.get('/api/discounts');
-        setDiscounts(discRes.data);
-
-        const logRes = await axios.get('/api/inventory-logs');
-        setInventoryLogs(logRes.data);
-
-        const secRes = await axios.get('/api/security-logs');
-        setSecurityLogs(secRes.data);
-      } else if (currentUser?.token) {
-        // Customer: only their own orders and tickets
-        try {
+      if (isAdmin && hasSession) {
+        // Admin-only data — all fetched in parallel instead of one-by-one
+        jobs.push((async () => {
+          const orderRes = await axios.get('/api/orders');
+          setOrders(orderRes.data.map((o: any) => ({
+            ...o,
+            id: o.id || o._id,
+            date: o.date || (o.createdAt ? new Date(o.createdAt).toISOString().split('T')[0] : '')
+          })));
+        })());
+        jobs.push((async () => {
+          const userRes = await axios.get('/api/users');
+          setUsers(userRes.data.map((u: any) => ({
+            ...u,
+            id: u._id
+          })));
+        })());
+        jobs.push((async () => {
+          const ticketRes = await axios.get('/api/tickets');
+          setTickets(ticketRes.data.map((t: any) => ({
+            ...t,
+            id: t._id,
+            date: new Date(t.createdAt).toISOString().split('T')[0]
+          })));
+        })());
+        jobs.push((async () => {
+          const payRes = await axios.get('/api/payments');
+          setPayments(payRes.data);
+        })());
+        jobs.push((async () => {
+          const shipRes = await axios.get('/api/shipping');
+          setShippingList(shipRes.data);
+        })());
+        jobs.push((async () => {
+          const discRes = await axios.get('/api/discounts');
+          setDiscounts(discRes.data);
+        })());
+        jobs.push((async () => {
+          const logRes = await axios.get('/api/inventory-logs');
+          setInventoryLogs(logRes.data);
+        })());
+        jobs.push((async () => {
+          const secRes = await axios.get('/api/security-logs');
+          setSecurityLogs(secRes.data);
+        })());
+      } else if (hasSession) {
+        // Customer: only their own orders and tickets (in parallel)
+        jobs.push((async () => {
           const myOrders = await axios.get('/api/my/orders');
           setOrders(myOrders.data.map((o: any) => ({
             ...o,
             id: o.id || o._id,
             date: o.date || (o.createdAt ? new Date(o.createdAt).toISOString().split('T')[0] : '')
           })));
-        } catch (e) {
-          console.error('Error fetching my orders:', e);
-        }
-        try {
+        })());
+        jobs.push((async () => {
           const myTickets = await axios.get('/api/my/tickets');
           setTickets(myTickets.data.map((t: any) => ({
             ...t,
             id: t._id,
             date: new Date(t.createdAt).toISOString().split('T')[0]
           })));
-        } catch (e) {
-          console.error('Error fetching my tickets:', e);
-        }
+        })());
       }
-    } catch (error) {
-      console.error('Error fetching MongoDB data:', error);
+
+      const results = await Promise.allSettled(jobs);
+      results.forEach((r) => {
+        if (r.status === 'rejected') {
+          console.error('Error fetching MongoDB data:', r.reason);
+        }
+      });
+    } finally {
+      loadDataBusyRef.current = false;
     }
   };
 
   // Lightweight product-only refresh for real-time updates across all users
   const refreshProducts = async () => {
+    if (refreshBusyRef.current) return; // skip if a refresh is already in flight
+    refreshBusyRef.current = true;
     try {
-      const prodRes = await axios.get('/api/products');
-      const mappedProds = prodRes.data.map((p: any) => ({
-        ...p,
-        id: p._id
-      }));
-      if (mappedProds && mappedProds.length > 0) {
-        setProducts(mappedProds);
-      }
+      await fetchProductsOnce();
     } catch (error) {
       console.error('Error refreshing products:', error);
+    } finally {
+      refreshBusyRef.current = false;
+    }
+  };
+
+  // Used after admin mutations: waits for any in-flight refresh, then always
+  // performs a fresh fetch so the new/edited product shows up immediately.
+  const refreshProductsFresh = async () => {
+    while (refreshBusyRef.current) {
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    refreshBusyRef.current = true;
+    try {
+      await fetchProductsOnce();
+    } finally {
+      refreshBusyRef.current = false;
     }
   };
 
@@ -529,7 +532,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const addProduct = async (newProd: Omit<Product, 'id'>) => {
     try {
       await axios.post('/api/products', newProd, { headers: getAuthHeaders() });
-      await refreshProducts();
+      await refreshProductsFresh();
     } catch (error) {
       console.error('Error adding product to MongoDB:', error);
       throw error;
@@ -540,7 +543,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const dbId = updatedProd._id || updatedProd.id;
       await axios.put(`/api/products/${dbId}`, updatedProd, { headers: getAuthHeaders() });
-      await refreshProducts();
+      await refreshProductsFresh();
     } catch (error) {
       console.error('Error updating product in MongoDB:', error);
       throw error;
@@ -550,7 +553,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const deleteProduct = async (id: string | number) => {
     try {
       await axios.delete(`/api/products/${id}`, { headers: getAuthHeaders() });
-      await refreshProducts();
+      await refreshProductsFresh();
     } catch (error) {
       console.error('Error deleting product from MongoDB:', error);
       throw error;
