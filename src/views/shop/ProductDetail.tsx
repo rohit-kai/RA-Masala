@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import axios from 'axios';
 import Header from '../includes/Header';
 import Footer from '../includes/Footer';
 import { useLanguage } from '../../context/LanguageContext';
@@ -24,6 +25,19 @@ const ProductDetail = () => {
 
   // Find product from AuthContext (which polls every 5s)
   const product = products.find((p) => String(p._id || p.id) === id);
+
+  // The catalog list ships small thumbnails; fetch the full-size image for
+  // this product so the detail page shows it crisply.
+  const [fullImage, setFullImage] = useState<string | null>(null);
+  useEffect(() => {
+    setFullImage(null);
+    if (!id) return;
+    let alive = true;
+    axios.get(`/api/products/${id}`)
+      .then(res => { if (alive && res.data?.image) setFullImage(res.data.image); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [id]);
 
   // Scroll to top on mount or product change
   useEffect(() => {
@@ -165,7 +179,7 @@ const ProductDetail = () => {
                 }}
               >
                 <img 
-                  src={getAssetPath(product.image)} 
+                  src={getAssetPath(fullImage || product.image)} 
                   alt={tp(product.name)}
                   style={{
                     maxHeight: '100%',

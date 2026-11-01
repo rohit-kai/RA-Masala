@@ -9,7 +9,8 @@ const ProductSchema = new mongoose.Schema({
   category: { type: String, required: true },
   unit: { type: String, required: true },
   brand: { type: String, default: 'masale' },
-  subCategory: { type: String, default: '' }
+  subCategory: { type: String, default: '' },
+  thumb: { type: String, default: '' }
 }, { timestamps: true });
 
 // GET /api/products sorts by newest first on every request

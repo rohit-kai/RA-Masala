@@ -7,7 +7,7 @@ import Footer from '../includes/Footer';
 import RoutePaths from '../../config';
 import Swal from 'sweetalert2';
 import { Product } from '../../config/products';
-import { getAssetPath } from '../../Utils/imageHelper';
+import { getAssetPath, compressImageFile } from '../../Utils/imageHelper';
 
 const AdminProducts = () => {
   const { user, products, addProduct, updateProduct, deleteProduct } = useAuth();
@@ -269,11 +269,9 @@ const AdminProducts = () => {
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                          const reader = new FileReader();
-                          reader.onloadend = () => {
-                            setImage(reader.result as string);
-                          };
-                          reader.readAsDataURL(file);
+                          compressImageFile(file)
+                            .then(setImage)
+                            .catch(() => {});
                         }
                       }}
                     />

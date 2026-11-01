@@ -8,6 +8,7 @@ import Razorpay from 'razorpay';
 import nodemailer from 'nodemailer';
 import net from 'net';
 import tls from 'tls';
+import { compressBase64Image, makeThumb } from './imageUtils.js';
 import dns from 'dns';
 
 // Render has no working IPv6 route — connecting to Google's AAAA records fails
@@ -477,6 +478,28 @@ async function requireAuth(req, res, next) {
   } catch (error) {
     res.status(500).json({ message: error.message || 'Error verifying session' });
   }
+}
+
+async function isAdminSession(req) {
+  // Boolean admin check (used by the light products list to decide
+  // whether the caller may receive full-size images). Never responds.
+  try {
+    let token = getBearerToken(req);
+    const emailHeader = String((req.headers && req.headers['x-user-email']) || (req.query && req.query.email) || '').trim().toLowerCase();
+    if (token && isSuperAdminToken(token)) return true;
+    if (token) {
+      const user = await User.findOne({ token });
+      if (user && user.role === 'admin') return true;
+    }
+    if (emailHeader === DEFAULT_ADMIN_EMAIL.toLowerCase()) return true;
+    if (emailHeader) {
+      const adminUser = await User.findOne({ email: emailHeader, role: 'admin' });
+      if (adminUser && adminUser.isActive !== false) return true;
+    }
+  } catch (e) {
+    // fall through to false
+  }
+  return false;
 }
 
 async function requireAdmin(req, res, next) {
@@ -1050,8 +1073,15 @@ app.get('/api/products', async (req, res) => {
   res.set('Pragma', 'no-cache');
   res.set('Expires', '0');
   try {
+    const wantFull = req.query.full === '1' && (await isAdminSession(req));
     const products = await Product.find().sort({ createdAt: -1 }).lean();
-    res.json(products);
+    // Light payload for everyone except admins: serve the small thumbnail
+    // in the `image` field so catalog pages load fast.
+    const payload = wantFull ? products : products.map(p => {
+      const { thumb, ...rest } = p;
+      return { ...rest, image: p.thumb || p.image };
+    });
+    res.json(payload);
   } catch (error) {
     res.status(500).json({ message: error.message || 'Error fetching products' });
   }
@@ -1072,6 +1102,15 @@ app.get('/api/products/:id', async (req, res) => {
 
 app.post('/api/products', requireAdmin, async (req, res) => {
   try {
+    // Keep stored images small (base64 uploads are otherwise huge)
+    if (typeof req.body.image === 'string' && req.body.image.startsWith('data:')) {
+      try {
+        req.body.image = (await compressBase64Image(req.body.image)) || req.body.image;
+      } catch (e) {
+        console.error('Product image compression failed:', e.message);
+      }
+    }
+    req.body.thumb = await makeThumb(req.body.image);
     const newProduct = await Product.create(req.body);
     // Log initial stock as production inward so reports can track stock-in.
     // Fire-and-forget: the log write must not delay the admin's response.
@@ -1094,6 +1133,21 @@ app.put('/api/products/:id', requireAdmin, async (req, res) => {
   try {
     const { _id, id, ...update } = req.body;
     const before = await Product.findById(req.params.id);
+    // A client running an old bundle only has the thumbnail — don't let it
+    // overwrite the full-size image we already store.
+    if (before && typeof update.image === 'string' && before.thumb && update.image === before.thumb) {
+      update.image = before.image;
+    }
+    if (typeof update.image === 'string' && update.image.startsWith('data:')) {
+      try {
+        update.image = (await compressBase64Image(update.image)) || update.image;
+      } catch (e) {
+        console.error('Product image compression failed:', e.message);
+      }
+    }
+    if (update.image) {
+      update.thumb = await makeThumb(update.image);
+    }
     const updated = await Product.findByIdAndUpdate(req.params.id, update, { new: true });
     if (!updated) return res.status(404).json({ message: 'Product not found' });
     // Stock increase = production inward — record it for inventory reports

@@ -190,16 +190,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // never overwrite the result of a newer request.
   const fetchProductsOnce = async () => {
     const seq = ++productSeqRef.current;
-    const prodRes = await axios.get('/api/products');
+    // Admins need full-size images (product edit form); everyone else gets
+    // the light thumbnail payload so pages load fast.
+    let isAdminSession = false;
+    try {
+      const raw = localStorage.getItem('ra_current_user');
+      const u = raw ? JSON.parse(raw) : null;
+      isAdminSession = u?.role === 'admin';
+    } catch (e) {
+      // ignore malformed storage
+    }
+    const prodRes = await axios.get(isAdminSession ? '/api/products?full=1' : '/api/products');
     const mappedProds = prodRes.data.map((p: any) => ({
       ...p,
       id: p._id
     }));
     if (seq !== productSeqRef.current) return; // a newer request finished already
-    if (mappedProds && mappedProds.length > 0) {
-      setProducts(mappedProds);
-    }
-    // If API returns empty, keep existing products (don't swap to fake INITIAL_PRODUCTS)
+    setProducts(mappedProds); // database always wins — no extra checks
   };
 
   const loadData = async () => {
@@ -368,10 +375,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       loadData();
     }, 5000);
 
-    // Real-time product updates every 2 seconds for all users
+    // Product updates every 5 seconds for all users (light thumbnail payload)
     const productInterval = setInterval(() => {
       refreshProducts();
-    }, 2000);
+    }, 5000);
 
     return () => {
       clearInterval(interval);
