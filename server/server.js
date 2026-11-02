@@ -157,6 +157,9 @@ async function deliverMail(message) {
         subject: message.subject,
         html: message.html
       });
+      if (result.error) {
+        throw new Error(result.error.message || `Resend error: ${JSON.stringify(result.error)}`);
+      }
       console.log('[Resend] Email sent successfully:', result.data?.id);
       return result;
     } catch (err) {
