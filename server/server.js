@@ -147,10 +147,17 @@ async function getFromAddress() {
 // Shared send: tries Resend API first (fast, <1s, HTTPS port 443 for Render/Vercel), falls back to SMTP.
 async function deliverMail(message) {
   // 1. Try Resend API (HTTPS port 443 — works on Render/Vercel in <300ms)
+  let resendErr = null;
   const resend = await getResend();
   if (resend) {
     try {
-      const fromAddr = message.from || await getFromAddress();
+      let fromAddr = message.from;
+      if (fromAddr && typeof fromAddr.then === 'function') {
+        fromAddr = await fromAddr;
+      }
+      if (!fromAddr) {
+        fromAddr = await getFromAddress();
+      }
       const result = await resend.emails.send({
         from: fromAddr,
         to: message.to,
@@ -163,7 +170,15 @@ async function deliverMail(message) {
       console.log('[Resend] Email sent successfully:', result.data?.id);
       return result;
     } catch (err) {
-      console.warn('[Resend] Send failed, falling back to SMTP:', err?.message || err);
+      resendErr = err;
+      console.warn('[Resend] Send failed:', err?.message || err);
+      // On cloud environments, Gmail SMTP ports (587/465) are blocked and cause "Connection timeout".
+      // If Resend failed with a specific error (e.g. unverified domain or invalid recipient),
+      // throw the actual Resend error immediately instead of hanging in a 30s SMTP timeout loop.
+      if (!process.env.SMTP_HOST || process.env.SMTP_HOST.includes('gmail')) {
+        throw err;
+      }
+      console.warn('[SMTP] Falling back to SMTP transport...');
     }
   }
 
@@ -173,6 +188,7 @@ async function deliverMail(message) {
   for (let attempt = 1; attempt <= 2; attempt++) {
     const mailer = await getMailer();
     if (!mailer) {
+      if (resendErr) throw resendErr;
       throw new Error(
         'Email delivery not configured. On Vercel / serverless cloud hosts, raw SMTP ports (587/465) are blocked. ' +
         'Please configure RESEND_API_KEY in environment variables or Admin Settings to send emails over HTTPS API in <1s.'
@@ -201,7 +217,7 @@ async function deliverMail(message) {
 
 async function sendResetEmail(toEmail, resetLink) {
   await deliverMail({
-    from: getFromAddress(),
+    from: await getFromAddress(),
     to: toEmail,
     subject: 'RA Masala - Reset Your Password',
     html: `
@@ -226,7 +242,7 @@ async function sendResetEmail(toEmail, resetLink) {
 
 // Generic HTML mail helper (same fail-fast deadline + retry as sendResetEmail)
 async function sendHtmlMail(toEmail, subject, html) {
-  await deliverMail({ from: getFromAddress(), to: toEmail, subject, html });
+  await deliverMail({ from: await getFromAddress(), to: toEmail, subject, html });
 }
 
 function escapeHtml(value) {
